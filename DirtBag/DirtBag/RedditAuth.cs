@@ -8,18 +8,18 @@ using RedditSharp;
 namespace DirtBag {
 	class RedditAuth {
 
-		public static string AccessToken { get; private set; }
+		public string AccessToken { get; private set; }
 
-		private static string uname;
-		private static string pass;
-		private static string clientID;
-		private static string clientSecret;
+		private string uname;
+		private string pass;
+		private string clientID;
+		private string clientSecret;
 
-		private static TimerState timerState;
+		private TimerState timerState;
 
 		private const int FIFTYFIVE_MINUTES = 3300000;
-		//runonce static initializer
-		static RedditAuth() {
+		
+		public RedditAuth() {
 			uname = ConfigurationManager.AppSettings["BotUsername"];
 			pass = ConfigurationManager.AppSettings["BotPassword"];
 			clientID = ConfigurationManager.AppSettings["ClientID"];
@@ -30,7 +30,7 @@ namespace DirtBag {
 			if ( string.IsNullOrEmpty( clientSecret ) ) throw new Exception( "Missing 'ClientSecret' in config" );
 			timerState = new TimerState();
 		}
-		public static void GetNewToken() {
+		public void GetNewToken() {
 			try {
 				AuthProvider ap = new AuthProvider( clientID, clientSecret, "/" );
 				AccessToken = ap.GetOAuthToken( uname, pass );
@@ -41,13 +41,13 @@ namespace DirtBag {
 			}
         }
 
-		public static void Login() {
+		public void Login() {
 			timerState.TimerRunning = true;
-			System.Threading.Timer refreshTimer = new System.Threading.Timer( new System.Threading.TimerCallback( RefreshTokenTimer ), timerState, 0, FIFTYFIVE_MINUTES );
+			timerState.TimerRef = new System.Threading.Timer( new System.Threading.TimerCallback( RefreshTokenTimer ), timerState, 0, FIFTYFIVE_MINUTES );
           
 		}
 
-		private static void RefreshTokenTimer(object s ) {
+		private void RefreshTokenTimer(object s ) {
 			TimerState state = (TimerState) s;
 			if ( !state.TimerRunning ) {
 				state.TimerRef.Dispose();
