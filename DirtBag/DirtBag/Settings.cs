@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+
 namespace DirtBag {
     [Serializable]
     public class BotSettings {
@@ -11,9 +13,9 @@ namespace DirtBag {
         public string Subreddit { get; set; }
         [JsonProperty]
         public double Version { get; set; }
-        [JsonProperty]
-        public List<string> Modules { get; set; }
-        [JsonIgnore]
+		[JsonProperty]
+		public int RunEveryXMinutes { get; set; }
+		[JsonIgnore]
         public DateTime LastModified { get; set; }
         /*** MODULE SETTINGS ***/
         [JsonProperty]
@@ -69,7 +71,7 @@ namespace DirtBag {
                 }
                 /***End Module Defaults ***/
                 if ( addedDefaults ) {
-                    wiki.EditPage( WIKIPAGE_NAME, JsonConvert.SerializeObject( this ), reason: "Add module default" );
+                    wiki.EditPage( WIKIPAGE_NAME, JsonConvert.SerializeObject( this, Formatting.Indented, new JsonConverter[] { new StringEnumConverter() } ).Replace( "\r\n  ", "\r\n\r\n    " ), reason: "Add module default" );
                     this.LastModified = DateTime.UtcNow.AddMinutes( 1 );
                 }
                 System.Diagnostics.Debug.WriteLine( string.Format( "Settings in wiki changed or read for first time : Revision Date = {0}", LastModified ) );
@@ -86,12 +88,12 @@ namespace DirtBag {
 
         private void CreateWikiPage( RedditSharp.Wiki wiki ) {
             Version = Program.VersionNumber;
-            Modules = new List<string>();
+			RunEveryXMinutes = 10;
             LastModified = DateTime.UtcNow;
             /*** Module Settings ***/
             LicensingSmasher = new Modules.LicensingSmasherSettings();
             /*** End Module Settings ***/
-            wiki.EditPage( WIKIPAGE_NAME, JsonConvert.SerializeObject( this ) );
+            wiki.EditPage( WIKIPAGE_NAME, JsonConvert.SerializeObject( this, Formatting.Indented, new JsonConverter[] { new StringEnumConverter() } ).Replace("\r\n  ","\r\n\r\n    ") );
         }
         private void SettingsTimer( object s ) {
             SettingsTimerState state = (SettingsTimerState) s;

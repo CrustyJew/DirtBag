@@ -22,7 +22,7 @@ namespace DirtBag {
         }
 
         public override object ReadJson( JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer ) {
-            var data = String.Join( ",", JArray.Load( reader ).Select( t => t.ToString() ) );
+			var data = existingValue.ToString();//reader.ReadAsString();//.Load( reader ).ToString();
 
             PostType result;
 

@@ -8,8 +8,9 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 
 namespace DirtBag.Modules {
-    class LicensingSmasher {
-        public bool IsRunning { get; set; }
+    class LicensingSmasher : IModule {
+		public IModuleSettings Settings { get; set; }
+		public bool IsRunning { get; set; }
         public RedditSharp.Reddit RedditClient { get; set; }
         public string Subreddit { get; set; }
         public string YouTubeAPIKey { get; set; }
@@ -20,6 +21,12 @@ namespace DirtBag.Modules {
             if ( string.IsNullOrEmpty( key ) ) throw new Exception( "Provide setting 'YouTubeAPIKey' in AppConfig" );
             YouTubeAPIKey = key;
         }
+		public LicensingSmasher(LicensingSmasherSettings settings, RedditSharp.Reddit reddit, string sub ) : this() {
+			RedditClient = reddit;
+			Subreddit = sub;
+			TermsToMatch = settings.MatchTerms.ToList();
+			Settings = settings;
+		}
         private const int ISLICENESED_SCORE = 2;
         private const int STRINGMATCH_SCORE = 8;
         private static Regex VideoID = new Regex( @"?: youtube\.com/(?:(?:watch|attribution_link)\?(?:.*(?:&|%3F|&amp;))?v(?:=|%3D)|embed/)|youtu\.be/)([a-zA-Z0-9-_]{11}" );
