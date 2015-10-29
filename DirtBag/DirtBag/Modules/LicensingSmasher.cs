@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Google.Apis.YouTube.v3;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace DirtBag.Modules {
     class LicensingSmasher : IModule {
@@ -29,19 +30,26 @@ namespace DirtBag.Modules {
 		}
         private const int ISLICENESED_SCORE = 2;
         private const int STRINGMATCH_SCORE = 8;
-        private static Regex VideoID = new Regex( @"?: youtube\.com/(?:(?:watch|attribution_link)\?(?:.*(?:&|%3F|&amp;))?v(?:=|%3D)|embed/)|youtu\.be/)([a-zA-Z0-9-_]{11}" );
+        private static Regex VideoID = new Regex( @"(?:youtube\.com/(?:(?:watch|attribution_link)\?(?:.*(?:&|%3F|&amp;))?v(?:=|%3D)|embed/|v/)|youtu\.be/)([a-zA-Z0-9-_]{11})" );
         public async Task<Dictionary<string, int>> Analyze( List<RedditSharp.Things.Post> posts ) {
             return await Task.Run( () => {
                 Dictionary<string, int> toReturn = new Dictionary<string, int>();
                 Dictionary<string, RedditSharp.Things.Post> youTubePosts = new Dictionary<string, RedditSharp.Things.Post>();
                 foreach ( RedditSharp.Things.Post post in posts ) {
+					toReturn.Add( post.Id, 0 );
                     if ( post.Url.Host.ToLower().Contains( "youtube" ) || post.Url.Host.ToLower().Contains( "youtu.bu" ) ) {
-                        //it's a YouTube vid
-                        string id = VideoID.Match( post.Url.ToString() ).Value;
-                        youTubePosts[id] = post;
+						//it's a YouTube link
+						string url = post.Url.ToString();
+						if (url.Contains("v=")) {
+							string id =  url.Substring( url.IndexOf( "v=" ) + 2 ).Split('&')[0];
+							if ( !string.IsNullOrEmpty( id ) ) {
+								youTubePosts[id] = post;
+							}
+						}
                     }
                 }
-                Google.Apis.YouTube.v3.YouTubeService yt = new YouTubeService();
+                Google.Apis.YouTube.v3.YouTubeService yt = new YouTubeService(new Google.Apis.Services.BaseClientService.Initializer() { ApiKey=YouTubeAPIKey } );
+				
                 var req = yt.Videos.List( "snippet,contentDetails" );
                 req.Id = string.Join( ",", youTubePosts.Keys );
                 var response = req.Execute();
@@ -65,7 +73,7 @@ namespace DirtBag.Modules {
     public class LicensingSmasherSettings : IModuleSettings {
         [JsonProperty]
         public bool Enabled { get; set; }
-        [JsonConverter( typeof( PostTypeConverter ) )]
+        [JsonConverter( typeof( StringEnumConverter ) )]
         [JsonProperty]
         public PostType PostTypes { get; set; }
         [JsonProperty]
@@ -79,7 +87,7 @@ namespace DirtBag.Modules {
 
         public void SetDefaultSettings() {
             Enabled = true;
-            PostTypes = PostType.All;
+            PostTypes = PostType.Hot | PostType.New;
             EveryXRuns = 1;
             MatchTerms = new string[] { "jukin", "licensing", "break.com", "storyful", "rumble", "newsflare", "visualdesk", "viral spiral", "viralspiral", "rightser", "to use this video in a commercial", "media enquiries" };
         }

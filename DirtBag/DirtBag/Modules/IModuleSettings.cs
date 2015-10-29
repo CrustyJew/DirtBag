@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace DirtBag.Modules {
     public interface IModuleSettings {
@@ -6,7 +7,7 @@ namespace DirtBag.Modules {
         bool Enabled { get; set; }
 		[JsonProperty]
 		int EveryXRuns { get; set; }
-		[JsonConverter( typeof( PostTypeConverter ) )]
+		[JsonConverter( typeof( StringEnumConverter ) )]
 		[JsonProperty]
 		PostType PostTypes { get; set; }
 

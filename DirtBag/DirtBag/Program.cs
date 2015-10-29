@@ -21,6 +21,7 @@ namespace DirtBag {
 		private static ManualResetEvent waitHandle = new ManualResetEvent( false );
 		public const double VersionNumber = 1.0;
 		static void Main( string[] args ) {
+			Modules = new List<DirtBag.Modules.IModule>();
 			//Instantiate and throw away a Reddit instance so the static constructor won't interfere with the WebAgent later.
 			new Reddit();
 
@@ -51,11 +52,13 @@ namespace DirtBag {
 			Settings.Subreddit = Subreddit;
 			Settings.Initialize( Client );
 
-			LoadModules();
 		}
 
 		private static void Settings_OnSettingsModified( object sender, EventArgs e ) {
 			System.Diagnostics.Debug.WriteLine( "Received settings modified event" );
+			StopTimer();
+			LoadModules();
+			StartTimer();
 		}
 
 		private static void StartTimer() {
@@ -63,21 +66,69 @@ namespace DirtBag {
 		}
 
 		private static void StopTimer() {
-			TheKeeper.Dispose();
+			if ( TheKeeper != null ) {
+				TheKeeper.Dispose();
+			}
 		}
 
-		private static void ProcessPosts(object s ) {
+		private static async void ProcessPosts(object s ) {
 			RedditSharp.Things.Subreddit sub = Client.GetSubreddit( Subreddit );
-            var newPosts = sub.New.Take( 50 ).ToList();
-			var hotPosts = sub.Hot.Take( 50 ).ToList();
-			var risingPosts = sub.Rising.Take( 50 ).ToList();
 
-			var newModules = Modules.Where( m => m.Settings.PostTypes.HasFlag( PostType.New ) );
-			var hotModules = Modules.Where( m => m.Settings.PostTypes.HasFlag( PostType.Hot ) );
-			var risingModules = Modules.Where( m => m.Settings.PostTypes.HasFlag( PostType.Rising ) );
+			List<RedditSharp.Things.Post> newPosts = new List<RedditSharp.Things.Post>();
+			List<RedditSharp.Things.Post> hotPosts = new List<RedditSharp.Things.Post>(); 
+			List<RedditSharp.Things.Post> risingPosts = new List<RedditSharp.Things.Post>(); 
+
+			//avoid getting unnecessary posts to keep requests lower
+			if ( Modules.Any( m => m.Settings.PostTypes.HasFlag( PostType.New ) ) ) {
+				newPosts = sub.New.Take( 50 ).ToList();
+			}
+			if ( Modules.Any( m => m.Settings.PostTypes.HasFlag( PostType.Hot ) ) ) {
+				hotPosts = sub.Hot.Take( 50 ).ToList();
+			}
+			if ( Modules.Any( m => m.Settings.PostTypes.HasFlag( PostType.Rising ) ) ) {
+				risingPosts = sub.Rising.Take( 50 ).ToList();
+			}
+
+			List<Task<Dictionary<string, int>>> postTasks = new List<Task<Dictionary<string, int>>>();
+
+			var postComparer = new Helpers.PostIdEqualityComparer();
+            foreach (var module in Modules ) {
+				//hashset to prevent duplicates being passed.
+				HashSet<RedditSharp.Things.Post> posts = new HashSet<RedditSharp.Things.Post>( postComparer );
+				if ( module.Settings.PostTypes.HasFlag( PostType.New ) ) {
+					posts.UnionWith( newPosts );
+				}
+				if ( module.Settings.PostTypes.HasFlag( PostType.Hot ) ) {
+					posts.UnionWith( hotPosts );
+				}
+				if ( module.Settings.PostTypes.HasFlag( PostType.Rising ) ) {
+					posts.UnionWith( risingPosts );
+				}
+				postTasks.Add( module.Analyze( posts.ToList() ) );
+			}
+
+
+			Dictionary<string, int> results = new Dictionary<string, int>();
+
+			while (postTasks.Count > 0 ) {
+				var finishedTask = await Task.WhenAny( postTasks );
+				postTasks.Remove( finishedTask );
+				var result = await finishedTask;
+				foreach(string key in result.Keys ) {
+					if(results.Keys.Contains( key ) ) {
+						results[key] = results[key] + result[key];
+					}
+					else {
+						results.Add( key, result[key] );
+					}
+				}
+			}
+
+			System.Diagnostics.Debug.WriteLine( String.Format( "Successfully processed {0} posts", results.Keys.Count ) );
 		}
 
 		private static void LoadModules() {
+			Modules.Clear();
 			/*** Load Modules ***/
 			if ( Settings.LicensingSmasher.Enabled ) Modules.Add( new Modules.LicensingSmasher( Settings.LicensingSmasher, Client, Subreddit ) );
 			/*** End Load Modules ***/

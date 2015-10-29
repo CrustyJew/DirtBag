@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using System.ComponentModel.DataAnnotations;
 
 namespace DirtBag {
     [Serializable]
@@ -14,6 +15,7 @@ namespace DirtBag {
         [JsonProperty]
         public double Version { get; set; }
 		[JsonProperty]
+		[Range(1,9000)]
 		public int RunEveryXMinutes { get; set; }
 		[JsonIgnore]
         public DateTime LastModified { get; set; }
@@ -59,16 +61,18 @@ namespace DirtBag {
                 catch {
                     throw new Exception( "Wikipage is corrupted. Fix it, clear wiki page, or delete the page to recreate with defaults." );
                 }
-                this.Modules = sets.Modules;
                 this.Version = sets.Version;
                 this.LastModified = settingsPage.RevisionDate.Value;
 
                 bool addedDefaults = false;
                 /***Module Defaults***/
-                if ( this.LicensingSmasher == null ) {
+                if ( sets.LicensingSmasher == null ) {
                     LicensingSmasher = new Modules.LicensingSmasherSettings();
                     addedDefaults = true;
                 }
+				else {
+					LicensingSmasher = sets.LicensingSmasher;
+				}
                 /***End Module Defaults ***/
                 if ( addedDefaults ) {
                     wiki.EditPage( WIKIPAGE_NAME, JsonConvert.SerializeObject( this, Formatting.Indented, new JsonConverter[] { new StringEnumConverter() } ).Replace( "\r\n  ", "\r\n\r\n    " ), reason: "Add module default" );
