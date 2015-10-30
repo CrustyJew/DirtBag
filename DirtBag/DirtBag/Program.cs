@@ -24,7 +24,8 @@ namespace DirtBag {
 			ActiveModules = new List<DirtBag.Modules.IModule>();
 			//Instantiate and throw away a Reddit instance so the static constructor won't interfere with the WebAgent later.
 			new Reddit();
-
+			Logging.DirtBagConnection conn = new Logging.DirtBagConnection();
+			conn.InitializeConnection( new string[] { "GoAwayNoOneLikesYou" } );
 			Initialize();
 
 			waitHandle.WaitOne(); //Go the fuck to sleep
