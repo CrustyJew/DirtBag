@@ -29,7 +29,7 @@ namespace DirtBag.Modules {
 			Settings = settings;
 			TermMatching = new Regex( string.Join( "|", settings.MatchTerms ), RegexOptions.IgnoreCase );
 		}
-        private const int ISLICENESED_SCORE = 2;
+        private const int ISLICENESED_SCORE = 4;
         private const int STRINGMATCH_SCORE = 8;
         private static Regex VideoID = new Regex( @"(?:youtube\.com/(?:(?:watch|attribution_link)\?(?:.*(?:&|%3F|&amp;))?v(?:=|%3D)|embed/|v/)|youtu\.be/)([a-zA-Z0-9-_]{11})" );
 		private Regex TermMatching;
@@ -38,7 +38,7 @@ namespace DirtBag.Modules {
                 Dictionary<string, PostAnalysisResults> toReturn = new Dictionary<string, PostAnalysisResults>();
                 Dictionary<string, RedditSharp.Things.Post> youTubePosts = new Dictionary<string, RedditSharp.Things.Post>();
                 foreach ( RedditSharp.Things.Post post in posts ) {
-					toReturn.Add( post.Id, new PostAnalysisResults() );
+					toReturn.Add( post.Id, new PostAnalysisResults(post) );
                     if ( post.Url.Host.ToLower().Contains( "youtube" ) || post.Url.Host.ToLower().Contains( "youtu.bu" ) ) {
 						//it's a YouTube link
 						string url = post.Url.ToString();
@@ -60,12 +60,12 @@ namespace DirtBag.Modules {
 					RedditSharp.Things.Post post = youTubePosts[vid.Id];
 
 					if ( vid.ContentDetails.LicensedContent.Value ) {
-						toReturn[post.Id].Scores.Add( new AnalysisScore( ISLICENESED_SCORE, "YouTube video marked as \"Licensed\"", ModuleName ) );
+						toReturn[post.Id].Scores.Add( new AnalysisScore( ISLICENESED_SCORE, "YouTube video marked as \"Licensed\"","YT Licensed", ModuleName ) );
 					}
 					List<string> termMatches = TermMatching.Matches( vid.Snippet.Description ).Cast<Match>().Select(m=>m.Value).ToList();
 					termMatches.AddRange( TermMatching.Matches( vid.Snippet.Title ).Cast<Match>().Select( m => m.Value ).ToList() );
                     if ( termMatches.Count > 0 ) {
-						toReturn[post.Id].Scores.Add( new AnalysisScore( STRINGMATCH_SCORE, "YouTube video title or description has the following term(s): " + string.Join(", ",termMatches), ModuleName ) );
+						toReturn[post.Id].Scores.Add( new AnalysisScore( STRINGMATCH_SCORE, "YouTube video title or description has the following term(s): " + string.Join(", ",termMatches),"Match: "+ string.Join( ", ", termMatches ), ModuleName ) );
 					}
                     
                 }

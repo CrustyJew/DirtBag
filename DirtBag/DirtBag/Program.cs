@@ -124,6 +124,18 @@ namespace DirtBag {
 				}
 			}
 
+			foreach(var result in results ) {
+				var resultVal = result.Value;
+
+				if(resultVal.TotalScore >= Settings.RemoveScoreThreshold && Settings.RemoveScoreThreshold > 0 ) {
+					resultVal.Post.Remove();
+				}
+				else if( resultVal.TotalScore >= Settings.ReportScoreThreshold && Settings.ReportScoreThreshold > 0 ) {
+					resultVal.Post.Report( RedditSharp.Things.VotableThing.ReportType.Other, otherReason: resultVal.ReportReason );
+				}
+
+			}
+
 			System.Diagnostics.Debug.WriteLine( String.Format( "Successfully processed {0} posts", results.Keys.Count ) );
 		}
 

@@ -17,6 +17,10 @@ namespace DirtBag {
 		[JsonProperty]
 		[Range(1,9000)]
 		public int RunEveryXMinutes { get; set; }
+		[JsonProperty]
+		public int ReportScoreThreshold { get; set; }
+		[JsonProperty]
+		public int RemoveScoreThreshold { get; set; }
 		[JsonIgnore]
         public DateTime LastModified { get; set; }
         /*** MODULE SETTINGS ***/
@@ -46,11 +50,17 @@ namespace DirtBag {
             catch {
                 //Page doesn't exist, create it with defaults.
                 CreateWikiPage( wiki );
-                return;
+				if ( OnSettingsModified != null ) {
+					OnSettingsModified( this, EventArgs.Empty );
+				}
+				return;
             }
             if ( string.IsNullOrEmpty( settingsPage.MarkdownContent ) ) {
                 CreateWikiPage( wiki );
-                return;
+				if ( OnSettingsModified != null ) {
+					OnSettingsModified( this, EventArgs.Empty );
+				}
+				return;
             }
 
             if ( settingsPage.RevisionDate != null && settingsPage.RevisionDate.Value > LastModified ) {
@@ -63,6 +73,10 @@ namespace DirtBag {
                 }
                 this.Version = sets.Version;
                 this.LastModified = settingsPage.RevisionDate.Value;
+				this.RemoveScoreThreshold = sets.RemoveScoreThreshold;
+				this.ReportScoreThreshold = sets.ReportScoreThreshold;
+				this.RunEveryXMinutes = sets.RunEveryXMinutes;
+
 
                 bool addedDefaults = false;
                 /***Module Defaults***/
@@ -94,8 +108,10 @@ namespace DirtBag {
             Version = Program.VersionNumber;
 			RunEveryXMinutes = 10;
             LastModified = DateTime.UtcNow;
-            /*** Module Settings ***/
-            LicensingSmasher = new Modules.LicensingSmasherSettings();
+			ReportScoreThreshold = -1;
+			RemoveScoreThreshold = -1;
+			/*** Module Settings ***/
+			LicensingSmasher = new Modules.LicensingSmasherSettings();
             /*** End Module Settings ***/
             wiki.EditPage( WIKIPAGE_NAME, JsonConvert.SerializeObject( this, Formatting.Indented, new JsonConverter[] { new StringEnumConverter() } ).Replace("\r\n  ","\r\n\r\n    ") );
         }
