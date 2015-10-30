@@ -127,9 +127,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Helpers\PostEqualityComparer.cs" />
+    <Compile Include="Modules\AnalysisScore.cs" />
     <Compile Include="Modules\IModule.cs" />
     <Compile Include="Modules\IModuleSettings.cs" />
     <Compile Include="Modules\LicensingSmasher.cs" />
+    <Compile Include="Modules\PostAnalysisResults.cs" />
     <Compile Include="PostTypes.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

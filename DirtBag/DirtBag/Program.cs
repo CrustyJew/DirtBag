@@ -16,12 +16,12 @@ namespace DirtBag {
 		public static string Subreddit { get; set; }
 		public static Timer TheKeeper { get; set; }
 
-		public static List<Modules.IModule> Modules { get; set; }
+		public static List<Modules.IModule> ActiveModules { get; set; }
 
 		private static ManualResetEvent waitHandle = new ManualResetEvent( false );
 		public const double VersionNumber = 1.0;
 		static void Main( string[] args ) {
-			Modules = new List<DirtBag.Modules.IModule>();
+			ActiveModules = new List<DirtBag.Modules.IModule>();
 			//Instantiate and throw away a Reddit instance so the static constructor won't interfere with the WebAgent later.
 			new Reddit();
 
@@ -79,20 +79,20 @@ namespace DirtBag {
 			List<RedditSharp.Things.Post> risingPosts = new List<RedditSharp.Things.Post>(); 
 
 			//avoid getting unnecessary posts to keep requests lower
-			if ( Modules.Any( m => m.Settings.PostTypes.HasFlag( PostType.New ) ) ) {
+			if ( ActiveModules.Any( m => m.Settings.PostTypes.HasFlag( PostType.New ) ) ) {
 				newPosts = sub.New.Take( 50 ).ToList();
 			}
-			if ( Modules.Any( m => m.Settings.PostTypes.HasFlag( PostType.Hot ) ) ) {
+			if ( ActiveModules.Any( m => m.Settings.PostTypes.HasFlag( PostType.Hot ) ) ) {
 				hotPosts = sub.Hot.Take( 50 ).ToList();
 			}
-			if ( Modules.Any( m => m.Settings.PostTypes.HasFlag( PostType.Rising ) ) ) {
+			if ( ActiveModules.Any( m => m.Settings.PostTypes.HasFlag( PostType.Rising ) ) ) {
 				risingPosts = sub.Rising.Take( 50 ).ToList();
 			}
 
-			List<Task<Dictionary<string, int>>> postTasks = new List<Task<Dictionary<string, int>>>();
+			List<Task<Dictionary<string, Modules.PostAnalysisResults>>> postTasks = new List<Task<Dictionary<string, Modules.PostAnalysisResults>>>();
 
 			var postComparer = new Helpers.PostIdEqualityComparer();
-            foreach (var module in Modules ) {
+            foreach (var module in ActiveModules ) {
 				//hashset to prevent duplicates being passed.
 				HashSet<RedditSharp.Things.Post> posts = new HashSet<RedditSharp.Things.Post>( postComparer );
 				if ( module.Settings.PostTypes.HasFlag( PostType.New ) ) {
@@ -108,7 +108,7 @@ namespace DirtBag {
 			}
 
 
-			Dictionary<string, int> results = new Dictionary<string, int>();
+			Dictionary<string, Modules.PostAnalysisResults > results = new Dictionary<string, Modules.PostAnalysisResults>();
 
 			while (postTasks.Count > 0 ) {
 				var finishedTask = await Task.WhenAny( postTasks );
@@ -116,7 +116,7 @@ namespace DirtBag {
 				var result = await finishedTask;
 				foreach(string key in result.Keys ) {
 					if(results.Keys.Contains( key ) ) {
-						results[key] = results[key] + result[key];
+						results[key].Scores.AddRange(result[key].Scores);
 					}
 					else {
 						results.Add( key, result[key] );
@@ -128,9 +128,9 @@ namespace DirtBag {
 		}
 
 		private static void LoadModules() {
-			Modules.Clear();
+			ActiveModules.Clear();
 			/*** Load Modules ***/
-			if ( Settings.LicensingSmasher.Enabled ) Modules.Add( new Modules.LicensingSmasher( Settings.LicensingSmasher, Client, Subreddit ) );
+			if ( Settings.LicensingSmasher.Enabled ) ActiveModules.Add( new Modules.LicensingSmasher( Settings.LicensingSmasher, Client, Subreddit ) );
 			/*** End Load Modules ***/
 		}
 	}

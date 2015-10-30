@@ -4,7 +4,8 @@ using RedditSharp.Things;
 
 namespace DirtBag.Modules {
 	interface IModule {
+		string ModuleName { get; }
 		IModuleSettings Settings { get; set; }
-		Task<Dictionary<string, int>> Analyze( List<Post> posts );
+		Task<Dictionary<string, PostAnalysisResults>> Analyze( List<Post> posts );
 	}
 }
