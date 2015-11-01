@@ -152,6 +152,7 @@
   <ItemGroup>
     <Compile Include="Helpers\PostEqualityComparer.cs" />
     <Compile Include="Logging\DirtBagConnection.cs" />
+    <Compile Include="Logging\ProcessedPost.cs" />
     <Compile Include="Modules\AnalysisScore.cs" />
     <Compile Include="Modules\IModule.cs" />
     <Compile Include="Modules\IModuleSettings.cs" />
