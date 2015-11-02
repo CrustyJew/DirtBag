@@ -92,13 +92,13 @@ namespace DirtBag {
                     wiki.EditPage( WIKIPAGE_NAME, JsonConvert.SerializeObject( this, Formatting.Indented, new JsonConverter[] { new StringEnumConverter() } ).Replace( "\r\n  ", "\r\n\r\n    " ), reason: "Add module default" );
                     this.LastModified = DateTime.UtcNow.AddMinutes( 1 );
                 }
-                System.Diagnostics.Debug.WriteLine( string.Format( "Settings in wiki changed or read for first time : Revision Date = {0}", LastModified ) );
+                Console.WriteLine( string.Format( "Settings in wiki changed or read for first time : Revision Date = {0}", LastModified ) );
                 if ( OnSettingsModified != null ) {
                     OnSettingsModified( this, EventArgs.Empty );
                 }
             }
             else {
-                System.Diagnostics.Debug.WriteLine( "No updates to settings detected in wiki" );
+                Console.WriteLine( "No updates to settings detected in wiki" );
             }
 
 
@@ -117,7 +117,7 @@ namespace DirtBag {
         }
         private void SettingsTimer( object s ) {
             SettingsTimerState state = (SettingsTimerState) s;
-            System.Diagnostics.Debug.WriteLine( "Checking settings from wiki" );
+            Console.WriteLine( "Checking settings from wiki" );
             state.SettingsRef.ReadSettings( state.RedditRef );
         }
         private class SettingsTimerState {

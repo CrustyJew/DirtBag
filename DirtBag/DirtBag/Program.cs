@@ -15,7 +15,7 @@ namespace DirtBag {
         public static BotSettings Settings { get; set; }
         public static string Subreddit { get; set; }
         public static Timer TheKeeper { get; set; }
-
+        private static Timer BurstDebug { get; set; }
         public static List<Modules.IModule> ActiveModules { get; set; }
 
         private static ManualResetEvent waitHandle = new ManualResetEvent( false );
@@ -46,7 +46,7 @@ namespace DirtBag {
             WebAgent.UserAgent = uAgent;
             Auth = new RedditAuth();
             Auth.Login();
-
+            BurstDebug = new Timer( CheckBurstStats, Agent, 0, 20000 );
             Client = new Reddit( Auth.AccessToken );
 
             Settings = new BotSettings();
@@ -57,7 +57,7 @@ namespace DirtBag {
         }
 
         private static void Settings_OnSettingsModified( object sender, EventArgs e ) {
-            System.Diagnostics.Debug.WriteLine( "Received settings modified event" );
+            Console.WriteLine( "Received settings modified event" );
             StopTimer();
             LoadModules();
             StartTimer();
@@ -72,7 +72,10 @@ namespace DirtBag {
                 TheKeeper.Dispose();
             }
         }
-
+        private static void CheckBurstStats(object s ) {
+            WebAgent agent = (WebAgent) s;
+            Console.WriteLine( string.Format( "Last Request: {0}\r\nBurst Start: {1}\r\nRequests this Burst: {2}", agent.LastRequest, agent.BurstStart, agent.RequestsThisBurst ) );
+        }
         private static async void ProcessPosts( object s ) {
             RedditSharp.Things.Subreddit sub = Client.GetSubreddit( Subreddit );
 
@@ -104,6 +107,10 @@ namespace DirtBag {
             newPosts.RemoveAll( p => removedPreviously.Contains( p.Id ) );
             risingPosts.RemoveAll( p => removedPreviously.Contains( p.Id ) );
             hotPosts.RemoveAll( p => removedPreviously.Contains( p.Id ) );
+
+            List<string> reportedPreviously = new List<string>();
+            //select posts that have already been removed once and add them to list
+            reportedPreviously.AddRange( alreadyProcessed.Where( p => p.Action.ToLower() == "report" ).Select( p => p.PostID ).ToList() );
 
 
             List<Task<Dictionary<string, Modules.PostAnalysisResults>>> postTasks = new List<Task<Dictionary<string, Modules.PostAnalysisResults>>>();
@@ -154,18 +161,20 @@ namespace DirtBag {
                     }
                 }
                 else if ( resultVal.TotalScore >= Settings.ReportScoreThreshold && Settings.ReportScoreThreshold > 0 ) {
-                    resultVal.Post.Report( RedditSharp.Things.VotableThing.ReportType.Other, otherReason: resultVal.ReportReason );
-                    try {
-                        Logging.ProcessedPost.SaveProcessedPost( Settings.Subreddit, resultVal.Post.Id, "Report" ); //change to enum at some point
-                    }
-                    catch ( Exception ex ) {
-                        Console.WriteLine( String.Format( "Error saving post as processed. Messaage : {0}", ex.Message + ex.InnerException != null ? "\r\n Inner Exception : " + ex.InnerException.Message : "" ) );
+                    if ( !reportedPreviously.Contains( resultVal.Post.Id ) ) {
+                        resultVal.Post.Report( RedditSharp.Things.VotableThing.ReportType.Other, otherReason: resultVal.ReportReason );
+                        try {
+                            Logging.ProcessedPost.SaveProcessedPost( Settings.Subreddit, resultVal.Post.Id, "Report" ); //change to enum at some point
+                        }
+                        catch ( Exception ex ) {
+                            Console.WriteLine( String.Format( "Error saving post as processed. Messaage : {0}", ex.Message + ex.InnerException != null ? "\r\n Inner Exception : " + ex.InnerException.Message : "" ) );
+                        }
                     }
                 }
 
             }
 
-            System.Diagnostics.Debug.WriteLine( String.Format( "Successfully processed {0} posts. Ignored {1} posts that had been removed already.", results.Keys.Count, removedPreviously.Count ) );
+            Console.WriteLine( String.Format( "Successfully processed {0} posts. Ignored {1} posts that had been removed already.", results.Keys.Count, removedPreviously.Count ) );
         }
 
         private static void LoadModules() {

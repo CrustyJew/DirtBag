@@ -53,7 +53,7 @@ namespace DirtBag {
             TimerState state = (TimerState) s;
             if ( !state.TimerRunning ) {
                 state.TimerRef.Dispose();
-                System.Diagnostics.Debug.WriteLine( "Timer stopping" );
+                Console.WriteLine( "Timer stopping" );
             }
             else {
                 GetNewToken();
