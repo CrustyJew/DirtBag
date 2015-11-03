@@ -18,9 +18,9 @@ namespace DirtBag {
 		[Range(1,9000)]
 		public int RunEveryXMinutes { get; set; }
 		[JsonProperty]
-		public int ReportScoreThreshold { get; set; }
+		public double ReportScoreThreshold { get; set; }
 		[JsonProperty]
-		public int RemoveScoreThreshold { get; set; }
+		public double RemoveScoreThreshold { get; set; }
 		[JsonIgnore]
         public DateTime LastModified { get; set; }
         /*** MODULE SETTINGS ***/

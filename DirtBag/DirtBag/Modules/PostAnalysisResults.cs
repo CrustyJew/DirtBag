@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DirtBag.Modules {
 	class PostAnalysisResults {
-		public int TotalScore {
+		public double TotalScore {
 			get {
 				return Scores.Count > 0 ? Scores.Select( s => s.Score ).Aggregate( ( s, t ) => s + t ) : 0;
 			}
