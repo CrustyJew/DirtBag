@@ -7,6 +7,8 @@ namespace DirtBag.Modules {
         bool Enabled { get; set; }
 		[JsonProperty]
 		int EveryXRuns { get; set; }
+        [JsonProperty]
+        double ScoreMultiplier { get; set; }
 		[JsonConverter( typeof( StringEnumConverter ) )]
 		[JsonProperty]
 		PostType PostTypes { get; set; }

@@ -66,14 +66,14 @@ namespace DirtBag.Modules {
                 availWeight += settings.CommentCountThreshold.Enabled ? settings.CommentCountThreshold.Weight : 0;
                 availWeight += settings.VoteCountThreshold.Enabled ? settings.VoteCountThreshold.Weight : 0;
 
-                double chanAgeScore = ( settings.ChannelAgeThreshold.Weight / availWeight ) * MAX_MODULE_SCORE;
-                double viewCountScore = ( settings.ViewCountThreshold.Weight / availWeight ) * MAX_MODULE_SCORE;
-                double negativeVoteScore = ( settings.NegativeVoteRatio.Weight / availWeight ) * MAX_MODULE_SCORE;
-                double redditAccountAgeScore = ( settings.RedditAccountAgeThreshold.Weight / availWeight ) * MAX_MODULE_SCORE;
-                double licensedScore = ( settings.LicensedChannel.Weight / availWeight ) * MAX_MODULE_SCORE;
-                double imgurSubmissionRatioScore = ( settings.ImgurSubmissionRatio.Weight / availWeight ) * MAX_MODULE_SCORE;
-                double commentCountScore = ( settings.CommentCountThreshold.Weight / availWeight ) * MAX_MODULE_SCORE;
-                double totalVotesScore = ( settings.VoteCountThreshold.Weight / availWeight ) * MAX_MODULE_SCORE;
+                double chanAgeScore = ( settings.ChannelAgeThreshold.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
+                double viewCountScore = ( settings.ViewCountThreshold.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
+                double negativeVoteScore = ( settings.NegativeVoteRatio.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
+                double redditAccountAgeScore = ( settings.RedditAccountAgeThreshold.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
+                double licensedScore = ( settings.LicensedChannel.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
+                double imgurSubmissionRatioScore = ( settings.ImgurSubmissionRatio.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
+                double commentCountScore = ( settings.CommentCountThreshold.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
+                double totalVotesScore = ( settings.VoteCountThreshold.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
 
                 Dictionary<string, List<RedditSharp.Things.Post>> channels = new Dictionary<string, List<Post>>();
                 for ( int i = 0; i < youTubePosts.Keys.Count; i += 50 ) {
@@ -132,11 +132,11 @@ namespace DirtBag.Modules {
         }
     }
 
-    class YouTubeSpamDetectorSettings : IModuleSettings {
+    public class YouTubeSpamDetectorSettings : IModuleSettings {
         public bool Enabled { get; set; }
         public PostType PostTypes { get; set; }
         public int EveryXRuns { get; set; }
-
+        public double ScoreMultiplier { get; set; }
         /// <summary>
         /// YouTube channel age in days
         /// </summary>
@@ -189,17 +189,19 @@ namespace DirtBag.Modules {
             Enabled = false;
             PostTypes = PostType.New;
             EveryXRuns = 1;
+            ScoreMultiplier = 1;
             ChannelAgeThreshold = new YouTubeSpamDetectorIntCategory() { Value = 14, Enabled = true, Weight = 3 };
             ViewCountThreshold = new YouTubeSpamDetectorIntCategory() { Value = 200, Enabled = true, Weight = 1 };
             VoteCountThreshold = new YouTubeSpamDetectorIntCategory() { Value = 25, Enabled = true, Weight = 1 };
             NegativeVoteRatio = new YouTubeSpamDetectorBoolCategory() { Enabled = true, Weight = 1 };
-            RedditAccountAgeThreshold = new YouTubeSpamDetectorIntCategory() { Value = 30, Enabled = true, Weight = 3 };
+            RedditAccountAgeThreshold = new YouTubeSpamDetectorIntCategory() { Value = 30, Enabled = true, Weight = 2 };
             LicensedChannel = new YouTubeSpamDetectorBoolCategory() { Enabled = true, Weight = 1 };
             ImgurSubmissionRatio = new YouTubeSpamDetectorIntCategory() { Value = 25, Enabled = false, Weight = 1 };
+            CommentCountThreshold = new YouTubeSpamDetectorIntCategory() { Value = 10, Enabled = true, Weight = 1 };
         }
     }
 
-    class YouTubeSpamDetectorIntCategory {
+    public class YouTubeSpamDetectorIntCategory {
         [JsonProperty]
         public int Value { get; set; }
         [JsonProperty]
@@ -207,7 +209,7 @@ namespace DirtBag.Modules {
         [JsonProperty]
         public double Weight { get; set; }
     }
-    class YouTubeSpamDetectorBoolCategory {
+    public class YouTubeSpamDetectorBoolCategory {
         [JsonProperty]
         public bool Enabled { get; set; }
         [JsonProperty]

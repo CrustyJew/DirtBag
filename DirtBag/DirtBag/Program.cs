@@ -181,6 +181,7 @@ namespace DirtBag {
             ActiveModules.Clear();
             /*** Load Modules ***/
             if ( Settings.LicensingSmasher.Enabled ) ActiveModules.Add( new Modules.LicensingSmasher( Settings.LicensingSmasher, Client, Subreddit ) );
+            if ( Settings.YouTubeSpamDetector.Enabled ) ActiveModules.Add( new Modules.YouTubeSpamDetector( Settings.YouTubeSpamDetector, Client, Subreddit ) );
             /*** End Load Modules ***/
         }
     }

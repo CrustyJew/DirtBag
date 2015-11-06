@@ -29,9 +29,7 @@ namespace DirtBag.Modules {
             Settings = settings;
             TermMatching = new Regex( string.Join( "|", settings.MatchTerms ), RegexOptions.IgnoreCase );
         }
-        private const int ISLICENESED_SCORE = 2;
-        private const int POSSIBLESPAM_SCORE = 5;
-        private const int STRINGMATCH_SCORE = 8;
+        private const int STRINGMATCH_SCORE = 10;
         private static Regex VideoID = new Regex( @"(?:youtube\.com/(?:(?:watch|attribution_link)\?(?:.*(?:&|%3F|&amp;))?v(?:=|%3D)|embed/|v/)|youtu\.be/)([a-zA-Z0-9-_]{11})" );
         private Regex TermMatching;
         public async Task<Dictionary<string, PostAnalysisResults>> Analyze( List<RedditSharp.Things.Post> posts ) {
@@ -61,25 +59,11 @@ namespace DirtBag.Modules {
                     foreach ( var vid in response.Items ) {
                         RedditSharp.Things.Post post = youTubePosts[vid.Id];
                         var scores = toReturn[post.Id].Scores;
-                        if ( vid.ContentDetails.LicensedContent.Value ) {
-                            scores.Add( new AnalysisScore( ISLICENESED_SCORE, "YouTube video marked as \"Licensed\"", "YT Licensed", ModuleName ) );
-                        }
-                        int spam = 0;
-                        if ( vid.Statistics.LikeCount < 20 ) spam += 1;
-                        if ( vid.Statistics.ViewCount < 300 ) spam += 1;
-                        if ( vid.ContentDetails.LicensedContent.Value ) spam += 1;
-                        if ( vid.Statistics.CommentCount < 10 ) spam += 1;
-                        //if ( vid.Statistics.FavoriteCount < 5 ) spam += 1;
-                        if ( vid.Statistics.DislikeCount > vid.Statistics.LikeCount ) spam += 1;
-
-                        if ( spam >= 3 ) {
-                            string reason = string.Format( "Video matches {0} of 5 spam checks",spam ); //TODO change to more verbose for non report reason?
-                            scores.Add( new AnalysisScore( POSSIBLESPAM_SCORE, reason, reason, ModuleName ) );
-                        }
+                        
                         List<string> termMatches = TermMatching.Matches( vid.Snippet.Description ).Cast<Match>().Select( m => m.Value ).ToList();
                         termMatches.AddRange( TermMatching.Matches( vid.Snippet.Title ).Cast<Match>().Select( m => m.Value ).ToList().Distinct() );
                         if ( termMatches.Count > 0 ) {
-                            scores.Add( new AnalysisScore( STRINGMATCH_SCORE, "YouTube video title or description has the following term(s): " + string.Join( ", ", termMatches ), "Match: " + string.Join( ", ", termMatches ), ModuleName ) );
+                            scores.Add( new AnalysisScore( STRINGMATCH_SCORE * Settings.ScoreMultiplier, "YouTube video title or description has the following term(s): " + string.Join( ", ", termMatches ), "Match: " + string.Join( ", ", termMatches ), ModuleName ) );
                         }
 
                     }
@@ -101,6 +85,8 @@ namespace DirtBag.Modules {
         [JsonProperty]
         public string[] MatchTerms { get; set; }
 
+        public double ScoreMultiplier { get; set; }
+
         public LicensingSmasherSettings() {
             SetDefaultSettings();
         }
@@ -109,6 +95,7 @@ namespace DirtBag.Modules {
             Enabled = false;
             PostTypes = PostType.All;
             EveryXRuns = 1;
+            ScoreMultiplier = 1;
             MatchTerms = new string[] { "jukin", "licensing", "break.com", "storyful", "rumble", "newsflare", "visualdesk", "viral spiral", "viralspiral", "rightser", "to use this video in a commercial", "media enquiries" };
         }
     }
