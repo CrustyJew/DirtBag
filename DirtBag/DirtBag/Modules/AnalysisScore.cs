@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace DirtBag.Modules {
-	class AnalysisScore {
+	public class AnalysisScore {
 		public double Score { get; set; }
 		public string Reason { get; set; }
 		public string ReportReason { get; set; }

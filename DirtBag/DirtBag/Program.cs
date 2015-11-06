@@ -7,6 +7,7 @@ using RedditSharp;
 using System.Configuration;
 using System.Threading;
 using DirtBag.Helpers;
+using Microsoft.Owin.Hosting;
 
 namespace DirtBag {
     class Program {
@@ -30,7 +31,11 @@ namespace DirtBag {
             conn.InitializeConnection( new string[] { sub } );
             Initialize();
 
-            waitHandle.WaitOne(); //Go the fuck to sleep
+            string baseAddress = "http://localhost:9009/";
+
+            WebApp.Start<Startup>( url: baseAddress  );
+
+                waitHandle.WaitOne(); //Go the fuck to sleep
 
         }
 
@@ -76,7 +81,7 @@ namespace DirtBag {
                 TheKeeper.Dispose();
             }
         }
-        private static void CheckBurstStats( object s ) {
+        internal static void CheckBurstStats( object s ) {
             RedditWebAgent agent = (RedditWebAgent) s;
             Console.WriteLine( string.Format( "Last Request: {0}\r\nBurst Start: {1}\r\nRequests this Burst: {2}", agent.LastRequest, agent.BurstStart, agent.RequestsThisBurst ) );
         }
@@ -179,6 +184,24 @@ namespace DirtBag {
             }
 
             Console.WriteLine( String.Format( "Successfully processed {0} posts. Ignored {1} posts that had been removed already.", results.Keys.Count, removedPreviously.Count ) );
+        }
+
+        internal static async Task<Modules.PostAnalysisResults> AnalyzePost(RedditSharp.Things.Post post ) {
+            List<Task<Dictionary<string, Modules.PostAnalysisResults>>> postTasks = new List<Task<Dictionary<string, Modules.PostAnalysisResults>>>();
+            foreach ( var module in ActiveModules ) {
+                postTasks.Add( module.Analyze( new List<RedditSharp.Things.Post>() { post } ) );
+            }
+            Modules.PostAnalysisResults results = new Modules.PostAnalysisResults( post );
+
+            while ( postTasks.Count > 0 ) {
+                var finishedTask = await Task.WhenAny( postTasks );
+                postTasks.Remove( finishedTask );
+                var result = await finishedTask;
+                foreach ( string key in result.Keys ) {
+                        results.Scores.AddRange( result[key].Scores );
+                }
+            }
+            return results;
         }
 
         private static void LoadModules() {
