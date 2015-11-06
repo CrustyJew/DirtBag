@@ -16,10 +16,11 @@ namespace DirtBag {
         private string clientSecret;
         private string redirectURI;
         private TimerState timerState;
+        private IWebAgent webAgent;
 
         private const int FIFTYFIVE_MINUTES = 3300000;
 
-        public RedditAuth() {
+        public RedditAuth(IWebAgent agent) {
             uname = ConfigurationManager.AppSettings["BotUsername"];
             pass = ConfigurationManager.AppSettings["BotPassword"];
             clientID = ConfigurationManager.AppSettings["ClientID"];
@@ -30,12 +31,14 @@ namespace DirtBag {
             if ( string.IsNullOrEmpty( clientID ) ) throw new Exception( "Missing 'ClientID' in config" );
             if ( string.IsNullOrEmpty( clientSecret ) ) throw new Exception( "Missing 'ClientSecret' in config" );
             if ( string.IsNullOrEmpty( redirectURI ) ) throw new Exception( "Missing 'RedirectURI' in config" );
+            webAgent = agent;
             timerState = new TimerState();
         }
         public void GetNewToken() {
             try {
-                AuthProvider ap = new AuthProvider( clientID, clientSecret, redirectURI );
+                AuthProvider ap = new AuthProvider( clientID, clientSecret, redirectURI, webAgent );
                 AccessToken = ap.GetOAuthToken( uname, pass );
+                webAgent.AccessToken = AccessToken;
             }
             catch { //TODO error handling
                 timerState.TimerRunning = false;
@@ -45,7 +48,7 @@ namespace DirtBag {
 
         public void Login() {
             timerState.TimerRunning = true;
-            timerState.TimerRef = new Timer( new TimerCallback( RefreshTokenTimer ), timerState, FIFTYFIVE_MINUTES, FIFTYFIVE_MINUTES );
+            timerState.TimerRef = new Timer( new TimerCallback( RefreshTokenTimer ), timerState, 15000, FIFTYFIVE_MINUTES );
             GetNewToken();
         }
 

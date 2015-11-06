@@ -6,10 +6,11 @@ using System.Threading.Tasks;
 using RedditSharp;
 using System.Configuration;
 using System.Threading;
+using DirtBag.Helpers;
 
 namespace DirtBag {
     class Program {
-        public static WebAgent Agent { get; set; }
+        public static RedditWebAgent Agent { get; set; }
         public static Reddit Client { get; set; }
         public static RedditAuth Auth { get; set; }
         public static BotSettings Settings { get; set; }
@@ -39,15 +40,18 @@ namespace DirtBag {
             if ( string.IsNullOrEmpty( uAgent ) ) throw new Exception( "Provide setting 'UserAgentString' in AppConfig to avoid Reddit throttling!" );
             if ( string.IsNullOrEmpty( sub ) ) throw new Exception( "Provide setting 'Subreddit' in AppConfig" );
             Subreddit = sub;
-            Agent = new WebAgent();
-            WebAgent.EnableRateLimit = true;
-            WebAgent.RateLimit = WebAgent.RateLimitMode.Burst;
-            WebAgent.RootDomain = "oauth.reddit.com";
-            WebAgent.UserAgent = uAgent;
-            Auth = new RedditAuth();
+            Agent = new RedditWebAgent();
+            RedditWebAgent.EnableRateLimit = true;
+            RedditWebAgent.RateLimit = RedditWebAgent.RateLimitMode.Burst;
+            RedditWebAgent.RootDomain = "oauth.reddit.com";
+            RedditWebAgent.UserAgent = uAgent;
+            RedditWebAgent.Protocol = "https";
+            Auth = new RedditAuth( Agent );
+
             Auth.Login();
+            Agent.AccessToken = Auth.AccessToken;
             BurstDebug = new Timer( CheckBurstStats, Agent, 0, 20000 );
-            Client = new Reddit( Auth.AccessToken );
+            Client = new Reddit( Agent, true );
 
             Settings = new BotSettings();
             Settings.OnSettingsModified += Settings_OnSettingsModified;
@@ -72,8 +76,8 @@ namespace DirtBag {
                 TheKeeper.Dispose();
             }
         }
-        private static void CheckBurstStats(object s ) {
-            WebAgent agent = (WebAgent) s;
+        private static void CheckBurstStats( object s ) {
+            RedditWebAgent agent = (RedditWebAgent) s;
             Console.WriteLine( string.Format( "Last Request: {0}\r\nBurst Start: {1}\r\nRequests this Burst: {2}", agent.LastRequest, agent.BurstStart, agent.RequestsThisBurst ) );
         }
         private static async void ProcessPosts( object s ) {
@@ -156,8 +160,8 @@ namespace DirtBag {
                     try {
                         Logging.ProcessedPost.SaveProcessedPost( Settings.Subreddit, resultVal.Post.Id, "Remove" ); //change to enum at some point
                     }
-                    catch(Exception ex) {
-                        Console.WriteLine( String.Format("Error saving post as processed. Messaage : {0}",ex.Message + ex.InnerException != null ? "\r\n Inner Exception : " + ex.InnerException.Message : "") );
+                    catch ( Exception ex ) {
+                        Console.WriteLine( String.Format( "Error saving post as processed. Messaage : {0}", ex.Message + ex.InnerException != null ? "\r\n Inner Exception : " + ex.InnerException.Message : "" ) );
                     }
                 }
                 else if ( resultVal.TotalScore >= Settings.ReportScoreThreshold && Settings.ReportScoreThreshold > 0 ) {

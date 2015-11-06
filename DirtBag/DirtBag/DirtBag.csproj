@@ -137,6 +137,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="System.Net.Http.WebRequest" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -151,6 +152,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Helpers\PostEqualityComparer.cs" />
+    <Compile Include="Helpers\RedditWebAgent.cs" />
     <Compile Include="Logging\DirtBagConnection.cs" />
     <Compile Include="Logging\ProcessedPost.cs" />
     <Compile Include="Modules\AnalysisScore.cs" />
