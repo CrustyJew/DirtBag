@@ -214,7 +214,7 @@ namespace DirtBag.Helpers {
                 var cookieHeader = Cookies.GetCookieHeader( new Uri( "http://reddit.com" ) );
                 request.Headers.Set( "Cookie", cookieHeader );
             }
-            if ( RootDomain == "oauth.reddit.com" )// use OAuth
+            if ( request.Host == "oauth.reddit.com" )// use OAuth
             {
                 request.Headers.Set( "Authorization", "bearer " + AccessToken );//Must be included in OAuth calls
             }

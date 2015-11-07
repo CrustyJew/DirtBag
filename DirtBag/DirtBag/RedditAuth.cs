@@ -48,7 +48,7 @@ namespace DirtBag {
 
         public void Login() {
             timerState.TimerRunning = true;
-            timerState.TimerRef = new Timer( new TimerCallback( RefreshTokenTimer ), timerState, 15000, FIFTYFIVE_MINUTES );
+            timerState.TimerRef = new Timer( new TimerCallback( RefreshTokenTimer ), timerState, FIFTYFIVE_MINUTES, FIFTYFIVE_MINUTES );
             GetNewToken();
         }
 
