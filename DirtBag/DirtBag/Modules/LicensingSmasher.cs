@@ -51,7 +51,7 @@ namespace DirtBag.Modules {
                 }
                 Google.Apis.YouTube.v3.YouTubeService yt = new YouTubeService( new Google.Apis.Services.BaseClientService.Initializer() { ApiKey = YouTubeAPIKey } );
 
-                var req = yt.Videos.List( "snippet,contentDetails,statistics" );
+                var req = yt.Videos.List( "snippet" );
                 for ( int i = 0; i < youTubePosts.Keys.Count; i += 50 ) {
                     req.Id = string.Join( ",", youTubePosts.Keys.Skip( i ).Take( 50 ) );
                     var response = req.Execute();
