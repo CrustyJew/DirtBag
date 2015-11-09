@@ -207,51 +207,54 @@ namespace DirtBag {
             List<string> mods = new List<string>();
             mods.AddRange( Client.GetSubreddit( Subreddit ).Moderators.Select( m => m.Name.ToLower() ).ToList() ); //TODO when enabling multiple subs, fix this
 
-            foreach ( var message in messages ) {
-                message.SetAsRead();
-                if ( message.Subject.ToLower() == "validate" || message.Subject.ToLower() == "check" || message.Subject.ToLower() == "analyze" ) {
-                    RedditSharp.Things.Post post;
-                    try {
-                        post = Client.GetPost( new Uri( message.Body ) );
-                    }
-                    catch {
-                        message.Reply( "That URL made me throw up in my mouth a little. Try again!" );
-                        continue;
-                    }
-                    if ( post.SubredditName.ToLower() != Subreddit.ToLower() ) { //TODO when enabling multiple subreddits, this needs tweaked!
-                        message.Reply( string.Format( "I don't have any rules for {0}.", post.SubredditName ) );
-                    }
-                    else if ( !mods.Contains( message.Author.ToLower() ) ) {
-                        message.Reply( string.Format( "You aren't a mod of {0}! What are you doing here? Go on! GIT!", post.SubredditName ) );
-                    }
-                    else if ( post.AuthorName == "[deleted]" ) {
-                        message.Reply( "The OP deleted the post so I can't check it. Sorry (read in Canadian accent)!" );
-                    }
-                    else {
-                        //omg finally analyze the damn thing
-                        Modules.PostAnalysisResults result = await AnalyzePost( post );
-                        StringBuilder reply = new StringBuilder();
-                        reply.AppendLine( string.Format( "Analysis results for \"[{0}]({1})\" submitted by /u/{2} to /r/{3}", post.Title, post.Permalink, post.AuthorName, post.SubredditName ) );
-                        reply.AppendLine();
-                        string action = "None";
-                        if ( Settings.RemoveScoreThreshold > 0 && result.TotalScore > Settings.RemoveScoreThreshold ) action = "Remove";
-                        if ( Settings.ReportScoreThreshold > 0 && result.TotalScore > Settings.ReportScoreThreshold ) action = "Report";
-                        reply.AppendLine( string.Format( "##Action Taken: {0} with a score of {1}", action, result.TotalScore ) );
-                        reply.AppendLine();
-                        reply.AppendLine( string.Format( "**/r/{0}'s thresholds** --- Remove : **{1}** , Report : **{2}**",
-                            post.SubredditName,
-                            Settings.RemoveScoreThreshold > 0 ? Settings.RemoveScoreThreshold.ToString() : "Disabled",
-                            Settings.ReportScoreThreshold > 0 ? Settings.ReportScoreThreshold.ToString() : "Disabled" ) );
-                        reply.AppendLine();
-                        reply.AppendLine( "Module| Score |Reason" );
-                        reply.AppendLine( ":--|:--:|:--" );
-                        foreach(var score in result.Scores ) {
-                            reply.AppendLine( string.Format( "{0}|{1}|{2}", score.ModuleName, score.Score, score.Reason ) );
+            foreach ( var unread in messages ) {
+                if ( unread.Kind == "t4" ) {
+                    RedditSharp.Things.PrivateMessage message = (RedditSharp.Things.PrivateMessage) unread;
+                    message.SetAsRead();
+                    if ( message.Subject.ToLower() == "validate" || message.Subject.ToLower() == "check" || message.Subject.ToLower() == "analyze" ) {
+                        RedditSharp.Things.Post post;
+                        try {
+                            post = Client.GetPost( new Uri( message.Body ) );
                         }
-                        message.Reply( reply.ToString() );
+                        catch {
+                            message.Reply( "That URL made me throw up in my mouth a little. Try again!" );
+                            continue;
+                        }
+                        if ( post.SubredditName.ToLower() != Subreddit.ToLower() ) { //TODO when enabling multiple subreddits, this needs tweaked!
+                            message.Reply( string.Format( "I don't have any rules for {0}.", post.SubredditName ) );
+                        }
+                        else if ( !mods.Contains( message.Author.ToLower() ) ) {
+                            message.Reply( string.Format( "You aren't a mod of {0}! What are you doing here? Go on! GIT!", post.SubredditName ) );
+                        }
+                        else if ( post.AuthorName == "[deleted]" ) {
+                            message.Reply( "The OP deleted the post so I can't check it. Sorry (read in Canadian accent)!" );
+                        }
+                        else {
+                            //omg finally analyze the damn thing
+                            Modules.PostAnalysisResults result = await AnalyzePost( post );
+                            StringBuilder reply = new StringBuilder();
+                            reply.AppendLine( string.Format( "Analysis results for \"[{0}]({1})\" submitted by /u/{2} to /r/{3}", post.Title, post.Permalink, post.AuthorName, post.SubredditName ) );
+                            reply.AppendLine();
+                            string action = "None";
+                            if ( Settings.RemoveScoreThreshold > 0 && result.TotalScore > Settings.RemoveScoreThreshold ) action = "Remove";
+                            if ( Settings.ReportScoreThreshold > 0 && result.TotalScore > Settings.ReportScoreThreshold ) action = "Report";
+                            reply.AppendLine( string.Format( "##Action Taken: {0} with a score of {1}", action, result.TotalScore ) );
+                            reply.AppendLine();
+                            reply.AppendLine( string.Format( "**/r/{0}'s thresholds** --- Remove : **{1}** , Report : **{2}**",
+                                post.SubredditName,
+                                Settings.RemoveScoreThreshold > 0 ? Settings.RemoveScoreThreshold.ToString() : "Disabled",
+                                Settings.ReportScoreThreshold > 0 ? Settings.ReportScoreThreshold.ToString() : "Disabled" ) );
+                            reply.AppendLine();
+                            reply.AppendLine( "Module| Score |Reason" );
+                            reply.AppendLine( ":--|:--:|:--" );
+                            foreach ( var score in result.Scores ) {
+                                reply.AppendLine( string.Format( "{0}|{1}|{2}", score.ModuleName, score.Score, score.Reason ) );
+                            }
+                            message.Reply( reply.ToString() );
+
+                        }
 
                     }
-
                 }
             }
         }
