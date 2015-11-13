@@ -13,6 +13,20 @@ namespace DirtBag.Modules {
         public string ModuleName { get { return "UserStalker"; } }
 
         public IModuleSettings Settings { get; set; }
+        public RedditSharp.Reddit RedditClient { get; set; }
+        public string Subreddit { get; set; }
+        public string YouTubeAPIKey { get; set; }
+        public UserStalker() {
+            string key = System.Configuration.ConfigurationManager.AppSettings["YouTubeAPIKey"];
+            if ( string.IsNullOrEmpty( key ) ) throw new Exception( "Provide setting 'YouTubeAPIKey' in AppConfig" );
+            YouTubeAPIKey = key;
+            InitDatabase();
+        }
+        public UserStalker( UserStalkerSettings settings, RedditSharp.Reddit reddit, string sub ) : this() {
+            RedditClient = reddit;
+            Subreddit = sub;
+            Settings = settings;
+        }
 
         public async Task<Dictionary<string, PostAnalysisResults>> Analyze( List<Post> posts ) {
             return await Task.Run( () => {
@@ -41,17 +55,37 @@ namespace DirtBag.Modules {
                     foreach ( var vid in response.Items ) {
                         RedditSharp.Things.Post post = youTubePosts[vid.Id];
                         var scores = toReturn[post.Id].Scores;
-                        Logging.UserPost.InsertPost( new Logging.UserPost() { ChannelID = vid.Snippet.ChannelId, ChannelName = vid.Snippet.ChannelTitle, Link = post.Permalink.ToString(), UserName = post.AuthorName } );
+                        Logging.UserPost.InsertPost( new Logging.UserPost() { ChannelID = vid.Snippet.ChannelId, ChannelName = vid.Snippet.ChannelTitle, Link = post.Permalink.ToString(), UserName = post.AuthorName, Subreddit = post.SubredditName } );
                     }
                 }
 
+                DateTime? lastRemoval = Logging.PostRemoval.GetLastProcessedRemovalDate( Subreddit );
+                int processedCount = 0;
+                var modActions = RedditClient.GetSubreddit( Subreddit ).GetModerationLog( RedditSharp.ModActionType.RemoveLink ).GetListing( 100, 5000 );
+
+                foreach(var modAct in modActions ) {
+                    if ( modAct.TimeStamp >= lastRemoval || processedCount > 2500 ) break;
+
+                    processedCount++;
+                    var post = RedditClient.GetThingByFullname( modAct.TargetThingFullname )as Post;
+
+                    Logging.UserPost userPost = new Logging.UserPost();
+                    userPost.Link = post.Permalink.ToString();
+                    userPost.UserName = post.AuthorName;
+                    userPost.Subreddit = Subreddit;
+
+                    Logging.PostRemoval removal = new Logging.PostRemoval(modAct);
+                    removal.Post = userPost;
+
+                }
                 return toReturn;
             } );
         }
-        public UserStalker() {
-            InitDatabase();
-        }
         public void InitDatabase() {
+            //Database is denormalized due to the impractical constraints of ensuring users and channels are loaded before
+            //loading a post or a removal for a user. Normalizing as it is right now may actually reduce performance
+            //and would certainly into more issues than it is probably worth unless more info is tacked on to some of the 
+            //categories later on.
             using ( DbConnection con = Logging.DirtBagConnection.GetConn() ) {
                 string initTables = "" +
                     "CREATE TABLE IF NOT EXISTS [UserPosts]( " +
@@ -60,7 +94,8 @@ namespace DirtBag.Modules {
                     "[UserName] varchar(50), " +
                     "[Link] varchar(200), " +
                     "[ChannelID] varchar(100), " +
-                    "[ChannelName] varchar(200) );" +
+                    "[ChannelName] varchar(200), " +
+                    "[Subreddit] varchar(100) );" +
                     "" +
                     "CREATE TABLE IF NOT EXISTS [PostRemovals]( " +
                     "[RemovalID] INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +

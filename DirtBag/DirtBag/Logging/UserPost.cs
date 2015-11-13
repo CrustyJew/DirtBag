@@ -12,17 +12,18 @@ namespace DirtBag.Logging {
         public string Link { get; set; }
         public string ChannelID { get; set; }
         public string ChannelName { get; set; }
+        public string Subreddit { get; set; }
         public List<PostRemoval> Removals { get; set; }
 
         public static void InsertPost(UserPost post ) {
             using (DbConnection con = DirtBagConnection.GetConn() ) {
                 string query = "" +
-                    "insert into UserPosts (UserID,Link,ChannelID,ChannelName) " +
-                    "select @UserID, @Link, @ChannelID, @ChannelName " +
+                    "insert into UserPosts (UserID,Link,ChannelID,ChannelName,Subreddit) " +
+                    "select @UserID, @Link, @ChannelID, @ChannelName, @Subreddit " +
                     "WHERE NOT EXISTS " +
                     "(select PostID from UserPosts where Link = @Link) " +
                     ";";
-                con.Execute( query, new { post.UserName, post.Link, post.ChannelID, post.ChannelName } );
+                con.Execute( query, new { post.UserName, post.Link, post.ChannelID, post.ChannelName, post.Subreddit } );
             }
         }
     }

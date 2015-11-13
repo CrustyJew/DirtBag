@@ -22,8 +22,9 @@ namespace DirtBag.Logging {
                     "up.ChannelID, up.ChannelName, " + 
                     //"chans.ChannelID, chans.Identifier, chans.Name " +
                     "rem.RemovalID,rem.TimeStamp rem.ModName, rem.Reason, rem.PostID " +
-                    "FROM Users usr " +
-                    "INNER JOIN UserPosts up on usr.UserID = up.UserID " +
+                    //"FROM Users usr " +
+                    //"INNER JOIN UserPosts up on usr.UserID = up.UserID " +
+                    "FROM UserPosts up " +
                     //"INNER JOIN Channels chans on up.ChannelID = chans.ChannelID " +
                     "INNER JOIN PostRemovals rem on up.PostID = rem.PostID " +                    
                     "WHERE " +
