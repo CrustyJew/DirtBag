@@ -15,15 +15,27 @@ namespace DirtBag.Logging {
         public string Subreddit { get; set; }
         public List<PostRemoval> Removals { get; set; }
 
-        public static void InsertPost(UserPost post ) {
-            using (DbConnection con = DirtBagConnection.GetConn() ) {
+        public static void InsertPost( UserPost post ) {
+            using ( DbConnection conn = DirtBagConnection.GetConn() ) {
                 string query = "" +
-                    "insert into UserPosts (UserID,Link,ChannelID,ChannelName,Subreddit) " +
-                    "select @UserID, @Link, @ChannelID, @ChannelName, @Subreddit " +
+                    "insert into UserPosts (UserName,Link,ChannelID,ChannelName,Subreddit) " +
+                    "select @UserName, @Link, @ChannelID, @ChannelName, @Subreddit " +
                     "WHERE NOT EXISTS " +
                     "(select PostID from UserPosts where Link = @Link) " +
                     ";";
-                con.Execute( query, new { post.UserName, post.Link, post.ChannelID, post.ChannelName, post.Subreddit } );
+                conn.Execute( query, new { post.UserName, post.Link, post.ChannelID, post.ChannelName, post.Subreddit } );
+            }
+        }
+
+        public static void UpdatePost( UserPost post ) {
+            using ( DbConnection conn = DirtBagConnection.GetConn() ) {
+                string query = "" +
+                    "update UserPosts " +
+                    "set UserName = @UserName, Link = @Link, ChannelID = @ChannelID, " +
+                    "ChannelName = @ChannelName, Subreddit = @Subreddit " +
+                    "WHERE PostID = @PostID";
+
+                conn.Execute( query, new { post.UserName, post.Link, post.ChannelID, post.ChannelName, post.Subreddit, post.PostID } );
             }
         }
     }

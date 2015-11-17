@@ -83,7 +83,10 @@ namespace DirtBag.Logging {
                 if ( !File.Exists( localDBFile ) ) {
                     SQLiteConnection.CreateFile( localDBFile );
                 }
-                return new SQLiteConnection( "Data Source=" + localDBFile );
+                SQLiteConnectionStringBuilder sb = new SQLiteConnectionStringBuilder();
+                sb.DataSource = localDBFile;
+                sb.DateTimeKind = DateTimeKind.Utc; //currently doesn't do anything as there is a bug in Dapper
+                return new SQLiteConnection( sb.ToString());
             }
             else {
                 sqlConnString = ConfigurationManager.AppSettings["SQLConnString"];

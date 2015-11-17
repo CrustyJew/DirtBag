@@ -28,6 +28,8 @@ namespace DirtBag {
         public Modules.LicensingSmasherSettings LicensingSmasher { get; set; }
         [JsonProperty]
         public Modules.YouTubeSpamDetectorSettings YouTubeSpamDetector { get; set; }
+        [JsonProperty]
+        public Modules.UserStalkerSettings UserStalker { get; set; }
         /*** END MODULE SETTINGS ***/
 
         public event EventHandler OnSettingsModified;
@@ -95,6 +97,13 @@ namespace DirtBag {
                 else {
                     YouTubeSpamDetector = sets.YouTubeSpamDetector;
                 }
+                if(sets.UserStalker == null ) {
+                    UserStalker = new Modules.UserStalkerSettings();
+                    addedDefaults = true;
+                }
+                else {
+                    UserStalker = sets.UserStalker;
+                }
                 /***End Module Defaults ***/
                 if ( addedDefaults ) {
                     wiki.EditPage( WIKIPAGE_NAME, JsonConvert.SerializeObject( this, Formatting.Indented, new JsonConverter[] { new StringEnumConverter() } ).Replace( "\r\n  ", "\r\n\r\n    " ), reason: "Add module default" );
@@ -121,6 +130,7 @@ namespace DirtBag {
 			/*** Module Settings ***/
 			LicensingSmasher = new Modules.LicensingSmasherSettings();
             YouTubeSpamDetector = new Modules.YouTubeSpamDetectorSettings();
+            UserStalker = new Modules.UserStalkerSettings();
             /*** End Module Settings ***/
             wiki.EditPage( WIKIPAGE_NAME, JsonConvert.SerializeObject( this, Formatting.Indented, new JsonConverter[] { new StringEnumConverter() } ).Replace("\r\n  ","\r\n\r\n    ") );
         }

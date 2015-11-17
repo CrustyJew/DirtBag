@@ -54,30 +54,57 @@ namespace DirtBag.Modules {
 
                     foreach ( var vid in response.Items ) {
                         RedditSharp.Things.Post post = youTubePosts[vid.Id];
-                        var scores = toReturn[post.Id].Scores;
+                        //var scores = toReturn[post.Id].Scores;
                         Logging.UserPost.InsertPost( new Logging.UserPost() { ChannelID = vid.Snippet.ChannelId, ChannelName = vid.Snippet.ChannelTitle, Link = post.Permalink.ToString(), UserName = post.AuthorName, Subreddit = post.SubredditName } );
                     }
                 }
+                Task.Run( () => {
+                    DateTime? lastRemoval = Logging.PostRemoval.GetLastProcessedRemovalDate( Subreddit );
+                    int processedCount = 0;
+                    var modActions = RedditClient.GetSubreddit( Subreddit ).GetModerationLog( RedditSharp.ModActionType.RemoveLink ).GetListing( 5000, 100 );
+                    Dictionary<string, Logging.UserPost> newPosts = new Dictionary<string, Logging.UserPost>();
+                    foreach ( var modAct in modActions ) {
+                        if ( modAct.TimeStamp <= lastRemoval || processedCount > 2500 ) break;
 
-                DateTime? lastRemoval = Logging.PostRemoval.GetLastProcessedRemovalDate( Subreddit );
-                int processedCount = 0;
-                var modActions = RedditClient.GetSubreddit( Subreddit ).GetModerationLog( RedditSharp.ModActionType.RemoveLink ).GetListing( 100, 5000 );
+                        processedCount++;
+                        var post = RedditClient.GetThingByFullname( modAct.TargetThingFullname ) as Post;
 
-                foreach(var modAct in modActions ) {
-                    if ( modAct.TimeStamp >= lastRemoval || processedCount > 2500 ) break;
+                        Logging.UserPost userPost = new Logging.UserPost();
+                        userPost.Link = post.Permalink.ToString();
+                        userPost.UserName = post.AuthorName;
+                        userPost.Subreddit = Subreddit;
 
-                    processedCount++;
-                    var post = RedditClient.GetThingByFullname( modAct.TargetThingFullname )as Post;
+                        Logging.PostRemoval removal = new Logging.PostRemoval( modAct );
+                        removal.Post = userPost;
 
-                    Logging.UserPost userPost = new Logging.UserPost();
-                    userPost.Link = post.Permalink.ToString();
-                    userPost.UserName = post.AuthorName;
-                    userPost.Subreddit = Subreddit;
+                        var newPost = Logging.PostRemoval.AddRemoval( removal );
+                        if ( newPost != null ) {
+                            if ( post.Url.Host.ToLower().Contains( "youtube" ) || post.Url.Host.ToLower().Contains( "youtu.bu" ) ) {
+                                //it's a YouTube link
+                                string url = post.Url.ToString();
+                                if ( url.Contains( "v=" ) ) {
+                                    string id = url.Substring( url.IndexOf( "v=" ) + 2 ).Split( '&' )[0];
+                                    if ( !string.IsNullOrEmpty( id ) ) {
+                                        newPosts[id] = newPost;
+                                    }
+                                }
+                            }
+                        }
+                    }
 
-                    Logging.PostRemoval removal = new Logging.PostRemoval(modAct);
-                    removal.Post = userPost;
+                    for ( int i = 0; i < newPosts.Keys.Count; i += 50 ) {
+                        req.Id = string.Join( ",", newPosts.Keys.Skip( i ).Take( 50 ) );
+                        var response = req.Execute();
+                        foreach ( var vid in response.Items ) {
+                            Logging.UserPost upost = newPosts[vid.Id];
+                            upost.ChannelID = vid.Snippet.ChannelId;
+                            upost.ChannelName = vid.Snippet.ChannelTitle;
+                            Logging.UserPost.UpdatePost( upost );
+                        }
+                    }
+                } );
 
-                }
+
                 return toReturn;
             } );
         }

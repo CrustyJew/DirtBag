@@ -53,7 +53,7 @@ namespace DirtBag {
             Agent.AccessToken = Auth.AccessToken;
             BurstDebug = new Timer( CheckBurstStats, Agent, 0, 20000 );
             Client = new Reddit( Agent, true );
-            
+
             Settings = new BotSettings();
             Settings.OnSettingsModified += Settings_OnSettingsModified;
             Settings.Subreddit = Subreddit;
@@ -77,7 +77,7 @@ namespace DirtBag {
             if ( TheKeeper != null ) {
                 TheKeeper.Dispose();
             }
-            if (TheWatcher != null ) {
+            if ( TheWatcher != null ) {
                 TheWatcher.Dispose();
             }
         }
@@ -263,6 +263,7 @@ namespace DirtBag {
             /*** Load Modules ***/
             if ( Settings.LicensingSmasher.Enabled ) ActiveModules.Add( new Modules.LicensingSmasher( Settings.LicensingSmasher, Client, Subreddit ) );
             if ( Settings.YouTubeSpamDetector.Enabled ) ActiveModules.Add( new Modules.YouTubeSpamDetector( Settings.YouTubeSpamDetector, Client, Subreddit ) );
+            if ( Settings.UserStalker.Enabled ) ActiveModules.Add( new Modules.UserStalker( Settings.UserStalker, Client, Subreddit ) );
             /*** End Load Modules ***/
         }
     }
