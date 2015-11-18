@@ -48,7 +48,7 @@ namespace DirtBag.Modules {
                 Dictionary<string, List<RedditSharp.Things.Post>> youTubePosts = new Dictionary<string, List<RedditSharp.Things.Post>>();
                 foreach ( RedditSharp.Things.Post post in posts ) {
                     toReturn.Add( post.Id, new PostAnalysisResults( post ) );
-                    if ( post.Url.Host.ToLower().Contains( "youtube" ) || post.Url.Host.ToLower().Contains( "youtu.bu" ) ) {
+                    if ( post.Url.Host.ToLower().Contains( "youtube" )) {
                         //it's a YouTube link
                         string url = post.Url.ToString();
                         if ( url.Contains( "v=" ) ) {
@@ -57,6 +57,14 @@ namespace DirtBag.Modules {
                                 if ( !youTubePosts.ContainsKey( id ) ) youTubePosts.Add( id, new List<RedditSharp.Things.Post>() );
                                 youTubePosts[id].Add( post );
                             }
+                        }
+                    }
+                    else if( post.Url.Host.ToLower().Contains( "youtu.be" ) ) {
+                        string url = post.Url.ToString();
+                        string id = url.Substring( url.IndexOf( ".be/" ) + 4 ).Split( '&' )[0];
+                        if ( !string.IsNullOrEmpty( id ) ) {
+                            if ( !youTubePosts.ContainsKey( id ) ) youTubePosts.Add( id, new List<RedditSharp.Things.Post>() );
+                            youTubePosts[id].Add( post );
                         }
                     }
                 }

@@ -37,17 +37,26 @@ namespace DirtBag.Modules {
         public async Task<Dictionary<string, PostAnalysisResults>> Analyze( List<Post> posts ) {
             return await Task.Run( () => {
                 Dictionary<string, PostAnalysisResults> toReturn = new Dictionary<string, PostAnalysisResults>();
-                Dictionary<string, RedditSharp.Things.Post> youTubePosts = new Dictionary<string, RedditSharp.Things.Post>();
+                Dictionary<string, List<RedditSharp.Things.Post>> youTubePosts = new Dictionary<string, List<RedditSharp.Things.Post>>();
                 foreach ( RedditSharp.Things.Post post in posts ) {
                     toReturn.Add( post.Id, new PostAnalysisResults( post ) );
-                    if ( post.Url.Host.ToLower().Contains( "youtube" ) || post.Url.Host.ToLower().Contains( "youtu.bu" ) ) {
+                    if ( post.Url.Host.ToLower().Contains( "youtube" ) ) {
                         //it's a YouTube link
                         string url = post.Url.ToString();
                         if ( url.Contains( "v=" ) ) {
                             string id = url.Substring( url.IndexOf( "v=" ) + 2 ).Split( '&' )[0];
                             if ( !string.IsNullOrEmpty( id ) ) {
-                                youTubePosts[id] = post;
+                                if ( !youTubePosts.ContainsKey( id ) ) youTubePosts.Add( id, new List<RedditSharp.Things.Post>() );
+                                youTubePosts[id].Add( post );
                             }
+                        }
+                    }
+                    else if ( post.Url.Host.ToLower().Contains( "youtu.be" ) ) {
+                        string url = post.Url.ToString();
+                        string id = url.Substring( url.IndexOf( ".be/" ) + 4 ).Split( '&' )[0];
+                        if ( !string.IsNullOrEmpty( id ) ) {
+                            if ( !youTubePosts.ContainsKey( id ) ) youTubePosts.Add( id, new List<RedditSharp.Things.Post>() );
+                            youTubePosts[id].Add( post );
                         }
                     }
                 }
@@ -81,33 +90,34 @@ namespace DirtBag.Modules {
                     var response = req.Execute();
 
                     foreach ( var vid in response.Items ) {
-                        RedditSharp.Things.Post post = youTubePosts[vid.Id];
-                        var scores = toReturn[post.Id].Scores;
-                        if ( !channels.ContainsKey( vid.Snippet.ChannelId ) ) {
-                            channels[vid.Snippet.ChannelId] = new List<Post>();
-                        }
-                        channels[vid.Snippet.ChannelId].Add( post );
+                        foreach ( RedditSharp.Things.Post post in youTubePosts[vid.Id] ) {
+                            var scores = toReturn[post.Id].Scores;
+                            if ( !channels.ContainsKey( vid.Snippet.ChannelId ) ) {
+                                channels[vid.Snippet.ChannelId] = new List<Post>();
+                            }
+                            channels[vid.Snippet.ChannelId].Add( post );
 
-                        if ( settings.ViewCountThreshold.Enabled && vid.Statistics.ViewCount.Value <= (ulong) Math.Abs( settings.ViewCountThreshold.Value ) ) { //TODO Fix this math.abs nonsense with some validation
-                            scores.Add( new AnalysisScore( viewCountScore, "View Count is below threshold", "Low Views", ModuleName ) );
-                        }
-                        if ( settings.LicensedChannel.Enabled && vid.ContentDetails.LicensedContent.Value ) {
-                            scores.Add( new AnalysisScore( licensedScore, "Channel is likely monetized", "Possibly Monetized", ModuleName ) );
-                        }
-                        if ( settings.CommentCountThreshold.Enabled && vid.Statistics.CommentCount <= (ulong) Math.Abs( settings.CommentCountThreshold.Value ) ) { //TODO Fix this math.abs nonsense with some validation
-                            scores.Add( new AnalysisScore( commentCountScore, "Number of comments is below threshold", "Low comments", ModuleName ) );
-                        }
-                        if ( settings.NegativeVoteRatio.Enabled && vid.Statistics.DislikeCount > vid.Statistics.LikeCount ) {
-                            scores.Add( new AnalysisScore( negativeVoteScore, "More dislikes than likes on video", ">50% dislikes", ModuleName ) );
-                        }
-                        if ( settings.VoteCountThreshold.Enabled && vid.Statistics.DislikeCount + vid.Statistics.LikeCount <= (ulong) Math.Abs( settings.VoteCountThreshold.Value ) ) { //TODO Fix this math.abs nonsense with some validation
-                            scores.Add( new AnalysisScore( totalVotesScore, "Total vote count is below threshold", "Low Total Votes", ModuleName ) );
-                        }
-                        if ( settings.RedditAccountAgeThreshold.Enabled && post.Author.Created.AddDays( settings.RedditAccountAgeThreshold.Value ) >= DateTime.UtcNow ) {
-                            scores.Add( new AnalysisScore( redditAccountAgeScore, "Reddit Account age is below threshold", "New Reddit Acct", ModuleName ) );
-                        }
-                        if ( settings.ImgurSubmissionRatio.Enabled && ( (double) 100 / post.Author.Posts.Take( 100 ).Count( p => p.Domain.ToLower().Contains( "imgur" ) ) ) * 100 >= settings.ImgurSubmissionRatio.Value ) {
-                            scores.Add( new AnalysisScore( imgurSubmissionRatioScore, "User has Imgur submissions above threshold for last 100 posts", "Lots of Imgur",ModuleName ) );
+                            if ( settings.ViewCountThreshold.Enabled && vid.Statistics.ViewCount.Value <= (ulong) Math.Abs( settings.ViewCountThreshold.Value ) ) { //TODO Fix this math.abs nonsense with some validation
+                                scores.Add( new AnalysisScore( viewCountScore, "View Count is below threshold", "Low Views", ModuleName ) );
+                            }
+                            if ( settings.LicensedChannel.Enabled && vid.ContentDetails.LicensedContent.Value ) {
+                                scores.Add( new AnalysisScore( licensedScore, "Channel is likely monetized", "Possibly Monetized", ModuleName ) );
+                            }
+                            if ( settings.CommentCountThreshold.Enabled && vid.Statistics.CommentCount <= (ulong) Math.Abs( settings.CommentCountThreshold.Value ) ) { //TODO Fix this math.abs nonsense with some validation
+                                scores.Add( new AnalysisScore( commentCountScore, "Number of comments is below threshold", "Low comments", ModuleName ) );
+                            }
+                            if ( settings.NegativeVoteRatio.Enabled && vid.Statistics.DislikeCount > vid.Statistics.LikeCount ) {
+                                scores.Add( new AnalysisScore( negativeVoteScore, "More dislikes than likes on video", ">50% dislikes", ModuleName ) );
+                            }
+                            if ( settings.VoteCountThreshold.Enabled && vid.Statistics.DislikeCount + vid.Statistics.LikeCount <= (ulong) Math.Abs( settings.VoteCountThreshold.Value ) ) { //TODO Fix this math.abs nonsense with some validation
+                                scores.Add( new AnalysisScore( totalVotesScore, "Total vote count is below threshold", "Low Total Votes", ModuleName ) );
+                            }
+                            if ( settings.RedditAccountAgeThreshold.Enabled && post.Author.Created.AddDays( settings.RedditAccountAgeThreshold.Value ) >= DateTime.UtcNow ) {
+                                scores.Add( new AnalysisScore( redditAccountAgeScore, "Reddit Account age is below threshold", "New Reddit Acct", ModuleName ) );
+                            }
+                            if ( settings.ImgurSubmissionRatio.Enabled && ( (double) 100 / post.Author.Posts.Take( 100 ).Count( p => p.Domain.ToLower().Contains( "imgur" ) ) ) * 100 >= settings.ImgurSubmissionRatio.Value ) {
+                                scores.Add( new AnalysisScore( imgurSubmissionRatioScore, "User has Imgur submissions above threshold for last 100 posts", "Lots of Imgur", ModuleName ) );
+                            }
                         }
                     }
                     if ( settings.ChannelAgeThreshold.Enabled ) {
@@ -126,6 +136,7 @@ namespace DirtBag.Modules {
                             }
                         }
                     }
+
                 }
                 return toReturn;
             } );
