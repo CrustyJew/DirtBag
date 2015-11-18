@@ -121,7 +121,7 @@ namespace DirtBag.Modules {
                 foreach ( var node in nodes ) {
                     string owner = node.GetAttributeValue( "content", "" );
                     string match = LicenserMatching.Match( owner ).Value;
-                    score = new AnalysisScore( ATTRIBUTION_SCORE * Settings.ScoreMultiplier, string.Format( "Video is monetized by '{0}'", match ), string.Format( "Monetized by '{0}'", match ), ModuleName );
+                    score = new AnalysisScore( ATTRIBUTION_SCORE * Settings.ScoreMultiplier, string.Format( "Video is monetized by '{0}'", owner ), string.Format( "Monetized by '{0}'", match ), ModuleName );
                     if ( !string.IsNullOrEmpty( match ) ) {
                         score = new AnalysisScore( ATTRIBUTION_MATCH_SCORE * Settings.ScoreMultiplier, string.Format( "Video is licensed through a network : '{0}'", match ), string.Format( "Video licensed by '{0}'", match ), ModuleName );
                         return score;
