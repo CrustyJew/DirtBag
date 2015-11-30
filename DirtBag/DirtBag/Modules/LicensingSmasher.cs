@@ -44,29 +44,19 @@ namespace DirtBag.Modules {
         private Regex LicenserMatching;
         public async Task<Dictionary<string, PostAnalysisResults>> Analyze( List<RedditSharp.Things.Post> posts ) {
             return await Task.Run( async () => {
+
                 Dictionary<string, PostAnalysisResults> toReturn = new Dictionary<string, PostAnalysisResults>();
                 Dictionary<string, List<RedditSharp.Things.Post>> youTubePosts = new Dictionary<string, List<RedditSharp.Things.Post>>();
+
                 foreach ( RedditSharp.Things.Post post in posts ) {
                     toReturn.Add( post.Id, new PostAnalysisResults( post ) );
-                    if ( post.Url.Host.ToLower().Contains( "youtube" ) ) {
-                        //it's a YouTube link
-                        string url = post.Url.ToString();
-                        if ( url.Contains( "v=" ) ) {
-                            string id = url.Substring( url.IndexOf( "v=" ) + 2 ).Split( '&' )[0];
-                            if ( !string.IsNullOrEmpty( id ) ) {
-                                if ( !youTubePosts.ContainsKey( id ) ) youTubePosts.Add( id, new List<RedditSharp.Things.Post>() );
-                                youTubePosts[id].Add( post );
-                            }
-                        }
+                    string ytID = Helpers.YouTubeHelpers.ExtractVideoID( post.Url.ToString() );
+
+                    if ( !string.IsNullOrEmpty( ytID ) ) {
+                        if ( !youTubePosts.ContainsKey( ytID ) ) youTubePosts.Add( ytID, new List<RedditSharp.Things.Post>() );
+                        youTubePosts[ytID].Add( post );
                     }
-                    else if ( post.Url.Host.ToLower().Contains( "youtu.be" ) ) {
-                        string url = post.Url.ToString();
-                        string id = url.Substring( url.IndexOf( ".be/" ) + 4 ).Split( '&' )[0];
-                        if ( !string.IsNullOrEmpty( id ) ) {
-                            if ( !youTubePosts.ContainsKey( id ) ) youTubePosts.Add( id, new List<RedditSharp.Things.Post>() );
-                            youTubePosts[id].Add( post );
-                        }
-                    }
+
                 }
                 Google.Apis.YouTube.v3.YouTubeService yt = new YouTubeService( new Google.Apis.Services.BaseClientService.Initializer() { ApiKey = YouTubeAPIKey } );
 
