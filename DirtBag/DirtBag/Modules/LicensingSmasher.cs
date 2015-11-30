@@ -167,7 +167,7 @@ namespace DirtBag.Modules {
             ScoreMultiplier = 1;
             MatchTerms = new string[] { "jukin", "licensing", "break.com", "storyful", "rumble", "newsflare", "visualdesk", "viral spiral", "viralspiral", "rightser", "to use this video in a commercial", "media enquiries" };
             //These are case sensitive for friendly name matching
-            KnownLicensers = new Dictionary<string, string>() { { "H7XeNNPkVV3JZxXm-O-MCA", "Jukin Media" }, { "Newsflare", "Newsflare" }, { "3339WgBDKIcxTfywuSmG8w", "ViralHog" }, { "Storyful", "Storyful" }, { "rumble", "Rumble" }, { "Rightster_Entertainment_Affillia", "Viral Spiral" }, { "Break", "Break" }, { "FullScreen", "FullScreen" } };
+            KnownLicensers = new Dictionary<string, string>() { { "H7XeNNPkVV3JZxXm-O-MCA", "Jukin Media" }, { "Newsflare", "Newsflare" }, { "3339WgBDKIcxTfywuSmG8w", "ViralHog" }, { "Storyful", "Storyful" }, { "rumble", "Rumble" }, { "Rightster_Entertainment_Affillia", "Viral Spiral" }, { "Break", "Break" } };
         }
     }
 }
