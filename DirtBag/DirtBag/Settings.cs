@@ -34,7 +34,7 @@ namespace DirtBag {
 
         public event EventHandler OnSettingsModified;
 
-        private const string WIKIPAGE_NAME = "codenamedirtbag";
+        private const string WIKIPAGE_NAME = "dirtbag";
         private const int FORTY_FIVE_MINUTES = 2700000;
 
         public void Initialize( RedditSharp.Reddit r ) {
@@ -133,6 +133,7 @@ namespace DirtBag {
             UserStalker = new Modules.UserStalkerSettings();
             /*** End Module Settings ***/
             wiki.EditPage( WIKIPAGE_NAME, JsonConvert.SerializeObject( this, Formatting.Indented, new JsonConverter[] { new StringEnumConverter() } ).Replace("\r\n  ","\r\n\r\n    ") );
+            wiki.SetPageSettings( WIKIPAGE_NAME, new RedditSharp.WikiPageSettings() { Listed = false, PermLevel = 2 } );
         }
         private void SettingsTimer( object s ) {
             SettingsTimerState state = (SettingsTimerState) s;

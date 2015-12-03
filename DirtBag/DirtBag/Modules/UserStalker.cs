@@ -31,18 +31,14 @@ namespace DirtBag.Modules {
         public async Task<Dictionary<string, PostAnalysisResults>> Analyze( List<Post> posts ) {
             return await Task.Run( () => {
                 Dictionary<string, PostAnalysisResults> toReturn = new Dictionary<string, PostAnalysisResults>();
-                Dictionary<string, RedditSharp.Things.Post> youTubePosts = new Dictionary<string, RedditSharp.Things.Post>();
+                Dictionary<string, List<RedditSharp.Things.Post>> youTubePosts = new Dictionary<string, List<RedditSharp.Things.Post>>();
                 foreach ( RedditSharp.Things.Post post in posts ) {
                     toReturn.Add( post.Id, new PostAnalysisResults( post ) );
-                    if ( post.Url.Host.ToLower().Contains( "youtube" ) || post.Url.Host.ToLower().Contains( "youtu.bu" ) ) {
-                        //it's a YouTube link
-                        string url = post.Url.ToString();
-                        if ( url.Contains( "v=" ) ) {
-                            string id = url.Substring( url.IndexOf( "v=" ) + 2 ).Split( '&' )[0];
-                            if ( !string.IsNullOrEmpty( id ) ) {
-                                youTubePosts[id] = post;
-                            }
-                        }
+                    string ytID = Helpers.YouTubeHelpers.ExtractVideoID( post.Url.ToString() );
+
+                    if ( !string.IsNullOrEmpty( ytID ) ) {
+                        if ( !youTubePosts.ContainsKey( ytID ) ) youTubePosts.Add( ytID, new List<RedditSharp.Things.Post>() );
+                        youTubePosts[ytID].Add( post );
                     }
                 }
                 Google.Apis.YouTube.v3.YouTubeService yt = new YouTubeService( new Google.Apis.Services.BaseClientService.Initializer() { ApiKey = YouTubeAPIKey } );
@@ -53,16 +49,16 @@ namespace DirtBag.Modules {
                     var response = req.Execute();
 
                     foreach ( var vid in response.Items ) {
-                        RedditSharp.Things.Post post = youTubePosts[vid.Id];
-                        //var scores = toReturn[post.Id].Scores;
-                        Logging.UserPost.InsertPost( new Logging.UserPost() { ChannelID = vid.Snippet.ChannelId, ChannelName = vid.Snippet.ChannelTitle, Link = post.Permalink.ToString(), UserName = post.AuthorName, Subreddit = post.SubredditName } );
+                        foreach ( var post in youTubePosts[vid.Id] ) {
+                            Logging.UserPost.InsertPost( new Logging.UserPost() { ChannelID = vid.Snippet.ChannelId, ChannelName = vid.Snippet.ChannelTitle, Link = post.Permalink.ToString(), UserName = post.AuthorName, Subreddit = post.SubredditName } );
+                        }
                     }
                 }
                 Task.Run( () => {
                     DateTime? lastRemoval = Logging.PostRemoval.GetLastProcessedRemovalDate( Subreddit );
                     int processedCount = 0;
                     var modActions = RedditClient.GetSubreddit( Subreddit ).GetModerationLog( RedditSharp.ModActionType.RemoveLink ).GetListing( 5000, 100 );
-                    Dictionary<string, Logging.UserPost> newPosts = new Dictionary<string, Logging.UserPost>();
+                    Dictionary<string, List<Logging.UserPost>> newPosts = new Dictionary<string, List<Logging.UserPost>>();
                     foreach ( var modAct in modActions ) {
                         if ( modAct.TimeStamp <= lastRemoval || processedCount > 2500 ) break;
 
@@ -80,26 +76,25 @@ namespace DirtBag.Modules {
                         var newPost = Logging.PostRemoval.AddRemoval( removal );
                         if ( newPost != null ) {
                             if ( post.Url.Host.ToLower().Contains( "youtube" ) || post.Url.Host.ToLower().Contains( "youtu.bu" ) ) {
-                                //it's a YouTube link
-                                string url = post.Url.ToString();
-                                if ( url.Contains( "v=" ) ) {
-                                    string id = url.Substring( url.IndexOf( "v=" ) + 2 ).Split( '&' )[0];
-                                    if ( !string.IsNullOrEmpty( id ) ) {
-                                        newPosts[id] = newPost;
-                                    }
+                                string ytID = Helpers.YouTubeHelpers.ExtractVideoID( post.Url.ToString() );
+                                if ( !string.IsNullOrEmpty( ytID ) ) {
+                                    if ( !newPosts.ContainsKey( ytID ) ) newPosts.Add( ytID, new List<Logging.UserPost>() );
+                                    newPosts[ytID].Add( newPost );
                                 }
                             }
                         }
                     }
 
+
                     for ( int i = 0; i < newPosts.Keys.Count; i += 50 ) {
                         req.Id = string.Join( ",", newPosts.Keys.Skip( i ).Take( 50 ) );
                         var response = req.Execute();
                         foreach ( var vid in response.Items ) {
-                            Logging.UserPost upost = newPosts[vid.Id];
-                            upost.ChannelID = vid.Snippet.ChannelId;
-                            upost.ChannelName = vid.Snippet.ChannelTitle;
-                            Logging.UserPost.UpdatePost( upost );
+                            foreach ( var upost in newPosts[vid.Id] ) {
+                                upost.ChannelID = vid.Snippet.ChannelId;
+                                upost.ChannelName = vid.Snippet.ChannelTitle;
+                                Logging.UserPost.UpdatePost( upost );
+                            }
                         }
                     }
                 } );
