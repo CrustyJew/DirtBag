@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data.Common;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using Dapper;
+
 namespace DirtBag.Logging {
     class UserPost {
         public int PostID { get; set; }
@@ -16,8 +12,8 @@ namespace DirtBag.Logging {
         public List<PostRemoval> Removals { get; set; }
 
         public static void InsertPost( UserPost post ) {
-            using ( DbConnection conn = DirtBagConnection.GetConn() ) {
-                string query = "" +
+            using ( var conn = DirtBagConnection.GetConn() ) {
+                var query = "" +
                     "insert into UserPosts (UserName,Link,ChannelID,ChannelName,Subreddit) " +
                     "select @UserName, @Link, @ChannelID, @ChannelName, @Subreddit " +
                     "WHERE NOT EXISTS " +
@@ -28,8 +24,8 @@ namespace DirtBag.Logging {
         }
 
         public static void UpdatePost( UserPost post ) {
-            using ( DbConnection conn = DirtBagConnection.GetConn() ) {
-                string query = "" +
+            using ( var conn = DirtBagConnection.GetConn() ) {
+                var query = "" +
                     "update UserPosts " +
                     "set UserName = @UserName, Link = @Link, ChannelID = @ChannelID, " +
                     "ChannelName = @ChannelName, Subreddit = @Subreddit " +

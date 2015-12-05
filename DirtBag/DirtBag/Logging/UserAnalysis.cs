@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Dapper;
-using System.Data.Common;
 
 namespace DirtBag.Logging {
     class UserAnalysis {
@@ -13,8 +9,8 @@ namespace DirtBag.Logging {
         public List<UserPost> Posts { get; set; }
 
         public static UserAnalysis GetUserAnalysis(string UserName ) {
-            using(DbConnection con = DirtBagConnection.GetConn() ) {
-                string query = "" +
+            using(var con = DirtBagConnection.GetConn() ) {
+                var query = "" +
                     "Select " +
                     //"usr.UserID, usr.UserName, " +
                     "up.UserName, " +
@@ -30,11 +26,11 @@ namespace DirtBag.Logging {
                     "WHERE " +
                     "usr.UserName like @UserName";
 
-                UserAnalysis analysis = new UserAnalysis();
+                var analysis = new UserAnalysis();
                 analysis.UserName = UserName;
                 analysis.Posts = new List<UserPost>();
 
-                Dictionary<int, UserPost> posts = new Dictionary<int, UserPost>();
+                var posts = new Dictionary<int, UserPost>();
 
                 var result = con.Query< UserPost, PostRemoval, UserAnalysis>( query, ( up, pr) => {
                     

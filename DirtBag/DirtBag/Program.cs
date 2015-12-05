@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using RedditSharp;
-using System.Configuration;
 using System.Threading;
+using System.Threading.Tasks;
 using DirtBag.Helpers;
+using DirtBag.Logging;
+using DirtBag.Modules;
+using RedditSharp;
+using RedditSharp.Things;
 
 namespace DirtBag {
     class Program {
@@ -18,26 +21,27 @@ namespace DirtBag {
         public static Timer TheKeeper { get; set; }
         public static Timer TheWatcher { get; set; }
         private static Timer BurstDebug { get; set; }
-        public static List<Modules.IModule> ActiveModules { get; set; }
+        public static List<IModule> ActiveModules { get; set; }
 
-        private static ManualResetEvent waitHandle = new ManualResetEvent( false );
+        private static readonly ManualResetEvent WaitHandle = new ManualResetEvent( false );
         public const double VersionNumber = 1.0;
-        static void Main( string[] args ) {
-            ActiveModules = new List<DirtBag.Modules.IModule>();
+        static void Main(string[] args)
+        {
+            ActiveModules = new List<IModule>();
             //Instantiate and throw away a Reddit instance so the static constructor won't interfere with the WebAgent later.
             new Reddit();
-            Logging.DirtBagConnection conn = new Logging.DirtBagConnection();
-            string sub = ConfigurationManager.AppSettings["Subreddit"];
-            conn.InitializeConnection( new string[] { sub } );
+            var conn = new DirtBagConnection();
+            var sub = ConfigurationManager.AppSettings["Subreddit"];
+            conn.InitializeConnection(new[] { sub });
             Initialize();
 
-            waitHandle.WaitOne(); //Go the fuck to sleep
+            WaitHandle.WaitOne(); //Go the fuck to sleep
 
         }
 
         public static void Initialize() {
-            string uAgent = ConfigurationManager.AppSettings["UserAgentString"];
-            string sub = ConfigurationManager.AppSettings["Subreddit"];
+            var uAgent = ConfigurationManager.AppSettings["UserAgentString"];
+            var sub = ConfigurationManager.AppSettings["Subreddit"];
             if ( string.IsNullOrEmpty( uAgent ) ) throw new Exception( "Provide setting 'UserAgentString' in AppConfig to avoid Reddit throttling!" );
             if ( string.IsNullOrEmpty( sub ) ) throw new Exception( "Provide setting 'Subreddit' in AppConfig" );
             Subreddit = sub;
@@ -74,23 +78,19 @@ namespace DirtBag {
         }
 
         private static void StopTimer() {
-            if ( TheKeeper != null ) {
-                TheKeeper.Dispose();
-            }
-            if ( TheWatcher != null ) {
-                TheWatcher.Dispose();
-            }
+            TheKeeper?.Dispose();
+            TheWatcher?.Dispose();
         }
         private static void CheckBurstStats( object s ) {
-            RedditWebAgent agent = (RedditWebAgent) s;
-            Console.WriteLine( string.Format( "Last Request: {0}\r\nBurst Start: {1}\r\nRequests this Burst: {2}", agent.LastRequest, agent.BurstStart, agent.RequestsThisBurst ) );
+            var agent = (RedditWebAgent) s;
+            Console.WriteLine("Last Request: {0}\r\nBurst Start: {1}\r\nRequests this Burst: {2}", agent.LastRequest, agent.BurstStart, agent.RequestsThisBurst);
         }
         private static async void ProcessPosts( object s ) {
-            RedditSharp.Things.Subreddit sub = Client.GetSubreddit( Subreddit );
+            var sub = Client.GetSubreddit( Subreddit );
 
-            List<RedditSharp.Things.Post> newPosts = new List<RedditSharp.Things.Post>();
-            List<RedditSharp.Things.Post> hotPosts = new List<RedditSharp.Things.Post>();
-            List<RedditSharp.Things.Post> risingPosts = new List<RedditSharp.Things.Post>();
+            var newPosts = new List<Post>();
+            var hotPosts = new List<Post>();
+            var risingPosts = new List<Post>();
 
             //avoid getting unnecessary posts to keep requests lower
             if ( ActiveModules.Any( m => m.Settings.PostTypes.HasFlag( PostType.New ) ) ) {
@@ -102,14 +102,14 @@ namespace DirtBag {
             if ( ActiveModules.Any( m => m.Settings.PostTypes.HasFlag( PostType.Rising ) ) ) {
                 risingPosts = sub.Rising.Take( 50 ).ToList();
             }
-            var postComparer = new Helpers.PostIdEqualityComparer();
-            HashSet<RedditSharp.Things.Post> allPosts = new HashSet<RedditSharp.Things.Post>( postComparer );
+            var postComparer = new PostIdEqualityComparer();
+            var allPosts = new HashSet<Post>( postComparer );
             allPosts.UnionWith( newPosts );
             allPosts.UnionWith( hotPosts );
             allPosts.UnionWith( risingPosts );
             //Get stats on already processed posts (This could be pulled from mod log at some point if ever desired / found to be more useful)
-            List<Logging.ProcessedPost> alreadyProcessed = Logging.ProcessedPost.CheckProcessed( allPosts.Select( p => p.Id ).ToList() );
-            List<string> removedPreviously = new List<string>();
+            var alreadyProcessed = ProcessedPost.CheckProcessed( allPosts.Select( p => p.Id ).ToList() );
+            var removedPreviously = new List<string>();
             //select posts that have already been removed once and add them to list
             removedPreviously.AddRange( alreadyProcessed.Where( p => p.Action.ToLower() == "remove" ).Select( p => p.PostID ).ToList() );
             //remove posts from processing that have been removed before. Don't want to override manual mod actions
@@ -117,17 +117,17 @@ namespace DirtBag {
             risingPosts.RemoveAll( p => removedPreviously.Contains( p.Id ) );
             hotPosts.RemoveAll( p => removedPreviously.Contains( p.Id ) );
 
-            List<string> reportedPreviously = new List<string>();
+            var reportedPreviously = new List<string>();
             //select posts that have already been removed once and add them to list
             reportedPreviously.AddRange( alreadyProcessed.Where( p => p.Action.ToLower() == "report" ).Select( p => p.PostID ).ToList() );
 
 
-            List<Task<Dictionary<string, Modules.PostAnalysisResults>>> postTasks = new List<Task<Dictionary<string, Modules.PostAnalysisResults>>>();
+            var postTasks = new List<Task<Dictionary<string, PostAnalysisResults>>>();
 
 
             foreach ( var module in ActiveModules ) {
                 //hashset to prevent duplicates being passed.
-                HashSet<RedditSharp.Things.Post> posts = new HashSet<RedditSharp.Things.Post>( postComparer );
+                var posts = new HashSet<Post>( postComparer );
                 if ( module.Settings.PostTypes.HasFlag( PostType.New ) ) {
                     posts.UnionWith( newPosts );
                 }
@@ -141,13 +141,13 @@ namespace DirtBag {
             }
 
 
-            Dictionary<string, Modules.PostAnalysisResults> results = new Dictionary<string, Modules.PostAnalysisResults>();
+            var results = new Dictionary<string, PostAnalysisResults>();
 
             while ( postTasks.Count > 0 ) {
                 var finishedTask = await Task.WhenAny( postTasks );
                 postTasks.Remove( finishedTask );
                 var result = await finishedTask;
-                foreach ( string key in result.Keys ) {
+                foreach ( var key in result.Keys ) {
                     if ( results.Keys.Contains( key ) ) {
                         results[key].Scores.AddRange( result[key].Scores );
                     }
@@ -163,40 +163,36 @@ namespace DirtBag {
                 if ( resultVal.TotalScore >= Settings.RemoveScoreThreshold && Settings.RemoveScoreThreshold > 0 ) {
                     resultVal.Post.Remove();
                     try {
-                        Logging.ProcessedPost.SaveProcessedPost( Settings.Subreddit, resultVal.Post.Id, "Remove" ); //change to enum at some point
+                        ProcessedPost.SaveProcessedPost( Settings.Subreddit, resultVal.Post.Id, "Remove" ); //change to enum at some point
                     }
                     catch ( Exception ex ) {
-                        Console.WriteLine( String.Format( "Error saving post as processed. Messaage : {0}", ex.Message + ex.InnerException != null ? "\r\n Inner Exception : " + ex.InnerException.Message : "" ) );
+                        Console.WriteLine("Error saving post as processed. Messaage : {0}", "\r\n Inner Exception : " + ex.InnerException.Message);
                     }
                 }
                 else if ( resultVal.TotalScore >= Settings.ReportScoreThreshold && Settings.ReportScoreThreshold > 0 ) {
-                    if ( !reportedPreviously.Contains( resultVal.Post.Id ) ) {
-                        resultVal.Post.Report( RedditSharp.Things.VotableThing.ReportType.Other, otherReason: resultVal.ReportReason );
-                        try {
-                            Logging.ProcessedPost.SaveProcessedPost( Settings.Subreddit, resultVal.Post.Id, "Report" ); //change to enum at some point
-                        }
-                        catch ( Exception ex ) {
-                            Console.WriteLine( String.Format( "Error saving post as processed. Messaage : {0}", ex.Message + ex.InnerException != null ? "\r\n Inner Exception : " + ex.InnerException.Message : "" ) );
-                        }
+                    if (reportedPreviously.Contains(resultVal.Post.Id)) continue;
+                    resultVal.Post.Report( VotableThing.ReportType.Other, resultVal.ReportReason );
+                    try {
+                        ProcessedPost.SaveProcessedPost( Settings.Subreddit, resultVal.Post.Id, "Report" ); //change to enum at some point
+                    }
+                    catch ( Exception ex ) {
+                        Console.WriteLine("Error saving post as processed. Messaage : {0}", "\r\n Inner Exception : " + ex.InnerException.Message);
                     }
                 }
 
             }
 
-            Console.WriteLine( String.Format( "Successfully processed {0} posts. Ignored {1} posts that had been removed already.", results.Keys.Count, removedPreviously.Count ) );
+            Console.WriteLine("Successfully processed {0} posts. Ignored {1} posts that had been removed already.", results.Keys.Count, removedPreviously.Count);
         }
-        internal static async Task<Modules.PostAnalysisResults> AnalyzePost( RedditSharp.Things.Post post ) {
-            List<Task<Dictionary<string, Modules.PostAnalysisResults>>> postTasks = new List<Task<Dictionary<string, Modules.PostAnalysisResults>>>();
-            foreach ( var module in ActiveModules ) {
-                postTasks.Add( module.Analyze( new List<RedditSharp.Things.Post>() { post } ) );
-            }
-            Modules.PostAnalysisResults results = new Modules.PostAnalysisResults( post );
+        internal static async Task<PostAnalysisResults> AnalyzePost( Post post ) {
+            var postTasks = ActiveModules.Select(module => module.Analyze(new List<Post> {post})).ToList();
+            var results = new PostAnalysisResults( post );
 
             while ( postTasks.Count > 0 ) {
                 var finishedTask = await Task.WhenAny( postTasks );
                 postTasks.Remove( finishedTask );
                 var result = await finishedTask;
-                foreach ( string key in result.Keys ) {
+                foreach ( var key in result.Keys ) {
                     results.Scores.AddRange( result[key].Scores );
                 }
             }
@@ -204,66 +200,62 @@ namespace DirtBag {
         }
         private static async void ProcessMessages( object s ) {
             var messages = Client.User.UnreadMessages;
-            List<string> mods = new List<string>();
+            var mods = new List<string>();
             mods.AddRange( Client.GetSubreddit( Subreddit ).Moderators.Select( m => m.Name.ToLower() ).ToList() ); //TODO when enabling multiple subs, fix this
 
-            foreach ( var unread in messages ) {
-                if ( unread.Kind == "t4" ) {
-                    RedditSharp.Things.PrivateMessage message = (RedditSharp.Things.PrivateMessage) unread;
-                    message.SetAsRead();
-                    if ( message.Subject.ToLower() == "validate" || message.Subject.ToLower() == "check" || message.Subject.ToLower() == "analyze" ) {
-                        RedditSharp.Things.Post post;
-                        try {
-                            post = Client.GetPost( new Uri( message.Body ) );
-                        }
-                        catch {
-                            message.Reply( "That URL made me throw up in my mouth a little. Try again!" );
-                            continue;
-                        }
-                        if ( post.SubredditName.ToLower() != Subreddit.ToLower() ) { //TODO when enabling multiple subreddits, this needs tweaked!
-                            message.Reply( string.Format( "I don't have any rules for {0}.", post.SubredditName ) );
-                        }
-                        else if ( !mods.Contains( message.Author.ToLower() ) ) {
-                            message.Reply( string.Format( "You aren't a mod of {0}! What are you doing here? Go on! GIT!", post.SubredditName ) );
-                        }
-                        else if ( post.AuthorName == "[deleted]" ) {
-                            message.Reply( "The OP deleted the post so I can't check it. Sorry (read in Canadian accent)!" );
-                        }
-                        else {
-                            //omg finally analyze the damn thing
-                            Modules.PostAnalysisResults result = await AnalyzePost( post );
-                            StringBuilder reply = new StringBuilder();
-                            reply.AppendLine( string.Format( "Analysis results for \"[{0}]({1})\" submitted by /u/{2} to /r/{3}", post.Title, post.Permalink, post.AuthorName, post.SubredditName ) );
-                            reply.AppendLine();
-                            string action = "None";
-                            if ( Settings.RemoveScoreThreshold > 0 && result.TotalScore > Settings.RemoveScoreThreshold ) action = "Remove";
-                            if ( Settings.ReportScoreThreshold > 0 && result.TotalScore > Settings.ReportScoreThreshold ) action = "Report";
-                            reply.AppendLine( string.Format( "##Action Taken: {0} with a score of {1}", action, result.TotalScore ) );
-                            reply.AppendLine();
-                            reply.AppendLine( string.Format( "**/r/{0}'s thresholds** --- Remove : **{1}** , Report : **{2}**",
-                                post.SubredditName,
-                                Settings.RemoveScoreThreshold > 0 ? Settings.RemoveScoreThreshold.ToString() : "Disabled",
-                                Settings.ReportScoreThreshold > 0 ? Settings.ReportScoreThreshold.ToString() : "Disabled" ) );
-                            reply.AppendLine();
-                            reply.AppendLine( "Module| Score |Reason" );
-                            reply.AppendLine( ":--|:--:|:--" );
-                            foreach ( var score in result.Scores ) {
-                                reply.AppendLine( string.Format( "{0}|{1}|{2}", score.ModuleName, score.Score, score.Reason ) );
-                            }
-                            message.Reply( reply.ToString() );
-
-                        }
-
+            foreach (var message in messages.Where(unread => unread.Kind == "t4").Cast<PrivateMessage>())
+            {
+                message.SetAsRead();
+                if (message.Subject.ToLower() != "validate" && message.Subject.ToLower() != "check" &&
+                    message.Subject.ToLower() != "analyze") continue;
+                Post post;
+                try {
+                    post = Client.GetPost( new Uri( message.Body ) );
+                }
+                catch {
+                    message.Reply( "That URL made me throw up in my mouth a little. Try again!" );
+                    continue;
+                }
+                if ( post.SubredditName.ToLower() != Subreddit.ToLower() ) { //TODO when enabling multiple subreddits, this needs tweaked!
+                    message.Reply($"I don't have any rules for {post.SubredditName}.");
+                }
+                else if ( !mods.Contains( message.Author.ToLower() ) ) {
+                    message.Reply($"You aren't a mod of {post.SubredditName}! What are you doing here? Go on! GIT!");
+                }
+                else if ( post.AuthorName == "[deleted]" ) {
+                    message.Reply( "The OP deleted the post so I can't check it. Sorry (read in Canadian accent)!" );
+                }
+                else {
+                    //omg finally analyze the damn thing
+                    var result = await AnalyzePost( post );
+                    var reply = new StringBuilder();
+                    reply.AppendLine(
+                        $"Analysis results for \"[{post.Title}]({post.Permalink})\" submitted by /u/{post.AuthorName} to /r/{post.SubredditName}");
+                    reply.AppendLine();
+                    var action = "None";
+                    if ( Settings.RemoveScoreThreshold > 0 && result.TotalScore > Settings.RemoveScoreThreshold ) action = "Remove";
+                    if ( Settings.ReportScoreThreshold > 0 && result.TotalScore > Settings.ReportScoreThreshold ) action = "Report";
+                    reply.AppendLine($"##Action Taken: {action} with a score of {result.TotalScore}");
+                    reply.AppendLine();
+                    reply.AppendLine(
+                        $"**/r/{post.SubredditName}'s thresholds** --- Remove : **{(Settings.RemoveScoreThreshold > 0 ? Settings.RemoveScoreThreshold.ToString() : "Disabled")}** , Report : **{(Settings.ReportScoreThreshold > 0 ? Settings.ReportScoreThreshold.ToString() : "Disabled")}**");
+                    reply.AppendLine();
+                    reply.AppendLine( "Module| Score |Reason" );
+                    reply.AppendLine( ":--|:--:|:--" );
+                    foreach ( var score in result.Scores ) {
+                        reply.AppendLine($"{score.ModuleName}|{score.Score}|{score.Reason}");
                     }
+                    message.Reply( reply.ToString() );
+
                 }
             }
         }
         private static void LoadModules() {
             ActiveModules.Clear();
             /*** Load Modules ***/
-            if ( Settings.LicensingSmasher.Enabled ) ActiveModules.Add( new Modules.LicensingSmasher( Settings.LicensingSmasher, Client, Subreddit ) );
-            if ( Settings.YouTubeSpamDetector.Enabled ) ActiveModules.Add( new Modules.YouTubeSpamDetector( Settings.YouTubeSpamDetector, Client, Subreddit ) );
-            if ( Settings.UserStalker.Enabled ) ActiveModules.Add( new Modules.UserStalker( Settings.UserStalker, Client, Subreddit ) );
+            if ( Settings.LicensingSmasher.Enabled ) ActiveModules.Add( new LicensingSmasher( Settings.LicensingSmasher, Client, Subreddit ) );
+            if ( Settings.YouTubeSpamDetector.Enabled ) ActiveModules.Add( new YouTubeSpamDetector( Settings.YouTubeSpamDetector, Client, Subreddit ) );
+            if ( Settings.UserStalker.Enabled ) ActiveModules.Add( new UserStalker( Settings.UserStalker, Client, Subreddit ) );
             /*** End Load Modules ***/
         }
     }

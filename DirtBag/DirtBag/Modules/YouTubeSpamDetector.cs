@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using RedditSharp.Things;
-using Newtonsoft.Json;
+using DirtBag.Helpers;
+using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
+using Newtonsoft.Json;
+using RedditSharp;
+using RedditSharp.Things;
 
 namespace DirtBag.Modules {
     class YouTubeSpamDetector : IModule {
@@ -16,19 +19,19 @@ namespace DirtBag.Modules {
         }
 
         public IModuleSettings Settings { get; set; }
-        public RedditSharp.Reddit RedditClient { get; set; }
+        public Reddit RedditClient { get; set; }
         public string Subreddit { get; set; }
         public string YouTubeAPIKey { get; set; }
 
         private const int MAX_MODULE_SCORE = 10;
 
         public YouTubeSpamDetector() {
-            string key = System.Configuration.ConfigurationManager.AppSettings["YouTubeAPIKey"];
+            var key = ConfigurationManager.AppSettings["YouTubeAPIKey"];
             if ( string.IsNullOrEmpty( key ) ) throw new Exception( "Provide setting 'YouTubeAPIKey' in AppConfig" );
             YouTubeAPIKey = key;
         }
 
-        public YouTubeSpamDetector( YouTubeSpamDetectorSettings settings, RedditSharp.Reddit reddit, string sub ) : this() {
+        public YouTubeSpamDetector( YouTubeSpamDetectorSettings settings, Reddit reddit, string sub ) : this() {
             Settings = settings;
             RedditClient = reddit;
             Subreddit = sub;
@@ -36,22 +39,22 @@ namespace DirtBag.Modules {
         }
         public async Task<Dictionary<string, PostAnalysisResults>> Analyze( List<Post> posts ) {
             return await Task.Run( () => {
-                Dictionary<string, PostAnalysisResults> toReturn = new Dictionary<string, PostAnalysisResults>();
-                Dictionary<string, List<RedditSharp.Things.Post>> youTubePosts = new Dictionary<string, List<RedditSharp.Things.Post>>();
-                foreach ( RedditSharp.Things.Post post in posts ) {
+                var toReturn = new Dictionary<string, PostAnalysisResults>();
+                var youTubePosts = new Dictionary<string, List<Post>>();
+                foreach ( var post in posts ) {
                     toReturn.Add( post.Id, new PostAnalysisResults( post ) );
-                    string ytID = Helpers.YouTubeHelpers.ExtractVideoID( post.Url.ToString() );
+                    var ytID = YouTubeHelpers.ExtractVideoId( post.Url.ToString() );
 
                     if ( !string.IsNullOrEmpty( ytID ) ) {
-                        if ( !youTubePosts.ContainsKey( ytID ) ) youTubePosts.Add( ytID, new List<RedditSharp.Things.Post>() );
+                        if ( !youTubePosts.ContainsKey( ytID ) ) youTubePosts.Add( ytID, new List<Post>() );
                         youTubePosts[ytID].Add( post );
                     }
                 }
-                Google.Apis.YouTube.v3.YouTubeService yt = new YouTubeService( new Google.Apis.Services.BaseClientService.Initializer() { ApiKey = YouTubeAPIKey } );
+                var yt = new YouTubeService( new BaseClientService.Initializer { ApiKey = YouTubeAPIKey } );
 
                 var req = yt.Videos.List( "snippet,contentDetails,statistics" );
 
-                YouTubeSpamDetectorSettings settings = (YouTubeSpamDetectorSettings) Settings;
+                var settings = (YouTubeSpamDetectorSettings) Settings;
                 double availWeight = 0;
                 availWeight += settings.ChannelAgeThreshold.Enabled ? settings.ChannelAgeThreshold.Weight : 0;
                 availWeight += settings.ViewCountThreshold.Enabled ? settings.ViewCountThreshold.Weight : 0;
@@ -62,22 +65,22 @@ namespace DirtBag.Modules {
                 availWeight += settings.CommentCountThreshold.Enabled ? settings.CommentCountThreshold.Weight : 0;
                 availWeight += settings.VoteCountThreshold.Enabled ? settings.VoteCountThreshold.Weight : 0;
 
-                double chanAgeScore = ( settings.ChannelAgeThreshold.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
-                double viewCountScore = ( settings.ViewCountThreshold.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
-                double negativeVoteScore = ( settings.NegativeVoteRatio.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
-                double redditAccountAgeScore = ( settings.RedditAccountAgeThreshold.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
-                double licensedScore = ( settings.LicensedChannel.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
-                double imgurSubmissionRatioScore = ( settings.ImgurSubmissionRatio.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
-                double commentCountScore = ( settings.CommentCountThreshold.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
-                double totalVotesScore = ( settings.VoteCountThreshold.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
+                var chanAgeScore = ( settings.ChannelAgeThreshold.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
+                var viewCountScore = ( settings.ViewCountThreshold.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
+                var negativeVoteScore = ( settings.NegativeVoteRatio.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
+                var redditAccountAgeScore = ( settings.RedditAccountAgeThreshold.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
+                var licensedScore = ( settings.LicensedChannel.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
+                var imgurSubmissionRatioScore = ( settings.ImgurSubmissionRatio.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
+                var commentCountScore = ( settings.CommentCountThreshold.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
+                var totalVotesScore = ( settings.VoteCountThreshold.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
 
-                Dictionary<string, List<RedditSharp.Things.Post>> channels = new Dictionary<string, List<Post>>();
-                for ( int i = 0; i < youTubePosts.Keys.Count; i += 50 ) {
+                var channels = new Dictionary<string, List<Post>>();
+                for ( var i = 0; i < youTubePosts.Keys.Count; i += 50 ) {
                     req.Id = string.Join( ",", youTubePosts.Keys.Skip( i ).Take( 50 ) );
                     var response = req.Execute();
 
                     foreach ( var vid in response.Items ) {
-                        foreach ( RedditSharp.Things.Post post in youTubePosts[vid.Id] ) {
+                        foreach ( var post in youTubePosts[vid.Id] ) {
                             var scores = toReturn[post.Id].Scores;
                             if ( !channels.ContainsKey( vid.Snippet.ChannelId ) ) {
                                 channels[vid.Snippet.ChannelId] = new List<Post>();
@@ -188,14 +191,14 @@ namespace DirtBag.Modules {
             PostTypes = PostType.New;
             EveryXRuns = 1;
             ScoreMultiplier = 1;
-            ChannelAgeThreshold = new YouTubeSpamDetectorIntCategory() { Value = 14, Enabled = true, Weight = 3 };
-            ViewCountThreshold = new YouTubeSpamDetectorIntCategory() { Value = 200, Enabled = true, Weight = 1 };
-            VoteCountThreshold = new YouTubeSpamDetectorIntCategory() { Value = 25, Enabled = true, Weight = 1 };
-            NegativeVoteRatio = new YouTubeSpamDetectorBoolCategory() { Enabled = true, Weight = 1 };
-            RedditAccountAgeThreshold = new YouTubeSpamDetectorIntCategory() { Value = 30, Enabled = true, Weight = 2 };
-            LicensedChannel = new YouTubeSpamDetectorBoolCategory() { Enabled = true, Weight = 1 };
-            ImgurSubmissionRatio = new YouTubeSpamDetectorIntCategory() { Value = 25, Enabled = false, Weight = 1 };
-            CommentCountThreshold = new YouTubeSpamDetectorIntCategory() { Value = 10, Enabled = true, Weight = 1 };
+            ChannelAgeThreshold = new YouTubeSpamDetectorIntCategory { Value = 14, Enabled = true, Weight = 3 };
+            ViewCountThreshold = new YouTubeSpamDetectorIntCategory { Value = 200, Enabled = true, Weight = 1 };
+            VoteCountThreshold = new YouTubeSpamDetectorIntCategory { Value = 25, Enabled = true, Weight = 1 };
+            NegativeVoteRatio = new YouTubeSpamDetectorBoolCategory { Enabled = true, Weight = 1 };
+            RedditAccountAgeThreshold = new YouTubeSpamDetectorIntCategory { Value = 30, Enabled = true, Weight = 2 };
+            LicensedChannel = new YouTubeSpamDetectorBoolCategory { Enabled = true, Weight = 1 };
+            ImgurSubmissionRatio = new YouTubeSpamDetectorIntCategory { Value = 25, Enabled = false, Weight = 1 };
+            CommentCountThreshold = new YouTubeSpamDetectorIntCategory { Value = 10, Enabled = true, Weight = 1 };
         }
     }
 

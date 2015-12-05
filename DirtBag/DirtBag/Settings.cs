@@ -1,11 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.ComponentModel.DataAnnotations;
 using System.Threading;
+using DirtBag.Modules;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using System.ComponentModel.DataAnnotations;
+using RedditSharp;
 
 namespace DirtBag {
     [Serializable]
@@ -25,45 +24,43 @@ namespace DirtBag {
         public DateTime LastModified { get; set; }
         /*** MODULE SETTINGS ***/
         [JsonProperty]
-        public Modules.LicensingSmasherSettings LicensingSmasher { get; set; }
+        public LicensingSmasherSettings LicensingSmasher { get; set; }
         [JsonProperty]
-        public Modules.YouTubeSpamDetectorSettings YouTubeSpamDetector { get; set; }
+        public YouTubeSpamDetectorSettings YouTubeSpamDetector { get; set; }
         [JsonProperty]
-        public Modules.UserStalkerSettings UserStalker { get; set; }
+        public UserStalkerSettings UserStalker { get; set; }
         /*** END MODULE SETTINGS ***/
 
         public event EventHandler OnSettingsModified;
 
-        private const string WIKIPAGE_NAME = "dirtbag";
-        private const int FORTY_FIVE_MINUTES = 2700000;
+        private const string WikipageName = "dirtbag";
+        private const int FortyFiveMinutes = 2700000;
 
-        public void Initialize( RedditSharp.Reddit r ) {
+        public void Initialize( Reddit r ) {
             LastModified = new DateTime( 1900, 1, 1, 1, 1, 1 );
-            SettingsTimerState state = new SettingsTimerState();
-            state.RedditRef = r;
-            state.SettingsRef = this;
-            state.TimerRef = new Timer( SettingsTimer, state, 0, FORTY_FIVE_MINUTES );
+            var state = new SettingsTimerState
+            {
+                RedditRef = r,
+                SettingsRef = this
+            };
+            state.TimerRef = new Timer( SettingsTimer, state, 0, FortyFiveMinutes );
         }
-        public void ReadSettings( RedditSharp.Reddit r ) {
-            RedditSharp.Wiki wiki = r.GetSubreddit( Subreddit ).Wiki;
-            RedditSharp.WikiPage settingsPage;
+        public void ReadSettings( Reddit r ) {
+            var wiki = r.GetSubreddit( Subreddit ).Wiki;
+            WikiPage settingsPage;
             try {
-                settingsPage = wiki.GetPage( WIKIPAGE_NAME );
+                settingsPage = wiki.GetPage( WikipageName );
             }
             catch {
                 //Page doesn't exist, create it with defaults.
                 CreateWikiPage( wiki );
-				if ( OnSettingsModified != null ) {
-					OnSettingsModified( this, EventArgs.Empty );
-				}
-				return;
+                OnSettingsModified?.Invoke( this, EventArgs.Empty );
+                return;
             }
             if ( string.IsNullOrEmpty( settingsPage.MarkdownContent ) ) {
                 CreateWikiPage( wiki );
-				if ( OnSettingsModified != null ) {
-					OnSettingsModified( this, EventArgs.Empty );
-				}
-				return;
+                OnSettingsModified?.Invoke( this, EventArgs.Empty );
+                return;
             }
 
             if ( settingsPage.RevisionDate != null && settingsPage.RevisionDate.Value > LastModified ) {
@@ -74,31 +71,31 @@ namespace DirtBag {
                 catch {
                     throw new Exception( "Wikipage is corrupted. Fix it, clear wiki page, or delete the page to recreate with defaults." );
                 }
-                this.Version = sets.Version;
-                this.LastModified = settingsPage.RevisionDate.Value;
-				this.RemoveScoreThreshold = sets.RemoveScoreThreshold;
-				this.ReportScoreThreshold = sets.ReportScoreThreshold;
-				this.RunEveryXMinutes = sets.RunEveryXMinutes;
+                Version = sets.Version;
+                LastModified = settingsPage.RevisionDate.Value;
+				RemoveScoreThreshold = sets.RemoveScoreThreshold;
+				ReportScoreThreshold = sets.ReportScoreThreshold;
+				RunEveryXMinutes = sets.RunEveryXMinutes;
 
 
-                bool addedDefaults = false;
+                var addedDefaults = false;
                 /***Module Defaults***/
                 if ( sets.LicensingSmasher == null ) {
-                    LicensingSmasher = new Modules.LicensingSmasherSettings();
+                    LicensingSmasher = new LicensingSmasherSettings();
                     addedDefaults = true;
                 }
 				else {
 					LicensingSmasher = sets.LicensingSmasher;
 				}
                 if (sets.YouTubeSpamDetector == null ) {
-                    YouTubeSpamDetector = new Modules.YouTubeSpamDetectorSettings();
+                    YouTubeSpamDetector = new YouTubeSpamDetectorSettings();
                     addedDefaults = true;
                 }
                 else {
                     YouTubeSpamDetector = sets.YouTubeSpamDetector;
                 }
                 if(sets.UserStalker == null ) {
-                    UserStalker = new Modules.UserStalkerSettings();
+                    UserStalker = new UserStalkerSettings();
                     addedDefaults = true;
                 }
                 else {
@@ -106,13 +103,11 @@ namespace DirtBag {
                 }
                 /***End Module Defaults ***/
                 if ( addedDefaults ) {
-                    wiki.EditPage( WIKIPAGE_NAME, JsonConvert.SerializeObject( this, Formatting.Indented, new JsonConverter[] { new StringEnumConverter() } ).Replace( "\r\n  ", "\r\n\r\n    " ), reason: "Add module default" );
-                    this.LastModified = DateTime.UtcNow.AddMinutes( 1 );
+                    wiki.EditPage( WikipageName, JsonConvert.SerializeObject( this, Formatting.Indented, new StringEnumConverter()).Replace( "\r\n  ", "\r\n\r\n    " ), reason: "Add module default" );
+                    LastModified = DateTime.UtcNow.AddMinutes( 1 );
                 }
-                Console.WriteLine( string.Format( "Settings in wiki changed or read for first time : Revision Date = {0}", LastModified ) );
-                if ( OnSettingsModified != null ) {
-                    OnSettingsModified( this, EventArgs.Empty );
-                }
+                Console.WriteLine("Settings in wiki changed or read for first time : Revision Date = {0}", LastModified);
+                OnSettingsModified?.Invoke( this, EventArgs.Empty );
             }
             else {
                 Console.WriteLine( "No updates to settings detected in wiki" );
@@ -121,28 +116,28 @@ namespace DirtBag {
 
         }
 
-        private void CreateWikiPage( RedditSharp.Wiki wiki ) {
+        private void CreateWikiPage( Wiki wiki ) {
             Version = Program.VersionNumber;
 			RunEveryXMinutes = 10;
             LastModified = DateTime.UtcNow;
 			ReportScoreThreshold = -1;
 			RemoveScoreThreshold = -1;
 			/*** Module Settings ***/
-			LicensingSmasher = new Modules.LicensingSmasherSettings();
-            YouTubeSpamDetector = new Modules.YouTubeSpamDetectorSettings();
-            UserStalker = new Modules.UserStalkerSettings();
+			LicensingSmasher = new LicensingSmasherSettings();
+            YouTubeSpamDetector = new YouTubeSpamDetectorSettings();
+            UserStalker = new UserStalkerSettings();
             /*** End Module Settings ***/
-            wiki.EditPage( WIKIPAGE_NAME, JsonConvert.SerializeObject( this, Formatting.Indented, new JsonConverter[] { new StringEnumConverter() } ).Replace("\r\n  ","\r\n\r\n    ") );
-            wiki.SetPageSettings( WIKIPAGE_NAME, new RedditSharp.WikiPageSettings() { Listed = false, PermLevel = 2 } );
+            wiki.EditPage( WikipageName, JsonConvert.SerializeObject( this, Formatting.Indented, new StringEnumConverter()).Replace("\r\n  ","\r\n\r\n    ") );
+            wiki.SetPageSettings( WikipageName, new WikiPageSettings { Listed = false, PermLevel = 2 } );
         }
-        private void SettingsTimer( object s ) {
-            SettingsTimerState state = (SettingsTimerState) s;
+        private static void SettingsTimer( object s ) {
+            var state = (SettingsTimerState) s;
             Console.WriteLine( "Checking settings from wiki" );
             state.SettingsRef.ReadSettings( state.RedditRef );
         }
         private class SettingsTimerState {
             public Timer TimerRef { get; set; }
-            public RedditSharp.Reddit RedditRef { get; set; }
+            public Reddit RedditRef { get; set; }
             public BotSettings SettingsRef { get; set; }
         }
 

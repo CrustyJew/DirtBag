@@ -1,14 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Configuration;
 using System.Data.Common;
 using System.Data.SqlClient;
 using System.Data.SQLite;
 using System.IO;
 using Dapper;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DirtBag.Logging {
     class DirtBagConnection {
@@ -35,8 +31,8 @@ namespace DirtBag.Logging {
                 }
             }
 
-            using ( DbConnection con = GetConn() ) {
-                string initTables = "" +
+            using ( var con = GetConn() ) {
+                var initTables = "" +
                     "CREATE TABLE IF NOT EXISTS [SubReddits]( " +
                     "[ID] INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
                     "[SubName] varchar(50) NOT NULL); " +
@@ -53,8 +49,8 @@ namespace DirtBag.Logging {
                     "";
                 con.Execute( initTables );
 
-                string subs = "('" + string.Join( "'),('", subreddits ) + "') ";
-                string seedData = "" +
+                var subs = "('" + string.Join( "'),('", subreddits ) + "') ";
+                var seedData = "" +
                     "INSERT INTO SubReddits (SubName) " +
                     "values " + subs +
                     "EXCEPT " +
@@ -72,9 +68,9 @@ namespace DirtBag.Logging {
         }
 
         public static DbConnection GetConn() {
-            bool useLocalDB = bool.Parse( ConfigurationManager.AppSettings["UseLocalDB"] );
-            string localDBFile = "";
-            string sqlConnString = "";
+            var useLocalDB = bool.Parse( ConfigurationManager.AppSettings["UseLocalDB"] );
+            var localDBFile = "";
+            var sqlConnString = "";
             if ( useLocalDB ) {
                 localDBFile = ConfigurationManager.AppSettings["LocalDBFile"];
                 if ( string.IsNullOrEmpty( localDBFile ) ) {
@@ -83,18 +79,16 @@ namespace DirtBag.Logging {
                 if ( !File.Exists( localDBFile ) ) {
                     SQLiteConnection.CreateFile( localDBFile );
                 }
-                SQLiteConnectionStringBuilder sb = new SQLiteConnectionStringBuilder();
+                var sb = new SQLiteConnectionStringBuilder();
                 sb.DataSource = localDBFile;
                 sb.DateTimeKind = DateTimeKind.Utc; //currently doesn't do anything as there is a bug in Dapper
                 return new SQLiteConnection( sb.ToString());
             }
-            else {
-                sqlConnString = ConfigurationManager.AppSettings["SQLConnString"];
-                if ( string.IsNullOrEmpty( sqlConnString ) ) {
-                    throw new Exception( "UseLocalDB set to false but no SQLConnString specified" );
-                }
-                return new SqlConnection( sqlConnString );
+            sqlConnString = ConfigurationManager.AppSettings["SQLConnString"];
+            if ( string.IsNullOrEmpty( sqlConnString ) ) {
+                throw new Exception( "UseLocalDB set to false but no SQLConnString specified" );
             }
+            return new SqlConnection( sqlConnString );
         }
     }
 }

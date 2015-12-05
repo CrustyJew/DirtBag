@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Data.Common;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Dapper;
-using System.Dynamic;
+using RedditSharp.Things;
+
 namespace DirtBag.Logging {
     class PostRemoval {
         public int RemovalID { get; set; }
@@ -23,15 +20,15 @@ namespace DirtBag.Logging {
         public PostRemoval() {
 
         }
-        public PostRemoval(RedditSharp.Things.ModAction action ) {
+        public PostRemoval(ModAction action ) {
             TimeStamp = action.TimeStamp.Value.ToUniversalTime();
             ModName = action.ModeratorName;
             Reason = action.Details;
         }
 
         public static DateTime? GetLastProcessedRemovalDate(string sub ) {
-            using ( DbConnection conn = DirtBagConnection.GetConn() ) {
-                string query = "" +
+            using ( var conn = DirtBagConnection.GetConn() ) {
+                var query = "" +
                     "select MAX(TimeStamp) " +
                     "FROM PostRemovals pr " +
                     "inner join UserPosts up on pr.PostID = up.PostID " +
@@ -44,8 +41,8 @@ namespace DirtBag.Logging {
         }
 
         public static UserPost AddRemoval(PostRemoval removal ) {
-            using ( DbConnection conn = DirtBagConnection.GetConn() ) {
-                string query = "" +
+            using ( var conn = DirtBagConnection.GetConn() ) {
+                var query = "" +
                     //"declare @theUserPost Table( " +
                     //"[PostID] INTEGER, " +
                     ////"[UserID] INTEGER NOT NULL, " +
@@ -82,7 +79,7 @@ namespace DirtBag.Logging {
                     removal.ModName,
                     removal.Reason} ).Single();
                 if ( string.IsNullOrEmpty( toReturn.ChannelName ) ) return toReturn;
-                else return null;
+                return null;
             }
         }
 

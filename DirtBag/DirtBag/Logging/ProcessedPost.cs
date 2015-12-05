@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Dapper;
 
 namespace DirtBag.Logging {
@@ -26,7 +23,7 @@ namespace DirtBag.Logging {
         }
 
         public static void SaveProcessedPost( string subName, string postID, string action ) {
-            string query = "" +
+            var query = "" +
                 "insert into ProcessedPosts (SubredditID,PostID,ActionID) " +
                 "select sub.ID, @postID, act.ID " +
                 "from Subreddits sub " +
@@ -43,7 +40,7 @@ namespace DirtBag.Logging {
         }
 
         public static List<ProcessedPost> CheckProcessed( List<string> postIDs ) {
-            string query = "" +
+            var query = "" +
                 "select sub.SubName, p.PostID, act.ActionName as \"Action\" " +
                 "from ProcessedPosts p " +
                 "inner join Subreddits sub on sub.ID = p.SubredditID " +
