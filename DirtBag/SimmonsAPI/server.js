@@ -26,12 +26,34 @@ var db = mongoose.connect;
 // =======================================================================================================
 var router = express.Router();                                          // get an instance of the express router
 
+// middleware to use for all requests
+router.use(function(req, res, next) {
+    // do logging
+    console.log('Something is happening.');
+    next(); //make sure we go to the next routes and dont stop here
+});
+
 // test route to make sure everything is working (accessed at GET htttp://localhost:8080/api
 router.get('/', function (req, res) {
     res.json({ message: 'hooray! welcome to our api!' });
 });
 
 // more routes for SimmonsAPI go here
+router.route('/users')
+    // create a user (accessed at POST http://localhost:1337/api/users
+    .post(function(req, res) {
+        var user = new User();      // create a new instance of the user model
+        user.name = req.body.name;  // set the users name (comes from the request)
+
+        // save the bear and check for errors
+        user.save(function(err) {
+            if (err) {
+                res.send(err);
+            }
+            res.json({ message: 'User created!' });
+        });
+    });
+
 
 // REGISTER ROUTES
 // =======================================================================================================
