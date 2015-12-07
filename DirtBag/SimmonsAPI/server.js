@@ -4,8 +4,8 @@
 // ======================================================================================================
 
 // call the packages we need
-var express = require('express');                               // call express
-var app = express();                                        // define our app using express
+var express = require('express');// call express
+var app = express();// define our app using express
 var bodyParser = require('body-parser');
 var User = require('./app/models/user');
 
@@ -14,7 +14,7 @@ var User = require('./app/models/user');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-var port = process.env.PORT || 8087;                                    // set our port
+var port = process.env.PORT || 8087;// set our port
 
 var mongoose = require('mongoose');
 mongoose.connect('localhost:27017');
@@ -24,7 +24,7 @@ var db = mongoose.connect;
 
 // ROUTES FOR API
 // =======================================================================================================
-var router = express.Router();                                          // get an instance of the express router
+var router = express.Router();// get an instance of the express router
 
 // middleware to use for all requests
 router.use(function(req, res, next) {
@@ -42,18 +42,31 @@ router.get('/', function (req, res) {
 router.route('/users')
     // create a user (accessed at POST http://localhost:1337/api/users
     .post(function(req, res) {
-        var user = new User();      // create a new instance of the user model
-        user.name = req.body.name;  // set the users name (comes from the request)
+        var user = new User(); // create a new instance of the user model
+        user.userName = req.body.userName; // set the users name (comes from the request)
+        user.accountCreatedDate = req.body.accountCreatedDate;
+        user.isAdmin = req.body.isAdmin;
+        user.lastLogin = req.body.lastLogin;
 
-        // save the bear and check for errors
+        // save the user and check for errors
         user.save(function(err) {
             if (err) {
                 res.send(err);
-            }
+                console.log(err);
+                return;
+            };
             res.json({ message: 'User created!' });
         });
+    })
+    //get all users (accessed at GET http://localhost:1337/api/users
+    .get(function(req, res) {
+        User.find(function(err, users) {
+            if (err) {
+                res.send(err);
+            };
+            res.json(users);
+        });
     });
-
 
 // REGISTER ROUTES
 // =======================================================================================================
