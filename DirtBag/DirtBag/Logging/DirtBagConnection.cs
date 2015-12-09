@@ -32,17 +32,23 @@ namespace DirtBag.Logging {
             }
 
             using ( var con = GetConn() ) {
-                var initTables = "" +
-                    "CREATE TABLE IF NOT EXISTS [SubReddits]( " +
-                    "[ID] INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
-                    "[SubName] varchar(50) NOT NULL); " +
-                    "" +
-                    "CREATE TABLE IF NOT EXISTS [Actions]( " +
-                    "[ID] INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
-                    "[ActionName] varchar(50) NOT NULL); " +
-                    "" +
-                    "CREATE TABLE IF NOT EXISTS [ProcessedPosts]( " +
-                    "[ID] INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
+                var initTables = "";
+                if ( UseLocalDB ) initTables += "CREATE TABLE IF NOT EXISTS ";
+                else initTables += "if not exists( select * from sys.tables t join sys.schemas s on ( t.schema_id = s.schema_id ) where s.name = SCHEMA_NAME() and t.name = 'Subreddits' ) Create table ";
+                initTables += "" +
+                    "[SubReddits]( [ID] INTEGER NOT NULL PRIMARY KEY " + ( UseLocalDB ? "AUTOINCREMENT" : "IDENTITY" ) + ", " +
+                    "[SubName] varchar(50) NOT NULL); ";
+                if ( UseLocalDB ) initTables += "CREATE TABLE IF NOT EXISTS ";
+                else initTables += "if not exists( select * from sys.tables t join sys.schemas s on ( t.schema_id = s.schema_id ) where s.name = SCHEMA_NAME() and t.name = 'Actions' ) Create table ";
+                initTables += "" +
+                    "[Actions]( " +
+                    "[ID] INTEGER NOT NULL PRIMARY KEY " + (UseLocalDB?"AUTOINCREMENT":"IDENTITY") +", " +
+                    "[ActionName] varchar(50) NOT NULL); ";
+                if ( UseLocalDB ) initTables += "CREATE TABLE IF NOT EXISTS ";
+                else initTables += "if not exists( select * from sys.tables t join sys.schemas s on ( t.schema_id = s.schema_id ) where t.name = 'ProcessedPosts' ) Create table ";
+                initTables += "" +
+                    "[ProcessedPosts]( " +
+                    "[ID] INTEGER NOT NULL PRIMARY KEY " + ( UseLocalDB ? "AUTOINCREMENT" : "IDENTITY" ) + ", " +
                     "[SubredditID] INTEGER NOT NULL, " +
                     "[PostID] varchar(20) NOT NULL, " +
                     "[ActionID] INTEGER ); " +
@@ -50,7 +56,9 @@ namespace DirtBag.Logging {
                 con.Execute( initTables );
 
                 var subs = "('" + string.Join( "'),('", subreddits ) + "') ";
-                var seedData = "" +
+                var seedData = "";
+                if ( UseLocalDB ) {
+                    seedData +=
                     "INSERT INTO SubReddits (SubName) " +
                     "values " + subs +
                     "EXCEPT " +
@@ -61,7 +69,21 @@ namespace DirtBag.Logging {
                     "EXCEPT " +
                     "SELECT ActionName from Actions" +
                     ";";
-
+                }
+                else {
+                    seedData +=
+                    "MERGE Subreddits WITH (HOLDLOCK) AS s " +
+                    "Using (VALUES " + subs + ") AS ns (SubName) " +
+                    "ON s.SubName = ns.SubName " +
+                    "WHEN NOT MATCHED BY TARGET THEN " +
+                    "INSERT (SubName) VALUES (ns.SubName); " +
+                    "" +
+                    "MERGE Actions WITH (HOLDLOCK) AS v " +
+                    "Using (VALUES ('Report'),('Remove')) AS nv (Action) " +
+                    "ON v.ActionName = nv.Action " +
+                    "WHEN NOT MATCHED BY TARGET THEN " +
+                    "INSERT (ActionName) VALUES (nv.Action); ";
+                }
                 con.Execute( seedData );
 
             }
