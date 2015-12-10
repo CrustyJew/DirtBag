@@ -17,8 +17,8 @@ app.use(bodyParser.json());
 var port = process.env.PORT || 8087;// set our port
 
 var mongoose = require('mongoose');
-mongoose.connect('localhost:27017');
-var db = mongoose.connect;
+mongoose.connect('mongodb://localhost:27017/Simmons');
+var db = mongoose.connection;
 
 
 
@@ -67,6 +67,20 @@ router.route('/users')
             res.json(users);
         });
     });
+
+
+router.route('/users/:user_id')
+
+    // get user with that id (accessed at GET http://localhost:1337/api/users/:user_id)
+    .get(function (req, res) {
+        User.findById(req.params.user_id, function(err, user) {
+            if (err) {
+                res.send(err);
+            };
+            res.json(user);
+        });
+    });
+
 
 // REGISTER ROUTES
 // =======================================================================================================
