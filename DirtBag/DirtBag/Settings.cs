@@ -5,6 +5,7 @@ using DirtBag.Modules;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using RedditSharp;
+using System.Net;
 
 namespace DirtBag {
     [Serializable]
@@ -51,11 +52,19 @@ namespace DirtBag {
             try {
                 settingsPage = wiki.GetPage( WikipageName );
             }
-            catch {
-                //Page doesn't exist, create it with defaults.
-                CreateWikiPage( wiki );
-                OnSettingsModified?.Invoke( this, EventArgs.Empty );
-                return;
+            catch(WebException ex) {
+                if ( ( ex.Response as HttpWebResponse ).StatusCode == HttpStatusCode.NotFound ) {
+                    //Page doesn't exist, create it with defaults.
+                    CreateWikiPage( wiki );
+                    OnSettingsModified?.Invoke( this, EventArgs.Empty );
+                    return;
+                }
+                else if ( ( ex.Response as HttpWebResponse ).StatusCode == HttpStatusCode.Unauthorized){
+                    throw new Exception( "Bot needs wiki permissions yo!" );
+                }
+                else { //todo retry handling?
+                    throw;
+                }
             }
             if ( string.IsNullOrEmpty( settingsPage.MarkdownContent ) ) {
                 CreateWikiPage( wiki );
