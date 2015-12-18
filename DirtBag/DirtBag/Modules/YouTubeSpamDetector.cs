@@ -119,8 +119,9 @@ namespace DirtBag.Modules {
                         foreach ( var channel in chanResponse.Items ) {
                             //if the channel was created less than the settings.ChannelAgeThreshold days ago
                             DateTime channelCreationDate = channel.Snippet.PublishedAt.HasValue ? channel.Snippet.PublishedAt.Value : DateTime.UtcNow;
-                            if ( channelCreationDate.AddDays( settings.ChannelAgeThreshold.Value ) >= DateTime.UtcNow ) {
-                                foreach ( var post in channels[channel.Id] ) {
+                            foreach ( var post in channels[channel.Id] ) {
+                                if ( channelCreationDate.AddDays( settings.ChannelAgeThreshold.Value ) >= post.CreatedUTC ) {
+                                
                                     //Add the score to the posts
                                     toReturn[post.Id].Scores.Add( new AnalysisScore( chanAgeScore, "Channel Age Below Threshold", "Channel Age", ModuleName ) );
                                 }

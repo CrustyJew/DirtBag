@@ -234,7 +234,7 @@ namespace DirtBag {
                     reply.AppendLine();
                     var action = "None";
                     if ( Settings.RemoveScoreThreshold > 0 && result.TotalScore > Settings.RemoveScoreThreshold ) action = "Remove";
-                    if ( Settings.ReportScoreThreshold > 0 && result.TotalScore > Settings.ReportScoreThreshold ) action = "Report";
+                    else if ( Settings.ReportScoreThreshold > 0 && result.TotalScore > Settings.ReportScoreThreshold ) action = "Report";
                     reply.AppendLine($"##Action Taken: {action} with a score of {result.TotalScore}");
                     reply.AppendLine();
                     reply.AppendLine(
