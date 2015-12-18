@@ -144,6 +144,8 @@ namespace DirtBag.Modules {
         [JsonProperty]
         public int EveryXRuns { get; set; }
         [JsonProperty]
+        Flair RemovalFlair { get; set; }
+        [JsonProperty]
         public string[] MatchTerms { get; set; }
         [JsonProperty]
         public Dictionary<string, string> KnownLicensers { get; set; }
@@ -162,6 +164,7 @@ namespace DirtBag.Modules {
             MatchTerms = new[] { "jukin", "licensing", "break.com", "storyful", "rumble", "newsflare", "visualdesk", "viral spiral", "viralspiral", "rightser", "to use this video in a commercial", "media enquiries" };
             //These are case sensitive for friendly name matching
             KnownLicensers = new Dictionary<string, string> { { "H7XeNNPkVV3JZxXm-O-MCA", "Jukin Media" }, { "Newsflare", "Newsflare" }, { "3339WgBDKIcxTfywuSmG8w", "ViralHog" }, { "Storyful", "Storyful" }, { "rumble", "Rumble" }, { "Rightster_Entertainment_Affillia", "Viral Spiral" }, { "Break", "Break" } };
+            RemovalFlair = new Flair() { Class = "red", Priority = 1, Text = "R10" };
         }
     }
 }

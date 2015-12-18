@@ -155,6 +155,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Flair.cs" />
     <Compile Include="Helpers\PostEqualityComparer.cs" />
     <Compile Include="Helpers\RedditWebAgent.cs" />
     <Compile Include="Helpers\YouTubeHelpers.cs" />

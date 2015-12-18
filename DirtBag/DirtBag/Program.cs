@@ -162,6 +162,9 @@ namespace DirtBag {
 
                 if ( resultVal.TotalScore >= Settings.RemoveScoreThreshold && Settings.RemoveScoreThreshold > 0 ) {
                     resultVal.Post.Remove();
+                    if ( resultVal.HasFlair ) {
+                        resultVal.Post.SetFlair( resultVal.FlairText, resultVal.FlairClass );
+                    }
                     try {
                         ProcessedPost.SaveProcessedPost( Settings.Subreddit, resultVal.Post.Id, "Remove" ); //change to enum at some point
                     }

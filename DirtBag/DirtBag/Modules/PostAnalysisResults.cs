@@ -18,7 +18,28 @@ namespace DirtBag.Modules {
 				return reason;
 			}
 		}
-		public Post Post { get; set; }
+        public bool HasFlair {
+            get {
+                return Scores.Where( f => f.RemovalFlair != null ).Count() > 0;
+            }
+        }
+        public string FlairText {
+            get {
+                return string.Join( " // ", Scores.Where( f => f.RemovalFlair != null ).Select( f => f.RemovalFlair.Text ) );
+            }
+        }
+
+        public string FlairClass {
+            get {
+                Flair highestPrio = null;
+                foreach(Flair f in Scores.Where( f => f.RemovalFlair != null ).Select(s=>s.RemovalFlair) ) {
+                    if ( highestPrio == null || f.Priority < highestPrio.Priority ) highestPrio = f;
+                }
+                return highestPrio.Class;
+            }
+        }
+
+        public Post Post { get; set; }
 
 		public List<AnalysisScore> Scores { get; set; }
 

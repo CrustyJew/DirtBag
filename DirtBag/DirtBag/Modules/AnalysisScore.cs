@@ -3,7 +3,8 @@
 		public double Score { get; set; }
 		public string Reason { get; set; }
 		public string ReportReason { get; set; }
-		public string ModuleName { get; set; }
+        public Flair RemovalFlair { get; set; }
+        public string ModuleName { get; set; }
 		public AnalysisScore() {
 			Score = 0;
 			Reason = "";
@@ -15,6 +16,8 @@
 			ReportReason = reportReason;
 			ModuleName = moduleName;
 		}
-		
-	}
+
+        
+    }
+
 }
