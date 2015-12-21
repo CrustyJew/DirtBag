@@ -25,7 +25,7 @@ namespace DirtBag.Modules {
         }
         public string FlairText {
             get {
-                return string.Join( " // ", Scores.Where( f => f.RemovalFlair != null ).Select( f => f.RemovalFlair.Text ) );
+                return string.Join( " / ", Scores.Where( f => f.RemovalFlair != null ).Select( f => f.RemovalFlair.Text ).Distinct() );
             }
         }
 

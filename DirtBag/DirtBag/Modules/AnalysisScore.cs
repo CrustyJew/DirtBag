@@ -10,14 +10,20 @@
 			Reason = "";
 			ModuleName = "";
 		}
-		public AnalysisScore(double score, string reason,string reportReason, string moduleName ) {
+		public AnalysisScore(double score, string reason, string reportReason, string moduleName ) {
 			Score = score;
 			Reason = reason;
 			ReportReason = reportReason;
 			ModuleName = moduleName;
 		}
 
-        
+        public AnalysisScore( double score, string reason, string reportReason, string moduleName, Flair removalFlair )
+            :this(score,reason,reportReason,moduleName) {
+
+            RemovalFlair = removalFlair;
+        }
+
+
     }
 
 }

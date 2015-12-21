@@ -9,5 +9,15 @@ namespace DirtBag {
         public string Text { get; set; }
         public string Class { get; set; }
         public int Priority { get; set; }
+        public Flair() {
+
+        }
+        public Flair(string text, string cssClass, int priority ) {
+            Text = text;
+            Class = cssClass;
+            Priority = priority;
+        }
     }
+
+    
 }

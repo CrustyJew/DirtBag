@@ -34,7 +34,7 @@ namespace DirtBag {
 
         public event EventHandler OnSettingsModified;
 
-        private const string WikipageName = "dirtbagtest";
+        private const string WikipageName = "dirtbag";
         private const int FortyFiveMinutes = 2700000;
 
         public void Initialize( Reddit r ) {

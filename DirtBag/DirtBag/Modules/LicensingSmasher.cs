@@ -24,6 +24,7 @@ namespace DirtBag.Modules {
         public string YouTubeAPIKey { get; set; }
         public List<string> TermsToMatch { get; set; }
         public Dictionary<string, string> KnownLicensers { get; set; }
+        public Flair RemovalFlair { get; set; }
         public LicensingSmasher() {
             var key = ConfigurationManager.AppSettings["YouTubeAPIKey"];
             if ( string.IsNullOrEmpty( key ) ) throw new Exception( "Provide setting 'YouTubeAPIKey' in AppConfig" );
@@ -35,6 +36,7 @@ namespace DirtBag.Modules {
             TermsToMatch = settings.MatchTerms.ToList();
             KnownLicensers = settings.KnownLicensers;
             Settings = settings;
+            RemovalFlair = settings.RemovalFlair;
             TermMatching = new Regex( string.Join( "|", settings.MatchTerms ), RegexOptions.IgnoreCase );
             LicenserMatching = new Regex( "^" + string.Join( "$|^", settings.KnownLicensers.Keys ) + "$", RegexOptions.IgnoreCase );
         }
@@ -48,7 +50,6 @@ namespace DirtBag.Modules {
         private Regex LicenserMatching;
         public async Task<Dictionary<string, PostAnalysisResults>> Analyze( List<Post> posts ) {
             return await Task.Run( async () => {
-
                 var toReturn = new Dictionary<string, PostAnalysisResults>();
                 var youTubePosts = new Dictionary<string, List<Post>>();
 
@@ -80,7 +81,7 @@ namespace DirtBag.Modules {
                         termMatches.AddRange( TermMatching.Matches( vid.Snippet.Title ).Cast<Match>().Select( m => m.Value ).ToList().Distinct() );
                         if ( termMatches.Count > 0 ) {
                             foreach ( var post in redditPosts ) {
-                                toReturn[post.Id].Scores.Add( new AnalysisScore( STRINGMATCH_SCORE * Settings.ScoreMultiplier, "YouTube video title or description has the following term(s): " + string.Join( ", ", termMatches ), "Match: " + string.Join( ", ", termMatches ), ModuleName ) );
+                                toReturn[post.Id].Scores.Add( new AnalysisScore( STRINGMATCH_SCORE * Settings.ScoreMultiplier, "YouTube video title or description has the following term(s): " + string.Join( ", ", termMatches ), "Match: " + string.Join( ", ", termMatches ), ModuleName, RemovalFlair ) );
                             }
                         }
 
@@ -126,7 +127,7 @@ namespace DirtBag.Modules {
                 var match = LicenserMatching.Match( owner ).Value;
                 score = new AnalysisScore( ATTRIBUTION_SCORE * Settings.ScoreMultiplier, string.Format( "Video is monetized by '{0}'", owner ), "Monetized", ModuleName );
                 if ( !string.IsNullOrEmpty( match ) ) {
-                    score = new AnalysisScore( ATTRIBUTION_MATCH_SCORE * Settings.ScoreMultiplier, string.Format( "Video is licensed through a network : '{0}'", KnownLicensers[match] ), string.Format( "Video licensed by '{0}'", KnownLicensers[match] ), ModuleName );
+                    score = new AnalysisScore( ATTRIBUTION_MATCH_SCORE * Settings.ScoreMultiplier, string.Format( "Video is licensed through a network : '{0}'", KnownLicensers[match] ), string.Format( "Video licensed by '{0}'", KnownLicensers[match] ), ModuleName, RemovalFlair );
                     return score;
                 }
 
@@ -144,7 +145,7 @@ namespace DirtBag.Modules {
         [JsonProperty]
         public int EveryXRuns { get; set; }
         [JsonProperty]
-        Flair RemovalFlair { get; set; }
+        public Flair RemovalFlair { get; set; }
         [JsonProperty]
         public string[] MatchTerms { get; set; }
         [JsonProperty]

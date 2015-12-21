@@ -201,7 +201,6 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
     <None Include="lib\RedditSharp.dll" />
     <None Include="lib\RedditSharp.pdb" />
