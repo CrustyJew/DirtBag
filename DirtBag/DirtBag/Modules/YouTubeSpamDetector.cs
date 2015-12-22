@@ -25,10 +25,13 @@ namespace DirtBag.Modules {
 
         private const int MAX_MODULE_SCORE = 10;
 
+        private Dictionary<string, int> processedCache;
+
         public YouTubeSpamDetector() {
             var key = ConfigurationManager.AppSettings["YouTubeAPIKey"];
             if ( string.IsNullOrEmpty( key ) ) throw new Exception( "Provide setting 'YouTubeAPIKey' in AppConfig" );
             YouTubeAPIKey = key;
+            processedCache = new Dictionary<string, int>();
         }
 
         public YouTubeSpamDetector( YouTubeSpamDetectorSettings settings, Reddit reddit, string sub ) : this() {
@@ -41,15 +44,17 @@ namespace DirtBag.Modules {
             return await Task.Run( () => {
                 var toReturn = new Dictionary<string, PostAnalysisResults>();
                 var youTubePosts = new Dictionary<string, List<Post>>();
-                foreach ( var post in posts ) {
-                    toReturn.Add( post.Id, new PostAnalysisResults( post ) );
+                foreach ( var post in posts.Where( p => !processedCache.ContainsKey( p.Id ) ) ) {
                     var ytID = YouTubeHelpers.ExtractVideoId( post.Url.ToString() );
 
                     if ( !string.IsNullOrEmpty( ytID ) ) {
+                        toReturn.Add( post.Id, new PostAnalysisResults( post ) );
                         if ( !youTubePosts.ContainsKey( ytID ) ) youTubePosts.Add( ytID, new List<Post>() );
                         youTubePosts[ytID].Add( post );
                     }
                 }
+
+
                 var yt = new YouTubeService( new BaseClientService.Initializer { ApiKey = YouTubeAPIKey } );
 
                 var req = yt.Videos.List( "snippet,contentDetails,statistics" );
@@ -121,7 +126,7 @@ namespace DirtBag.Modules {
                             DateTime channelCreationDate = channel.Snippet.PublishedAt.HasValue ? channel.Snippet.PublishedAt.Value : DateTime.UtcNow;
                             foreach ( var post in channels[channel.Id] ) {
                                 if ( channelCreationDate.AddDays( settings.ChannelAgeThreshold.Value ) >= post.CreatedUTC ) {
-                                
+
                                     //Add the score to the posts
                                     toReturn[post.Id].Scores.Add( new AnalysisScore( chanAgeScore, "Channel Age Below Threshold", "Channel Age", ModuleName ) );
                                 }
@@ -130,8 +135,25 @@ namespace DirtBag.Modules {
                     }
 
                 }
+                ManageCache( posts ); //after loop to avoid issues if it fails TODO error handle this mofo, Azure just restarts so it ghetto works for now
                 return toReturn;
             } );
+        }
+
+        private void ManageCache( List<Post> posts ) {
+
+            IEnumerable<string> postIDs = posts.Select( p => p.Id );
+            foreach ( var notSeen in processedCache.Where( c => !postIDs.Contains( c.Key ) ).ToArray() ) {
+                processedCache[notSeen.Key]++;
+            }
+            foreach ( string id in postIDs ) {
+                if ( processedCache.ContainsKey( id ) ) processedCache[id] = 0;
+                else processedCache.Add( id, 0 );
+            }
+            foreach ( var expired in processedCache.Where( c => c.Value > 3 ).ToArray() ) {
+                processedCache.Remove( expired.Key );
+            }
+
         }
     }
 

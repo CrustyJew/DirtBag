@@ -55,7 +55,7 @@ namespace DirtBag {
 
             Auth.Login();
             Agent.AccessToken = Auth.AccessToken;
-            //BurstDebug = new Timer( CheckBurstStats, Agent, 0, 20000 );
+            BurstDebug = new Timer( CheckBurstStats, Agent, 0, 20000 );
             Client = new Reddit( Agent, true );
 
             Settings = new BotSettings();
