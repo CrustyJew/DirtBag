@@ -34,10 +34,12 @@ namespace DirtBag {
 
         public event EventHandler OnSettingsModified;
 
-        private const string WikipageName = "dirtbag";
+        private static string WikiPageName = "dirtbag";
         private const int FortyFiveMinutes = 2700000;
 
         public void Initialize( Reddit r ) {
+            if ( string.IsNullOrEmpty(System.Configuration.ConfigurationManager.AppSettings["WikiPageName"] ) ) throw new Exception( "Provide setting 'WikiPageName' in AppConfig to store bot settings." );
+            WikiPageName = System.Configuration.ConfigurationManager.AppSettings["WikiPageName"];
             LastModified = new DateTime( 1900, 1, 1, 1, 1, 1 );
             var state = new SettingsTimerState
             {
@@ -50,7 +52,7 @@ namespace DirtBag {
             var wiki = r.GetSubreddit( Subreddit ).Wiki;
             WikiPage settingsPage;
             try {
-                settingsPage = wiki.GetPage( WikipageName );
+                settingsPage = wiki.GetPage( WikiPageName );
             }
             catch(WebException ex) {
                 if ( ( ex.Response as HttpWebResponse ).StatusCode == HttpStatusCode.NotFound ) {
@@ -112,7 +114,7 @@ namespace DirtBag {
                 }
                 /***End Module Defaults ***/
                 if ( addedDefaults ) {
-                    wiki.EditPage( WikipageName, JsonConvert.SerializeObject( this, Formatting.Indented, new StringEnumConverter()).Replace( "\r\n  ", "\r\n\r\n    " ), reason: "Add module default" );
+                    wiki.EditPage( WikiPageName, JsonConvert.SerializeObject( this, Formatting.Indented, new StringEnumConverter()).Replace( "\r\n  ", "\r\n\r\n    " ), reason: "Add module default" );
                     LastModified = DateTime.UtcNow.AddMinutes( 1 );
                 }
                 Console.WriteLine("Settings in wiki changed or read for first time : Revision Date = {0}", LastModified);
@@ -136,8 +138,8 @@ namespace DirtBag {
             YouTubeSpamDetector = new YouTubeSpamDetectorSettings();
             UserStalker = new UserStalkerSettings();
             /*** End Module Settings ***/
-            wiki.EditPage( WikipageName, JsonConvert.SerializeObject( this, Formatting.Indented, new StringEnumConverter()).Replace("\r\n  ","\r\n\r\n    ") );
-            wiki.SetPageSettings( WikipageName, new WikiPageSettings { Listed = false, PermLevel = 2 } );
+            wiki.EditPage( WikiPageName, JsonConvert.SerializeObject( this, Formatting.Indented, new StringEnumConverter()).Replace("\r\n  ","\r\n\r\n    ") );
+            wiki.SetPageSettings( WikiPageName, new WikiPageSettings { Listed = false, PermLevel = 2 } );
         }
         private static void SettingsTimer( object s ) {
             var state = (SettingsTimerState) s;

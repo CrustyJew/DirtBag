@@ -34,7 +34,10 @@ namespace DirtBag {
             var sub = ConfigurationManager.AppSettings["Subreddit"];
             conn.InitializeConnection(new[] { sub });
             Initialize();
-
+            while( true ) {
+                var x = Console.ReadLine();
+                System.Diagnostics.Debug.WriteLine( x );
+            }
             WaitHandle.WaitOne(); //Go the fuck to sleep
 
         }

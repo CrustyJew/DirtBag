@@ -36,7 +36,8 @@ namespace DirtBag.Logging {
                     "up.Subreddit = @sub ";
                 var time = conn.Query<DateTime?>( query, new { sub } ).Single();
                 if ( !time.HasValue ) return null;
-                return time.Value.ToUniversalTime();
+                if ( DirtBagConnection.UseLocalDB ) return time.Value.ToUniversalTime();
+                else return time.Value;
             }
         }
 
@@ -52,8 +53,8 @@ namespace DirtBag.Logging {
                     //"[ChannelName] varchar(200), " +
                     //"[Subreddit] varchar(100) ) " +
                     //"" +
-                    "insert into UserPosts (UserName,Link,ChannelID,ChannelName,Subreddit) " +
-                    "select @UserName, @Link, @ChannelID, @ChannelName, @Subreddit " +
+                    "insert into UserPosts (UserName,ThingID,Link,PostTime,ChannelID,ChannelName,Subreddit) " +
+                    "select @UserName, @ThingID, @Link, @PostTime, @ChannelID, @ChannelName, @Subreddit " +
                     "WHERE NOT EXISTS " +
                     "(select PostID from UserPosts where Link = @Link) " +
                     "; " +
@@ -71,7 +72,9 @@ namespace DirtBag.Logging {
 
                 var toReturn = conn.Query<UserPost>( query, new {
                     removal.Post.UserName,
+                    removal.Post.ThingID,
                     removal.Post.Link,
+                    removal.Post.PostTime,
                     removal.Post.ChannelID,
                     removal.Post.ChannelName,
                     removal.Post.Subreddit,

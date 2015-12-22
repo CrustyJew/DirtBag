@@ -53,7 +53,7 @@ namespace DirtBag.Modules {
 
                     foreach ( var vid in response.Items ) {
                         foreach ( var post in youTubePosts[vid.Id] ) {
-                            UserPost.InsertPost( new UserPost { ChannelID = vid.Snippet.ChannelId, ChannelName = vid.Snippet.ChannelTitle, Link = post.Permalink.ToString(), UserName = post.AuthorName, Subreddit = post.SubredditName } );
+                            UserPost.InsertPost( new UserPost { ChannelID = vid.Snippet.ChannelId, ChannelName = vid.Snippet.ChannelTitle, ThingID = post.Id, Link = post.Url.ToString(), PostTime = post.CreatedUTC, UserName = post.AuthorName, Subreddit = post.SubredditName } );
                         }
                     }
                 }
@@ -69,7 +69,9 @@ namespace DirtBag.Modules {
                         var post = RedditClient.GetThingByFullname( modAct.TargetThingFullname ) as Post;
 
                         var userPost = new UserPost();
-                        userPost.Link = post.Permalink.ToString();
+                        userPost.ThingID = post.Id;
+                        userPost.Link = post.Url.ToString();
+                        userPost.PostTime = post.CreatedUTC;
                         userPost.UserName = post.AuthorName;
                         userPost.Subreddit = Subreddit;
 
@@ -78,28 +80,23 @@ namespace DirtBag.Modules {
 
                         var newPost = PostRemoval.AddRemoval( removal );
                         if ( newPost != null ) {
-                            if ( post.Url.Host.ToLower().Contains( "youtube" ) || post.Url.Host.ToLower().Contains( "youtu.bu" ) ) {
-                                var ytID = YouTubeHelpers.ExtractVideoId( post.Url.ToString() );
-                                if ( !string.IsNullOrEmpty( ytID ) ) {
-                                    if ( !newPosts.ContainsKey( ytID ) ) newPosts.Add( ytID, new List<UserPost>() );
-                                    newPosts[ytID].Add( newPost );
-                                }
+
+                            var ytID = YouTubeHelpers.ExtractVideoId( post.Url.ToString() );
+                            if ( !string.IsNullOrEmpty( ytID ) ) {
+                                if ( !newPosts.ContainsKey( ytID ) ) newPosts.Add( ytID, new List<UserPost>() );
+                                newPosts[ytID].Add( newPost );
                             }
+
+                        }
+
+                        if(processedCount % 75 == 0 ) {
+                            UpdateChannels( newPosts, req );
+                            newPosts.Clear();
                         }
                     }
 
+                    UpdateChannels( newPosts, req );
 
-                    for ( var i = 0; i < newPosts.Keys.Count; i += 50 ) {
-                        req.Id = string.Join( ",", newPosts.Keys.Skip( i ).Take( 50 ) );
-                        var response = req.Execute();
-                        foreach ( var vid in response.Items ) {
-                            foreach ( var upost in newPosts[vid.Id] ) {
-                                upost.ChannelID = vid.Snippet.ChannelId;
-                                upost.ChannelName = vid.Snippet.ChannelTitle;
-                                UserPost.UpdatePost( upost );
-                            }
-                        }
-                    }
                 } );
 
 
@@ -109,36 +106,59 @@ namespace DirtBag.Modules {
         public void InitDatabase() {
             //Database is denormalized due to the impractical constraints of ensuring users and channels are loaded before
             //loading a post or a removal for a user. Normalizing as it is right now may actually reduce performance
-            //and would certainly into more issues than it is probably worth unless more info is tacked on to some of the 
+            //and would certainly introduce more issues than it is probably worth unless more info is tacked on to some of the 
             //categories later on.
             using ( var con = DirtBagConnection.GetConn() ) {
+                bool useLocalDB = DirtBagConnection.UseLocalDB;
                 var initTables = "" +
-                    "CREATE TABLE IF NOT EXISTS [UserPosts]( " +
-                    "[PostID] INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
+                    ( useLocalDB ?
+                        "CREATE TABLE IF NOT EXISTS " :
+                        "if not exists( select * from sys.tables t join sys.schemas s on ( t.schema_id = s.schema_id ) where s.name = SCHEMA_NAME() and t.name = 'UserPosts' ) Create table "
+                    ) +
+                    "[UserPosts]([PostID] INTEGER NOT NULL PRIMARY KEY " + ( useLocalDB ? "AUTOINCREMENT" : "IDENTITY" ) + ", " +
                     //"[UserID] INTEGER NOT NULL, " +
-                    "[UserName] varchar(50), " +
-                    "[Link] varchar(200), " +
+                    "[UserName] nvarchar(50), " +
+                    "[ThingID] varchar(10), " +
+                    "[Link] nvarchar(200), " +
+                    "[PostTime] DATETIME, " +
                     "[ChannelID] varchar(100), " +
-                    "[ChannelName] varchar(200), " +
-                    "[Subreddit] varchar(100) );" +
+                    "[ChannelName] nvarchar(200), " +
+                    "[Subreddit] Nvarchar(100) ); " +
                     "" +
-                    "CREATE TABLE IF NOT EXISTS [PostRemovals]( " +
-                    "[RemovalID] INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
+                    ( useLocalDB ?
+                        "CREATE TABLE IF NOT EXISTS " :
+                        "if not exists( select * from sys.tables t join sys.schemas s on ( t.schema_id = s.schema_id ) where s.name = SCHEMA_NAME() and t.name = 'PostRemovals' ) Create table "
+                    ) +
+                    "[PostRemovals]([RemovalID] INTEGER NOT NULL PRIMARY KEY " + ( useLocalDB ? "AUTOINCREMENT" : "IDENTITY" ) + ", " +
                     "[TimeStamp] DATETIME, " +
                     "[PostID] INTEGER NOT NULL, " +
-                    "[ModName] VARCHAR(50), " +
-                    "[Reason] VARCHAR(200) ); " +
+                    "[ModName] NVARCHAR(50), " +
+                    "[Reason] NVARCHAR(200) ); " +
                     "" +
                     //"CREATE TABLE IF NOT EXISTS [Channels]( " +
                     //"[ChannelID] INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
                     //"[Identifier] VARCHAR(100) NOT NULL, " +
                     //"[Name] varchar(200) NOT NULL ); " +
                     "" +
-                    "CREATE TABLE IF NOT EXISTS [Users]( " +
-                    "[UserID] INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
-                    "[UserName] VARCHAR(50) ); " +
+                    //"CREATE TABLE IF NOT EXISTS [Users]( " +
+                    //"[UserID] INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
+                    //"[UserName] VARCHAR(50) ); " +
                     "";
                 con.Execute( initTables );
+            }
+        }
+
+        private void UpdateChannels( Dictionary<string, List<UserPost>> newPosts, VideosResource.ListRequest req) {
+            for ( var i = 0; i < newPosts.Keys.Count; i += 50 ) {
+                req.Id = string.Join( ",", newPosts.Keys.Skip( i ).Take( 50 ) );
+                var response = req.Execute();
+                foreach ( var vid in response.Items ) {
+                    foreach ( var upost in newPosts[vid.Id] ) {
+                        upost.ChannelID = vid.Snippet.ChannelId;
+                        upost.ChannelName = vid.Snippet.ChannelTitle;
+                        UserPost.UpdatePost( upost );
+                    }
+                }
             }
         }
 

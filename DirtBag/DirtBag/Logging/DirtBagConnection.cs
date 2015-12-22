@@ -8,7 +8,7 @@ using Dapper;
 
 namespace DirtBag.Logging {
     class DirtBagConnection {
-        public bool UseLocalDB { get; set; }
+        public static bool UseLocalDB { get; set; }
         public string SQLConnString { get; set; }
         public string LocalDBFile { get; set; }
 
