@@ -4,6 +4,7 @@ namespace DirtBag.Helpers {
     class YouTubeHelpers {
         public static string ExtractVideoId(string url ) {
             string id = null;
+            url = System.Net.WebUtility.UrlDecode( url ); //decode for attribution links
             var lowerUrl = url.ToLower();
             if ( lowerUrl.Contains( "youtube" ) ) {
                 //it's a YouTube link
