@@ -19,10 +19,12 @@ namespace DirtBag.Modules {
         public Reddit RedditClient { get; set; }
         public string Subreddit { get; set; }
         public string YouTubeAPIKey { get; set; }
+        private Dictionary<string, int> processedCache;
         public UserStalker() {
             var key = ConfigurationManager.AppSettings["YouTubeAPIKey"];
             if ( string.IsNullOrEmpty( key ) ) throw new Exception( "Provide setting 'YouTubeAPIKey' in AppConfig" );
             YouTubeAPIKey = key;
+            processedCache = new Dictionary<string, int>();
             InitDatabase();
         }
         public UserStalker( UserStalkerSettings settings, Reddit reddit, string sub ) : this() {
@@ -35,7 +37,7 @@ namespace DirtBag.Modules {
             return await Task.Run( () => {
                 var toReturn = new Dictionary<string, PostAnalysisResults>();
                 var youTubePosts = new Dictionary<string, List<Post>>();
-                foreach ( var post in posts ) {
+                foreach ( var post in posts.Where(p=> !processedCache.Keys.Contains( p.Id ) ) ) {
                     toReturn.Add( post.Id, new PostAnalysisResults( post ) );
                     var ytID = YouTubeHelpers.ExtractVideoId( post.Url.ToString() );
 
@@ -44,6 +46,7 @@ namespace DirtBag.Modules {
                         youTubePosts[ytID].Add( post );
                     }
                 }
+                ManageCache( posts );
                 var yt = new YouTubeService( new BaseClientService.Initializer { ApiKey = YouTubeAPIKey } );
 
                 var req = yt.Videos.List( "snippet" );
@@ -60,10 +63,10 @@ namespace DirtBag.Modules {
                 Task.Run( () => {
                     var lastRemoval = PostRemoval.GetLastProcessedRemovalDate( Subreddit );
                     var processedCount = 0;
-                    var modActions = RedditClient.GetSubreddit( Subreddit ).GetModerationLog( ModActionType.RemoveLink ).GetListing( 5000, 100 );
+                    var modActions = RedditClient.GetSubreddit( Subreddit ).GetModerationLog( ModActionType.RemoveLink ).GetListing( 300, 100 );
                     var newPosts = new Dictionary<string, List<UserPost>>();
                     foreach ( var modAct in modActions ) {
-                        if ( modAct.TimeStamp <= lastRemoval || processedCount > 2500 ) break;
+                        if ( modAct.TimeStamp <= lastRemoval || processedCount > 100 ) break; //probably dumb and unnecessary
 
                         processedCount++;
                         var post = RedditClient.GetThingByFullname( modAct.TargetThingFullname ) as Post;
@@ -160,6 +163,22 @@ namespace DirtBag.Modules {
                     }
                 }
             }
+        }
+
+        private void ManageCache( List<Post> posts ) {
+
+            IEnumerable<string> postIDs = posts.Select( p => p.Id );
+            foreach ( var notSeen in processedCache.Where( c => !postIDs.Contains( c.Key ) ).ToArray() ) {
+                processedCache[notSeen.Key]++;
+            }
+            foreach ( string id in postIDs ) {
+                if ( processedCache.ContainsKey( id ) ) processedCache[id] = 0;
+                else processedCache.Add( id, 0 );
+            }
+            foreach ( var expired in processedCache.Where( c => c.Value > 3 ).ToArray() ) {
+                processedCache.Remove( expired.Key );
+            }
+
         }
 
 
