@@ -11,20 +11,11 @@ namespace DirtBag.Logging {
         public static UserAnalysis GetUserAnalysis(string UserName ) {
             using(var con = DirtBagConnection.GetConn() ) {
                 var query = "" +
-                    "Select " +
-                    //"usr.UserID, usr.UserName, " +
-                    "up.UserName, " +
-                    "up.PostID, up.UserID, up.Link, " +
-                    "up.ChannelID, up.ChannelName, " + 
-                    //"chans.ChannelID, chans.Identifier, chans.Name " +
-                    "rem.RemovalID,rem.TimeStamp rem.ModName, rem.Reason, rem.PostID " +
-                    //"FROM Users usr " +
-                    //"INNER JOIN UserPosts up on usr.UserID = up.UserID " +
-                    "FROM UserPosts up " +
-                    //"INNER JOIN Channels chans on up.ChannelID = chans.ChannelID " +
-                    "INNER JOIN PostRemovals rem on up.PostID = rem.PostID " +                    
-                    "WHERE " +
-                    "usr.UserName like @UserName";
+                    "Select up.ChannelID,count( up.postID ), count( distinct rem.PostID ) " +
+                    "FROM dirtbag.UserPosts up " +
+                    "left JOIN dirtbag.PostRemovals rem on up.PostID = rem.PostID " +
+                    "where username like @UserName " +
+                    "group by channelid"; 
 
                 var analysis = new UserAnalysis();
                 analysis.UserName = UserName;

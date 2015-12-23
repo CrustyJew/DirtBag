@@ -165,11 +165,13 @@
     <Compile Include="Logging\ProcessedPost.cs" />
     <Compile Include="Logging\UserAnalysis.cs" />
     <Compile Include="Logging\UserPost.cs" />
+    <Compile Include="Logging\UserPostingHistory.cs" />
     <Compile Include="Modules\AnalysisScore.cs" />
     <Compile Include="Modules\IModule.cs" />
     <Compile Include="Modules\IModuleSettings.cs" />
     <Compile Include="Modules\LicensingSmasher.cs" />
     <Compile Include="Modules\PostAnalysisResults.cs" />
+    <Compile Include="Modules\SelfPromotionCombustor.cs" />
     <Compile Include="Modules\UserStalker.cs" />
     <Compile Include="Modules\YouTubeSpamDetector.cs" />
     <Compile Include="PostTypes.cs" />
