@@ -30,6 +30,8 @@ namespace DirtBag {
         public YouTubeSpamDetectorSettings YouTubeSpamDetector { get; set; }
         [JsonProperty]
         public UserStalkerSettings UserStalker { get; set; }
+        [JsonProperty]
+        public SelfPromotionCombustorSettings SelfPromotionCombustor { get; set; }
         /*** END MODULE SETTINGS ***/
 
         public event EventHandler OnSettingsModified;
@@ -112,6 +114,13 @@ namespace DirtBag {
                 else {
                     UserStalker = sets.UserStalker;
                 }
+                if(sets.SelfPromotionCombustor == null ) {
+                    SelfPromotionCombustor = new SelfPromotionCombustorSettings();
+                    addedDefaults = true;
+                }
+                else {
+                    SelfPromotionCombustor = sets.SelfPromotionCombustor;
+                }
                 /***End Module Defaults ***/
                 if ( addedDefaults ) {
                     wiki.EditPage( WikiPageName, JsonConvert.SerializeObject( this, Formatting.Indented, new StringEnumConverter()).Replace( "\r\n  ", "\r\n\r\n    " ), reason: "Add module default" );
@@ -137,6 +146,7 @@ namespace DirtBag {
 			LicensingSmasher = new LicensingSmasherSettings();
             YouTubeSpamDetector = new YouTubeSpamDetectorSettings();
             UserStalker = new UserStalkerSettings();
+            SelfPromotionCombustor = new SelfPromotionCombustorSettings();
             /*** End Module Settings ***/
             wiki.EditPage( WikiPageName, JsonConvert.SerializeObject( this, Formatting.Indented, new StringEnumConverter()).Replace("\r\n  ","\r\n\r\n    ") );
             wiki.SetPageSettings( WikiPageName, new WikiPageSettings { Listed = false, PermLevel = 2 } );

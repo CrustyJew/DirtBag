@@ -49,48 +49,47 @@ namespace DirtBag.Modules {
         private Regex TermMatching;
         private Regex LicenserMatching;
         public async Task<Dictionary<string, PostAnalysisResults>> Analyze( List<Post> posts ) {
-            return await Task.Run( async () => {
-                var toReturn = new Dictionary<string, PostAnalysisResults>();
-                var youTubePosts = new Dictionary<string, List<Post>>();
 
-                foreach ( var post in posts ) {
-                    toReturn.Add( post.Id, new PostAnalysisResults( post ) );
-                    var ytID = YouTubeHelpers.ExtractVideoId( post.Url.ToString() );
+            var toReturn = new Dictionary<string, PostAnalysisResults>();
+            var youTubePosts = new Dictionary<string, List<Post>>();
 
-                    if ( !string.IsNullOrEmpty( ytID ) ) {
-                        if ( !youTubePosts.ContainsKey( ytID ) ) youTubePosts.Add( ytID, new List<Post>() );
-                        youTubePosts[ytID].Add( post );
-                    }
+            foreach ( var post in posts ) {
+                toReturn.Add( post.Id, new PostAnalysisResults( post ) );
+                var ytID = YouTubeHelpers.ExtractVideoId( post.Url.ToString() );
 
+                if ( !string.IsNullOrEmpty( ytID ) ) {
+                    if ( !youTubePosts.ContainsKey( ytID ) ) youTubePosts.Add( ytID, new List<Post>() );
+                    youTubePosts[ytID].Add( post );
                 }
-                var yt = new YouTubeService( new BaseClientService.Initializer { ApiKey = YouTubeAPIKey } );
 
-                var req = yt.Videos.List( "snippet" );
-                for ( var i = 0; i < youTubePosts.Keys.Count; i += 50 ) {
-                    var ids = youTubePosts.Keys.Skip( i ).Take( 50 );
-                    req.Id = string.Join( ",", ids );
+            }
+            var yt = new YouTubeService( new BaseClientService.Initializer { ApiKey = YouTubeAPIKey } );
 
-                    var ytScrape = ScrapeYouTube( youTubePosts.Skip( i ).Take( 50 ).ToDictionary( p => p.Key, p => p.Value ), toReturn );
-                    var response = req.Execute();
+            var req = yt.Videos.List( "snippet" );
+            for ( var i = 0; i < youTubePosts.Keys.Count; i += 50 ) {
+                var ids = youTubePosts.Keys.Skip( i ).Take( 50 );
+                req.Id = string.Join( ",", ids );
 
-                    foreach ( var vid in response.Items ) {
-                        var redditPosts = youTubePosts[vid.Id];
-                        //var scores = toReturn[post.Id].Scores;
+                var ytScrape = ScrapeYouTube( youTubePosts.Skip( i ).Take( 50 ).ToDictionary( p => p.Key, p => p.Value ), toReturn );
+                var response = await req.ExecuteAsync();
 
-                        var termMatches = TermMatching.Matches( vid.Snippet.Description ).Cast<Match>().Select( m => m.Value ).ToList();
-                        termMatches.AddRange( TermMatching.Matches( vid.Snippet.Title ).Cast<Match>().Select( m => m.Value ).ToList().Distinct() );
-                        if ( termMatches.Count > 0 ) {
-                            foreach ( var post in redditPosts ) {
-                                toReturn[post.Id].Scores.Add( new AnalysisScore( STRINGMATCH_SCORE * Settings.ScoreMultiplier, "YouTube video title or description has the following term(s): " + string.Join( ", ", termMatches ), "Match: " + string.Join( ", ", termMatches ), ModuleName, RemovalFlair ) );
-                            }
+                foreach ( var vid in response.Items ) {
+                    var redditPosts = youTubePosts[vid.Id];
+                    //var scores = toReturn[post.Id].Scores;
+
+                    var termMatches = TermMatching.Matches( vid.Snippet.Description ).Cast<Match>().Select( m => m.Value ).ToList();
+                    termMatches.AddRange( TermMatching.Matches( vid.Snippet.Title ).Cast<Match>().Select( m => m.Value ).ToList().Distinct() );
+                    if ( termMatches.Count > 0 ) {
+                        foreach ( var post in redditPosts ) {
+                            toReturn[post.Id].Scores.Add( new AnalysisScore( STRINGMATCH_SCORE * Settings.ScoreMultiplier, "YouTube video title or description has the following term(s): " + string.Join( ", ", termMatches ), "Match: " + string.Join( ", ", termMatches ), ModuleName, RemovalFlair ) );
                         }
-
                     }
-                    await ytScrape;
-                }
 
-                return toReturn;
-            } );
+                }
+                await ytScrape;
+            }
+
+            return toReturn;
         }
 
         private async Task ScrapeYouTube( Dictionary<string, List<Post>> ytPosts, Dictionary<string, PostAnalysisResults> results ) {

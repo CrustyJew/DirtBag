@@ -3,7 +3,7 @@ using Dapper;
 using System;
 
 namespace DirtBag.Logging {
-    public class UserPost {
+    class UserPost {
         public int PostID { get; set; }
         public string UserName { get; set; }
         public string ThingID { get; set; }

@@ -140,7 +140,7 @@ namespace DirtBag {
                 if ( module.Settings.PostTypes.HasFlag( PostType.Rising ) ) {
                     posts.UnionWith( risingPosts );
                 }
-                postTasks.Add( module.Analyze( posts.ToList() ) );
+                postTasks.Add( Task.Run( ()=>module.Analyze( posts.ToList() ) ) );
             }
 
 
@@ -262,6 +262,7 @@ namespace DirtBag {
             if ( Settings.LicensingSmasher.Enabled ) ActiveModules.Add( new LicensingSmasher( Settings.LicensingSmasher, Client, Subreddit ) );
             if ( Settings.YouTubeSpamDetector.Enabled ) ActiveModules.Add( new YouTubeSpamDetector( Settings.YouTubeSpamDetector, Client, Subreddit ) );
             if ( Settings.UserStalker.Enabled ) ActiveModules.Add( new UserStalker( Settings.UserStalker, Client, Subreddit ) );
+            if ( Settings.SelfPromotionCombustor.Enabled ) ActiveModules.Add( new SelfPromotionCombustor( Settings.SelfPromotionCombustor, Client ) );
             /*** End Load Modules ***/
         }
     }
