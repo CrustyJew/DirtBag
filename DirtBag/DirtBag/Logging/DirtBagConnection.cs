@@ -66,7 +66,7 @@ namespace DirtBag.Logging {
                     "SELECT SubName from SubReddits" +
                     ";" +
                     "INSERT INTO Actions (ActionName) " +
-                    "VALUES ('Report'),('Remove') " +
+                    "VALUES ('Report'),('Remove'),('None') " +
                     "EXCEPT " +
                     "SELECT ActionName from Actions" +
                     ";";
@@ -80,7 +80,7 @@ namespace DirtBag.Logging {
                     "INSERT (SubName) VALUES (ns.SubName); " +
                     "" +
                     "MERGE Actions WITH (HOLDLOCK) AS v " +
-                    "Using (VALUES ('Report'),('Remove')) AS nv (Action) " +
+                    "Using (VALUES ('Report'),('Remove'),('None')) AS nv (Action) " +
                     "ON v.ActionName = nv.Action " +
                     "WHEN NOT MATCHED BY TARGET THEN " +
                     "INSERT (ActionName) VALUES (nv.Action); ";

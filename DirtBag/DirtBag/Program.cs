@@ -112,17 +112,13 @@ namespace DirtBag {
             allPosts.UnionWith( risingPosts );
             //Get stats on already processed posts (This could be pulled from mod log at some point if ever desired / found to be more useful)
             var alreadyProcessed = ProcessedPost.CheckProcessed( allPosts.Select( p => p.Id ).ToList() );
-            var removedPreviously = new List<string>();
+            var removedPreviously = new List<ProcessedPost>();
             //select posts that have already been removed once and add them to list
-            removedPreviously.AddRange( alreadyProcessed.Where( p => p.Action.ToLower() == "remove" ).Select( p => p.PostID ).ToList() );
-            //remove posts from processing that have been removed before. Don't want to override manual mod actions
-            newPosts.RemoveAll( p => removedPreviously.Contains( p.Id ) );
-            risingPosts.RemoveAll( p => removedPreviously.Contains( p.Id ) );
-            hotPosts.RemoveAll( p => removedPreviously.Contains( p.Id ) );
+            removedPreviously.AddRange( alreadyProcessed.Where( p => p.Action.ToLower() == "remove" ).ToList() );
 
-            var reportedPreviously = new List<string>();
+            var reportedPreviously = new List<ProcessedPost>();
             //select posts that have already been removed once and add them to list
-            reportedPreviously.AddRange( alreadyProcessed.Where( p => p.Action.ToLower() == "report" ).Select( p => p.PostID ).ToList() );
+            reportedPreviously.AddRange( alreadyProcessed.Where( p => p.Action.ToLower() == "report" ).ToList() );
 
 
             var postTasks = new List<Task<Dictionary<string, PostAnalysisResults>>>();
@@ -162,30 +158,52 @@ namespace DirtBag {
 
             foreach ( var result in results ) {
                 var resultVal = result.Value;
-
+                string action = "None";
+                bool unseen = false;
+                ProcessedPost processed = alreadyProcessed.SingleOrDefault( p => p.PostID == resultVal.Post.Id );
+                if ( processed == null ) {
+                    processed = new ProcessedPost( Settings.Subreddit, resultVal.Post.Id, action );
+                    unseen = true;
+                }
                 if ( resultVal.TotalScore >= Settings.RemoveScoreThreshold && Settings.RemoveScoreThreshold > 0 ) {
-                    resultVal.Post.Remove();
-                    if ( resultVal.HasFlair ) {
-                        resultVal.Post.SetFlair( resultVal.FlairText, resultVal.FlairClass );
+                    ProcessedPost removed = removedPreviously.SingleOrDefault( p => p.PostID == resultVal.Post.Id );
+                    if ( removed == null || removed.AnalysisResults.TotalScore < resultVal.TotalScore ) {
+                        //only remove the post if it wasn't previously removed by the bot, OR if the score has increased
+                        resultVal.Post.Remove();
+                        if ( resultVal.HasFlair ) {
+                            resultVal.Post.SetFlair( resultVal.FlairText, resultVal.FlairClass );
+                        }
                     }
-                    try {
-                        ProcessedPost.SaveProcessedPost( Settings.Subreddit, resultVal.Post.Id, "Remove" ); //change to enum at some point
-                    }
-                    catch ( Exception ex ) {
-                        Console.WriteLine("Error saving post as processed. Messaage : {0}", "\r\n Inner Exception : " + ex.InnerException.Message);
-                    }
+                    action = "Remove";
                 }
                 else if ( resultVal.TotalScore >= Settings.ReportScoreThreshold && Settings.ReportScoreThreshold > 0 ) {
-                    if (reportedPreviously.Contains(resultVal.Post.Id)) continue;
-                    resultVal.Post.Report( VotableThing.ReportType.Other, resultVal.ReportReason );
-                    try {
-                        ProcessedPost.SaveProcessedPost( Settings.Subreddit, resultVal.Post.Id, "Report" ); //change to enum at some point
+                    if ( reportedPreviously.Count( p => p.PostID == resultVal.Post.Id ) == 0 ) {
+                        //can't change report text or report an item again. Thanks Obama... err... Reddit...
+                        resultVal.Post.Report( VotableThing.ReportType.Other, resultVal.ReportReason );
                     }
-                    catch ( Exception ex ) {
-                        Console.WriteLine("Error saving post as processed. Messaage : {0}", "\r\n Inner Exception : " + ex.InnerException.Message);
+                    action = "Report";
+                }
+                if ( resultVal.TotalScore != processed.AnalysisResults.TotalScore || action != processed.Action ) {
+                    if ( resultVal.TotalScore > 0 ) processed.AnalysisResults = resultVal;
+                    else processed.AnalysisResults = null;
+                    //processed post needs updated in
+                    if ( unseen ) {
+                        try {
+                            ProcessedPost.AddProcessedPost( processed ); //change to enum at some point
+                        }
+                        catch ( Exception ex ) {
+                            Console.WriteLine( "Error adding new post as processed. Messaage : {0}", "\r\n Inner Exception : " + ex.InnerException.Message );
+                        }
+                    }
+                    else {
+                        try {
+                            ProcessedPost.UpdateProcessedPost( processed ); //change to enum at some point
+                        }
+                        catch ( Exception ex ) {
+                            Console.WriteLine( "Error updating processed post. Messaage : {0}", "\r\n Inner Exception : " + ex.InnerException.Message );
+                        }
                     }
                 }
-
             }
 
             Console.WriteLine("Successfully processed {0} posts. Ignored {1} posts that had been removed already.", results.Keys.Count, removedPreviously.Count);

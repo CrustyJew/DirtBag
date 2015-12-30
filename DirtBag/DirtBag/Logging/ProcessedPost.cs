@@ -6,9 +6,13 @@ using Newtonsoft.Json;
 
 namespace DirtBag.Logging {
     public class ProcessedPost {
+        [JsonProperty]
         public string SubName { get; set; }
+        [JsonProperty]
         public string PostID { get; set; }
+        [JsonProperty]
         public string Action { get; set; }
+        [JsonProperty]
         public Modules.PostAnalysisResults AnalysisResults { get; set; }
 
         public ProcessedPost() {
@@ -19,43 +23,42 @@ namespace DirtBag.Logging {
             SubName = subName;
             PostID = postID;
             Action = action;
+            AnalysisResults = new Modules.PostAnalysisResults();
         }
 
         public void Save() {
-            SaveProcessedPost( this );
+            AddProcessedPost( this );
         }
 
-        public static void SaveProcessedPost( string subName, string postID, string action ) {
+        public static void AddProcessedPost( ProcessedPost post ) {
+            //string jsonAnalysisResults = JsonConvert.SerializeObject( post.AnalysisResults,Formatting.None );
+            byte[] serialized = Helpers.ProcessedPostHelpers.SerializeAndCompressResults( post );//System.Text.Encoding.ASCII.GetBytes( jsonAnalysisResults ); //This would need to change to support unicode report reasons & full explanations
             var query = "" +
-                "insert into ProcessedPosts (SubredditID,PostID,ActionID) " +
-                "select sub.ID, @postID, act.ID " +
-                "from Subreddits sub " +
-                "inner join Actions act on act.ActionName = @action " +
-                "where sub.SubName like @subName" +
-                ";";
-            //using(GZipStream gz = new GZipStream()
-            using ( var conn = DirtBagConnection.GetConn() ) {
-                conn.Execute( query, new { subName, postID, action } );
-            }
-        }
-        public static void SaveProcessedPost( ProcessedPost post ) {
-            string jsonAnalysisResults = JsonConvert.SerializeObject( post.AnalysisResults );
-            using ( System.IO.MemoryStream ms = new System.IO.MemoryStream() ) {
-                using ( System.IO.Compression.GZipStream gz = new GZipStream( ms, System.IO.Compression.CompressionMode.Compress ) ) {
-                    byte[] json = System.Text.Encoding.Unicode.GetBytes( jsonAnalysisResults );
-                    gz.Write( json, 0, json.Length );
-                }
-                var query = "" +
                 "insert into ProcessedPosts (SubredditID,PostID,ActionID,AnalysisResults) " +
                 "select sub.ID, @PostID, act.ID, @AnalysisResults " +
                 "from Subreddits sub " +
                 "inner join Actions act on act.ActionName = @Action " +
                 "where sub.SubName like @SubName" +
                 ";";
-                using ( var conn = DirtBagConnection.GetConn() ) {
-                    conn.Execute( query, new { post.SubName, post.PostID, post.Action, AnalysisResults = ms.ToArray() } );
-                }
+            using ( var conn = DirtBagConnection.GetConn() ) {
+                conn.Execute( query, new { post.SubName, post.PostID, post.Action, AnalysisResults = serialized } );
             }
+
+        }
+
+        public static void UpdateProcessedPost( ProcessedPost post ) {
+            byte[] serialized = Helpers.ProcessedPostHelpers.SerializeAndCompressResults( post );
+            var query = "" +
+                "Update pp " +
+                "Set pp.ActionID = act.ID, pp.AnalysisResults = @AnalysisResults " +
+                "FROM ProcessedPosts pp " +
+                "inner join Actions act on act.ActionName = @Action " +
+                "where pp.PostID = @PostID " +
+                ";";
+            using ( var conn = DirtBagConnection.GetConn() ) {
+                conn.Execute( query, new { AnalysisResults = serialized, post.Action, post.PostID } );
+            }
+
         }
 
         public static List<ProcessedPost> CheckProcessed( List<string> postIDs ) {
@@ -68,17 +71,8 @@ namespace DirtBag.Logging {
                 ";";
 
             using ( var conn = DirtBagConnection.GetConn() ) {
-               return conn.Query<ProcessedPost, byte[], ProcessedPost>( query, ( pp, b ) => {
-                    if ( b != null ) {
-                       using(System.IO.MemoryStream uncompressed = new System.IO.MemoryStream() ) {
-                           using ( System.IO.MemoryStream ms = new System.IO.MemoryStream( b ) )
-                           using ( System.IO.Compression.GZipStream gz = new GZipStream( ms, System.IO.Compression.CompressionMode.Decompress ) ) {
-                               gz.CopyTo( uncompressed );
-                           }
-                            string json = System.Text.Encoding.Unicode.GetString( uncompressed.ToArray() );
-                            pp.AnalysisResults = JsonConvert.DeserializeObject<Modules.PostAnalysisResults>( json );
-                        }
-                    }
+                return conn.Query<ProcessedPost, byte[], ProcessedPost>( query, ( pp, b ) => {
+                    pp.AnalysisResults = Helpers.ProcessedPostHelpers.InflateAndDeserializeResults( b );
                     return pp;
                 }, splitOn: "AnalysisResults", param: new { postIDs } ).ToList();
             }

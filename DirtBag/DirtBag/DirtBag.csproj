@@ -157,6 +157,7 @@
   <ItemGroup>
     <Compile Include="Flair.cs" />
     <Compile Include="Helpers\PostEqualityComparer.cs" />
+    <Compile Include="Helpers\ProcessedPostHelpers.cs" />
     <Compile Include="Helpers\RedditWebAgent.cs" />
     <Compile Include="Helpers\YouTubeHelpers.cs" />
     <Compile Include="Logging\Channel.cs" />
