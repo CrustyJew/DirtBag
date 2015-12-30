@@ -17,6 +17,7 @@ namespace DirtBag.Modules {
                 return "YouTubeSpamDetector";
             }
         }
+        public bool MultiScan { get { return false; } }
 
         public IModuleSettings Settings { get; set; }
         public Reddit RedditClient { get; set; }

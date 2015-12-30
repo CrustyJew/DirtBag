@@ -17,6 +17,7 @@ using RedditSharp.Things;
 namespace DirtBag.Modules {
     class LicensingSmasher : IModule {
         public string ModuleName { get { return "LicensingSmasher"; } }
+        public bool MultiScan { get { return true; } }
         public IModuleSettings Settings { get; set; }
         public bool IsRunning { get; set; }
         public Reddit RedditClient { get; set; }

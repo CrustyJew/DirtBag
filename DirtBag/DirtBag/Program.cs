@@ -114,11 +114,11 @@ namespace DirtBag {
             var alreadyProcessed = ProcessedPost.CheckProcessed( allPosts.Select( p => p.Id ).ToList() );
             var removedPreviously = new List<ProcessedPost>();
             //select posts that have already been removed once and add them to list
-            removedPreviously.AddRange( alreadyProcessed.Where( p => p.Action.ToLower() == "remove" ).ToList() );
+            removedPreviously.AddRange( alreadyProcessed.Where( p => p.Action.ToLower() == "remove" ) );
 
             var reportedPreviously = new List<ProcessedPost>();
             //select posts that have already been removed once and add them to list
-            reportedPreviously.AddRange( alreadyProcessed.Where( p => p.Action.ToLower() == "report" ).ToList() );
+            reportedPreviously.AddRange( alreadyProcessed.Where( p => p.Action.ToLower() == "report" ) );
 
 
             var postTasks = new List<Task<Dictionary<string, PostAnalysisResults>>>();
@@ -136,12 +136,18 @@ namespace DirtBag {
                 if ( module.Settings.PostTypes.HasFlag( PostType.Rising ) ) {
                     posts.UnionWith( risingPosts );
                 }
-                postTasks.Add( Task.Run( ()=>module.Analyze( posts.ToList() ) ) );
+                List<Post> postsList = new List<Post>();
+                if ( !module.MultiScan ) {
+                    //only add unseen posts
+                    postsList.AddRange( posts.Where( ph => alreadyProcessed.Count( ap => ap.PostID == ph.Id ) == 0 ) );
+                }
+                else {
+                    postsList = posts.ToList();
+                }
+                if( postsList.Count > 0 ) postTasks.Add( Task.Run( ()=>module.Analyze( postsList ) ) );
             }
 
-
             var results = new Dictionary<string, PostAnalysisResults>();
-
             while ( postTasks.Count > 0 ) {
                 var finishedTask = await Task.WhenAny( postTasks );
                 postTasks.Remove( finishedTask );
@@ -155,41 +161,52 @@ namespace DirtBag {
                     }
                 }
             }
-
+            int ignoredCounter = 0;
             foreach ( var result in results ) {
-                var resultVal = result.Value;
-                string action = "None";
+                var combinedAnalysis = result.Value;
+                string action = "None"; //change to Enum at some point
                 bool unseen = false;
-                ProcessedPost processed = alreadyProcessed.SingleOrDefault( p => p.PostID == resultVal.Post.Id );
-                if ( processed == null ) {
-                    processed = new ProcessedPost( Settings.Subreddit, resultVal.Post.Id, action );
+                ProcessedPost original = alreadyProcessed.SingleOrDefault( p => p.PostID == combinedAnalysis.Post.Id );
+                if ( original == null ) {
+                    original = new ProcessedPost( Settings.Subreddit, combinedAnalysis.Post.Id, "invalid" );
                     unseen = true;
                 }
-                if ( resultVal.TotalScore >= Settings.RemoveScoreThreshold && Settings.RemoveScoreThreshold > 0 ) {
-                    ProcessedPost removed = removedPreviously.SingleOrDefault( p => p.PostID == resultVal.Post.Id );
-                    if ( removed == null || removed.AnalysisResults.TotalScore < resultVal.TotalScore ) {
+                else {
+                    var prevScores = original.AnalysisResults.Scores.Where( os => combinedAnalysis.Scores.Count( cs => cs.ModuleName == os.ModuleName ) == 0 ).ToList();
+                    combinedAnalysis.Scores.AddRange( prevScores );
+                }
+                if ( combinedAnalysis.TotalScore >= Settings.RemoveScoreThreshold && Settings.RemoveScoreThreshold > 0 ) {
+                    ProcessedPost removed = removedPreviously.SingleOrDefault( p => p.PostID == combinedAnalysis.Post.Id );
+                    if ( removed == null || removed.AnalysisResults.TotalScore < combinedAnalysis.TotalScore ) {
                         //only remove the post if it wasn't previously removed by the bot, OR if the score has increased
-                        resultVal.Post.Remove();
-                        if ( resultVal.HasFlair ) {
-                            resultVal.Post.SetFlair( resultVal.FlairText, resultVal.FlairClass );
+                        combinedAnalysis.Post.Remove();
+                        if ( combinedAnalysis.HasFlair ) {
+                            combinedAnalysis.Post.SetFlair( combinedAnalysis.FlairText, combinedAnalysis.FlairClass );
                         }
+                    }
+                    else {
+                        ignoredCounter++;
                     }
                     action = "Remove";
                 }
-                else if ( resultVal.TotalScore >= Settings.ReportScoreThreshold && Settings.ReportScoreThreshold > 0 ) {
-                    if ( reportedPreviously.Count( p => p.PostID == resultVal.Post.Id ) == 0 ) {
+                else if ( combinedAnalysis.TotalScore >= Settings.ReportScoreThreshold && Settings.ReportScoreThreshold > 0 ) {
+                    if ( reportedPreviously.Count( p => p.PostID == combinedAnalysis.Post.Id ) == 0 ) {
                         //can't change report text or report an item again. Thanks Obama... err... Reddit...
-                        resultVal.Post.Report( VotableThing.ReportType.Other, resultVal.ReportReason );
+                        combinedAnalysis.Post.Report( VotableThing.ReportType.Other, combinedAnalysis.ReportReason );
                     }
                     action = "Report";
                 }
-                if ( resultVal.TotalScore != processed.AnalysisResults.TotalScore || action != processed.Action ) {
-                    if ( resultVal.TotalScore > 0 ) processed.AnalysisResults = resultVal;
-                    else processed.AnalysisResults = null;
+                if ( combinedAnalysis.TotalScore != original.AnalysisResults.TotalScore || action != original.Action ) {
+                    if ( combinedAnalysis.TotalScore > 0 ) {
+                        original.AnalysisResults = combinedAnalysis;
+                    }
+                    else original.AnalysisResults = null;
+
+                    original.Action = action;
                     //processed post needs updated in
                     if ( unseen ) {
                         try {
-                            ProcessedPost.AddProcessedPost( processed ); //change to enum at some point
+                            ProcessedPost.AddProcessedPost( original ); 
                         }
                         catch ( Exception ex ) {
                             Console.WriteLine( "Error adding new post as processed. Messaage : {0}", "\r\n Inner Exception : " + ex.InnerException.Message );
@@ -197,16 +214,16 @@ namespace DirtBag {
                     }
                     else {
                         try {
-                            ProcessedPost.UpdateProcessedPost( processed ); //change to enum at some point
+                            ProcessedPost.UpdateProcessedPost( original ); 
                         }
                         catch ( Exception ex ) {
-                            Console.WriteLine( "Error updating processed post. Messaage : {0}", "\r\n Inner Exception : " + ex.InnerException.Message );
+                            Console.WriteLine( "Error updating processed post. Messaage : {0}", "\r\n Inner Exception : " + (ex.InnerException!= null ? ex.InnerException.Message : "null") );
                         }
                     }
                 }
             }
 
-            Console.WriteLine("Successfully processed {0} posts. Ignored {1} posts that had been removed already.", results.Keys.Count, removedPreviously.Count);
+            Console.WriteLine("Successfully processed {0} posts. Ignored {1} posts that had been removed already.", results.Keys.Count, ignoredCounter );
         }
         internal static async Task<PostAnalysisResults> AnalyzePost( Post post ) {
             var postTasks = ActiveModules.Select(module => module.Analyze(new List<Post> {post})).ToList();

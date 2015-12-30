@@ -49,11 +49,11 @@ namespace DirtBag.Logging {
         public static void UpdateProcessedPost( ProcessedPost post ) {
             byte[] serialized = Helpers.ProcessedPostHelpers.SerializeAndCompressResults( post );
             var query = "" +
-                "Update pp " +
-                "Set pp.ActionID = act.ID, pp.AnalysisResults = @AnalysisResults " +
-                "FROM ProcessedPosts pp " +
-                "inner join Actions act on act.ActionName = @Action " +
-                "where pp.PostID = @PostID " +
+                "Update ProcessedPosts " +
+                "Set ActionID = (select ID from Actions where ActionName = @Action), AnalysisResults = @AnalysisResults " +
+                //"FROM ProcessedPosts pp " +
+                //"inner join Actions act on act.ActionName = @Action " +
+                "where PostID like @PostID " +
                 ";";
             using ( var conn = DirtBagConnection.GetConn() ) {
                 conn.Execute( query, new { AnalysisResults = serialized, post.Action, post.PostID } );

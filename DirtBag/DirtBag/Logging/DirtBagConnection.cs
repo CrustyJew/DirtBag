@@ -52,7 +52,7 @@ namespace DirtBag.Logging {
                     "[SubredditID] INTEGER NOT NULL, " +
                     "[PostID] varchar(20) NOT NULL, " +
                     "[ActionID] INTEGER, "+
-                    "[AnalysisResults] VARBINARY(max) ); " + //varbinary uses less space than base64 encoding and storing as varchar
+                    "[AnalysisResults] VARBINARY(2000) ); " + //varbinary uses less space than base64 encoding and storing as varchar
                     "";
                 con.Execute( initTables );
 

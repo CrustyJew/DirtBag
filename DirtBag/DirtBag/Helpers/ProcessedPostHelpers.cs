@@ -11,7 +11,7 @@ namespace DirtBag.Helpers {
         }
 
         public static Modules.PostAnalysisResults InflateAndDeserializeResults(byte[] compressed ) {
-            if ( compressed == null ) return null;
+            if ( compressed == null ) return new Modules.PostAnalysisResults();
 
             string json = ZlibStream.UncompressString( compressed );
             return JsonConvert.DeserializeObject<Modules.PostAnalysisResults>( json );

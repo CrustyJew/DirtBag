@@ -17,6 +17,7 @@ namespace DirtBag.Modules {
                 return "Self Promotion Combustor";
             }
         }
+        public bool MultiScan { get { return false; } }
 
         public IModuleSettings Settings { get; set; }
         public RedditSharp.Reddit RedditClient { get; set; }

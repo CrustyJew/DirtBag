@@ -14,6 +14,7 @@ using RedditSharp.Things;
 namespace DirtBag.Modules {
     class UserStalker : IModule {
         public string ModuleName { get { return "UserStalker"; } }
+        public bool MultiScan { get { return false; } }
 
         public IModuleSettings Settings { get; set; }
         public Reddit RedditClient { get; set; }
