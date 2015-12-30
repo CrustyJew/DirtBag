@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Newtonsoft.Json;
 
 namespace DirtBag {
     public class Flair {
+        [JsonProperty]
         public string Text { get; set; }
+        [JsonProperty]
         public string Class { get; set; }
+        [JsonProperty]
         public int Priority { get; set; }
         public Flair() {
 
