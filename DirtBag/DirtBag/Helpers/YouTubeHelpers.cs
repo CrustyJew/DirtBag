@@ -13,7 +13,7 @@ namespace DirtBag.Helpers {
                 }
             }
             else if ( lowerUrl.Contains( "youtu.be" ) ) {
-                id = url.Substring( url.IndexOf( ".be/", StringComparison.Ordinal ) + 4 ).Split( '&' )[0];
+                id = url.Substring( url.IndexOf( ".be/", StringComparison.Ordinal ) + 4 ).Split( '?' )[0];
             }
             return id;
         }
