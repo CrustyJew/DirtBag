@@ -14,6 +14,7 @@ namespace DirtBag.Logging {
                     "FROM dirtbag.UserPosts up " +
                     //"left JOIN dirtbag.PostRemovals rem on up.PostID = rem.PostID " +
                     "where username like @UserName " +
+                    "and up.ChannelID is not null " +
                     //"group by channelid";
                     "";
 
