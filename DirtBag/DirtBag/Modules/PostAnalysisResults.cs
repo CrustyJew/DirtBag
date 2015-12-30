@@ -44,7 +44,7 @@ namespace DirtBag.Modules {
                 return highestPrio.Class;
             }
         }
-        [JsonProperty]
+        [JsonIgnore]
         public Post Post { get; set; }
 
         [JsonProperty]

@@ -51,7 +51,8 @@ namespace DirtBag.Logging {
                     "[ID] INTEGER NOT NULL PRIMARY KEY " + ( UseLocalDB ? "AUTOINCREMENT" : "IDENTITY" ) + ", " +
                     "[SubredditID] INTEGER NOT NULL, " +
                     "[PostID] varchar(20) NOT NULL, " +
-                    "[ActionID] INTEGER ); " +
+                    "[ActionID] INTEGER, "+
+                    "[AnalysisResults] VARBINARY(max) ); " + //varbinary uses less space than base64 encoding and storing as varchar
                     "";
                 con.Execute( initTables );
 

@@ -32,26 +32,35 @@ namespace DirtBag.Logging {
                 "from Subreddits sub " +
                 "inner join Actions act on act.ActionName = @action " +
                 "where sub.SubName like @subName" +
-                ";"; 
+                ";";
             //using(GZipStream gz = new GZipStream()
             using ( var conn = DirtBagConnection.GetConn() ) {
                 conn.Execute( query, new { subName, postID, action } );
             }
         }
-        public static void SaveProcessedPost(ProcessedPost post ) {
+        public static void SaveProcessedPost( ProcessedPost post ) {
             string jsonAnalysisResults = JsonConvert.SerializeObject( post.AnalysisResults );
-            using ( System.IO.MemoryStream ms = new System.IO.MemoryStream() ) { 
-            using(System.IO.Compression.GZipStream gz = new GZipStream(ms, System.IO.Compression.CompressionMode.Compress ) ) {
-                byte[] json = System.Text.Encoding.Unicode.GetBytes( jsonAnalysisResults );
-                gz.Write( json, 0, json.Length );
-            }
-               
+            using ( System.IO.MemoryStream ms = new System.IO.MemoryStream() ) {
+                using ( System.IO.Compression.GZipStream gz = new GZipStream( ms, System.IO.Compression.CompressionMode.Compress ) ) {
+                    byte[] json = System.Text.Encoding.Unicode.GetBytes( jsonAnalysisResults );
+                    gz.Write( json, 0, json.Length );
+                }
+                var query = "" +
+                "insert into ProcessedPosts (SubredditID,PostID,ActionID,AnalysisResults) " +
+                "select sub.ID, @PostID, act.ID, @AnalysisResults " +
+                "from Subreddits sub " +
+                "inner join Actions act on act.ActionName = @Action " +
+                "where sub.SubName like @SubName" +
+                ";";
+                using ( var conn = DirtBagConnection.GetConn() ) {
+                    conn.Execute( query, new { post.SubName, post.PostID, post.Action, AnalysisResults = ms.ToArray() } );
+                }
             }
         }
 
         public static List<ProcessedPost> CheckProcessed( List<string> postIDs ) {
             var query = "" +
-                "select sub.SubName, p.PostID, act.ActionName as \"Action\" " +
+                "select sub.SubName, p.PostID, act.ActionName as \"Action\", p.AnalysisResults " +
                 "from ProcessedPosts p " +
                 "inner join Subreddits sub on sub.ID = p.SubredditID " +
                 "inner join Actions act on act.ID = p.ActionID " +
@@ -59,7 +68,19 @@ namespace DirtBag.Logging {
                 ";";
 
             using ( var conn = DirtBagConnection.GetConn() ) {
-                return conn.Query<ProcessedPost>( query, new { postIDs } ).ToList();
+               return conn.Query<ProcessedPost, byte[], ProcessedPost>( query, ( pp, b ) => {
+                    if ( b != null ) {
+                       using(System.IO.MemoryStream uncompressed = new System.IO.MemoryStream() ) {
+                           using ( System.IO.MemoryStream ms = new System.IO.MemoryStream( b ) )
+                           using ( System.IO.Compression.GZipStream gz = new GZipStream( ms, System.IO.Compression.CompressionMode.Decompress ) ) {
+                               gz.CopyTo( uncompressed );
+                           }
+                            string json = System.Text.Encoding.Unicode.GetString( uncompressed.ToArray() );
+                            pp.AnalysisResults = JsonConvert.DeserializeObject<Modules.PostAnalysisResults>( json );
+                        }
+                    }
+                    return pp;
+                }, splitOn: "AnalysisResults", param: new { postIDs } ).ToList();
             }
         }
     }
