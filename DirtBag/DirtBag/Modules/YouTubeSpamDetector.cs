@@ -9,6 +9,7 @@ using Google.Apis.YouTube.v3;
 using Newtonsoft.Json;
 using RedditSharp;
 using RedditSharp.Things;
+using System.Net;
 
 namespace DirtBag.Modules {
     class YouTubeSpamDetector : IModule {
@@ -17,6 +18,7 @@ namespace DirtBag.Modules {
                 return "YouTubeSpamDetector";
             }
         }
+        public Modules ModuleEnum { get { return Modules.YouTubeSpamDetector; } }
         public bool MultiScan { get { return false; } }
 
         public IModuleSettings Settings { get; set; }
@@ -45,11 +47,11 @@ namespace DirtBag.Modules {
 
             var toReturn = new Dictionary<string, PostAnalysisResults>();
             var youTubePosts = new Dictionary<string, List<Post>>();
-            foreach ( var post in posts.Where( p => !processedCache.ContainsKey( p.Id ) ) ) {
+            foreach ( var post in posts ) {
                 var ytID = YouTubeHelpers.ExtractVideoId( post.Url.ToString() );
+                toReturn.Add( post.Id, new PostAnalysisResults( post, ModuleEnum ) );
 
                 if ( !string.IsNullOrEmpty( ytID ) ) {
-                    toReturn.Add( post.Id, new PostAnalysisResults( post ) );
                     if ( !youTubePosts.ContainsKey( ytID ) ) youTubePosts.Add( ytID, new List<Post>() );
                     youTubePosts[ytID].Add( post );
                 }
@@ -108,10 +110,24 @@ namespace DirtBag.Modules {
                         if ( settings.VoteCountThreshold.Enabled && vid.Statistics.DislikeCount + vid.Statistics.LikeCount <= (ulong) Math.Abs( settings.VoteCountThreshold.Value ) ) { //TODO Fix this math.abs nonsense with some validation
                             scores.Add( new AnalysisScore( totalVotesScore, "Total vote count is below threshold", "Low Total Votes", ModuleName ) );
                         }
-                        if ( settings.RedditAccountAgeThreshold.Enabled && post.Author.Created.AddDays( settings.RedditAccountAgeThreshold.Value ) >= DateTime.UtcNow ) {
+                        DateTime authorCreated= DateTime.UtcNow;
+                        bool shadowbanned = false;
+                        try {
+                            authorCreated = post.Author.Created;
+                        }
+                        catch(WebException ex) {
+                            if( ( ex.Response as HttpWebResponse ).StatusCode == HttpStatusCode.NotFound ) {
+                                authorCreated = DateTime.UtcNow;
+                                shadowbanned = true;
+                            }
+                            else {
+                                throw;
+                            }
+                        }
+                        if ( settings.RedditAccountAgeThreshold.Enabled && authorCreated.AddDays( settings.RedditAccountAgeThreshold.Value ) >= DateTime.UtcNow ) {
                             scores.Add( new AnalysisScore( redditAccountAgeScore, "Reddit Account age is below threshold", "New Reddit Acct", ModuleName ) );
                         }
-                        if ( settings.ImgurSubmissionRatio.Enabled && ( (double) 100 / post.Author.Posts.Take( 100 ).Count( p => p.Domain.ToLower().Contains( "imgur" ) ) ) * 100 >= settings.ImgurSubmissionRatio.Value ) {
+                        if ( settings.ImgurSubmissionRatio.Enabled && !shadowbanned && ( (double) 100 / post.Author.Posts.Take( 100 ).Count( p => p.Domain.ToLower().Contains( "imgur" ) ) ) * 100 >= settings.ImgurSubmissionRatio.Value ) {
                             scores.Add( new AnalysisScore( imgurSubmissionRatioScore, "User has Imgur submissions above threshold for last 100 posts", "Lots of Imgur", ModuleName ) );
                         }
                     }
@@ -136,24 +152,8 @@ namespace DirtBag.Modules {
                 }
 
             }
-            ManageCache( posts ); //after loop to avoid issues if it fails TODO error handle this mofo, Azure just restarts so it ghetto works for now
+           
             return toReturn;
-
-        }
-
-        private void ManageCache( List<Post> posts ) {
-
-            IEnumerable<string> postIDs = posts.Select( p => p.Id );
-            foreach ( var notSeen in processedCache.Where( c => !postIDs.Contains( c.Key ) ).ToArray() ) {
-                processedCache[notSeen.Key]++;
-            }
-            foreach ( string id in postIDs ) {
-                if ( processedCache.ContainsKey( id ) ) processedCache[id] = 0;
-                else processedCache.Add( id, 0 );
-            }
-            foreach ( var expired in processedCache.Where( c => c.Value > 3 ).ToArray() ) {
-                processedCache.Remove( expired.Key );
-            }
 
         }
     }

@@ -17,6 +17,7 @@ using RedditSharp.Things;
 namespace DirtBag.Modules {
     class LicensingSmasher : IModule {
         public string ModuleName { get { return "LicensingSmasher"; } }
+        public Modules ModuleEnum { get { return Modules.LicensingSmasher; } }
         public bool MultiScan { get { return true; } }
         public IModuleSettings Settings { get; set; }
         public bool IsRunning { get; set; }
@@ -26,6 +27,7 @@ namespace DirtBag.Modules {
         public List<string> TermsToMatch { get; set; }
         public Dictionary<string, string> KnownLicensers { get; set; }
         public Flair RemovalFlair { get; set; }
+        
         public LicensingSmasher() {
             var key = ConfigurationManager.AppSettings["YouTubeAPIKey"];
             if ( string.IsNullOrEmpty( key ) ) throw new Exception( "Provide setting 'YouTubeAPIKey' in AppConfig" );
@@ -55,7 +57,7 @@ namespace DirtBag.Modules {
             var youTubePosts = new Dictionary<string, List<Post>>();
 
             foreach ( var post in posts ) {
-                toReturn.Add( post.Id, new PostAnalysisResults( post ) );
+                toReturn.Add( post.Id, new PostAnalysisResults( post, ModuleEnum ) );
                 var ytID = YouTubeHelpers.ExtractVideoId( post.Url.ToString() );
 
                 if ( !string.IsNullOrEmpty( ytID ) ) {

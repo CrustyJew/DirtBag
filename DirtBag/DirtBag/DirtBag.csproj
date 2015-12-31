@@ -171,6 +171,7 @@
     <Compile Include="Modules\IModule.cs" />
     <Compile Include="Modules\IModuleSettings.cs" />
     <Compile Include="Modules\LicensingSmasher.cs" />
+    <Compile Include="Modules\ModulesEnum.cs" />
     <Compile Include="Modules\PostAnalysisResults.cs" />
     <Compile Include="Modules\SelfPromotionCombustor.cs" />
     <Compile Include="Modules\UserStalker.cs" />

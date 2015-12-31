@@ -46,6 +46,8 @@ namespace DirtBag.Modules {
         }
         [JsonIgnore]
         public Post Post { get; set; }
+        [JsonIgnore]
+        public Modules AnalyzingModule { get; set; }
 
         [JsonProperty]
         public List<AnalysisScore> Scores { get; set; }
@@ -54,8 +56,9 @@ namespace DirtBag.Modules {
 			Scores = new List<AnalysisScore>();
         }
         
-        public PostAnalysisResults(Post post ) :this() {
+        public PostAnalysisResults(Post post, Modules module ) :this() {
 			Post = post;
+            AnalyzingModule = module;
 		}
 
 	}

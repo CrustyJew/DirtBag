@@ -3,10 +3,11 @@ using System.Threading.Tasks;
 using RedditSharp.Things;
 
 namespace DirtBag.Modules {
-	interface IModule {
-		string ModuleName { get; }
+    interface IModule {
+        string ModuleName { get; }
+        Modules ModuleEnum { get; }
         bool MultiScan { get; }
-		IModuleSettings Settings { get; set; }
-		Task<Dictionary<string, PostAnalysisResults>> Analyze( List<Post> posts );
-	}
+        IModuleSettings Settings { get; set; }
+        Task<Dictionary<string, PostAnalysisResults>> Analyze( List<Post> posts );
+    }
 }
