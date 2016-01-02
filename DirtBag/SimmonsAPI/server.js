@@ -101,11 +101,20 @@ router.route('/users/:user_id')
 
           res.json({message: 'User updated!'});
         });
-
       });
+    })
 
+    // delete user with this id (accessed at DELETE http://localhost:8087/api/users/:user_id)
+    .delete(function(req, res){
+      User.remove({
+        _id: req.params.user_id
+      }, function(err, user){
+        if(err){
+          res.send(err);
+        };
+        res.json({message: 'Successfully deleted.'})
+      });
     });
-
 
 
 // REGISTER ROUTES
