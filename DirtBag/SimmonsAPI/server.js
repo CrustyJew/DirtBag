@@ -4,22 +4,55 @@
 // ======================================================================================================
 
 // call the packages we need
-var express = require('express');// call express
-var app = express();// define our app using express
-var bodyParser = require('body-parser');
-var User = require('./app/models/user');
+var express     = require('express');// call express
+var app         = express();// define our app using express
+var bodyParser  = require('body-parser');
+var morgan      = require('morgan');
+var mongoose    = require('mongoose');
+
+var jwt         = require('jsonwebtoken'); // used to create, sign, and verify tokens
+var config      = require('./config');  // get our config file
+var User        = require('./app/models/user');  // get our mongoose model
+
+
+// CONFIGURATION
+// =======================================================================================================
+var port = process.env.PORT || 8087; // used to create, sign, and verify tokens
+mongoose.connect(config.database);
+app.set('superSecret', config.secret); // secret variable
 
 // configure app to use bodyParser()
 // this will let us get data from a POST
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({ extended: false }));
+// app.use(bodyParser.urlencoded({ extended: true })); // this may need to be true
 app.use(bodyParser.json());
 
-var port = process.env.PORT || 8087;// set our port
+// use morgan to log request to the console
+app.use(morgan('dev'));
 
-var mongoose = require('mongoose');
-mongoose.connect('mongodb://localhost:27017/Simmons');
+
 var db = mongoose.connection;
 
+app.get('/setup', function(req, res){
+
+  // create sample user
+  var bob = new User({
+    name: 'Bob Dole',
+    created: new Date(),
+    admin: false,
+    lastLogin: new Date(),
+    active: true,
+    password: 'chickennoodlesoup',
+  });
+
+  // save the sample user
+  bob.save(function(err){
+    if (err){throw err;};
+
+    console.log('User saved successfully');
+    res.json({success: true});
+  })
+});
 
 
 // ROUTES FOR API
@@ -35,7 +68,8 @@ router.use(function(req, res, next) {
 
 // test route to make sure everything is working (accessed at GET htttp://localhost:8080/api
 router.get('/', function (req, res) {
-    res.json({ message: 'hooray! welcome to our api!' });
+  res.send('Hello! The API is at http://localhost:' + port + '/api');
+    // res.json({ message: 'hooray! welcome to our api!' });
 });
 
 // more routes for SimmonsAPI go here

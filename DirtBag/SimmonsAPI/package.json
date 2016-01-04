@@ -10,7 +10,9 @@
   "dependencies": {
     "body-parser": "^1.14.1",
     "express": "^4.13.3",
+    "jsonwebtoken": "^5.5.0",
     "mongodb": "^2.1.0",
-    "mongoose": "^4.2.9"
+    "mongoose": "^4.2.9",
+    "morgan": "^1.6.1"
   }
 }
