@@ -26,7 +26,8 @@ namespace DirtBag.Modules {
         public Flair RemovalFlair { get; set; }
         public int PercentageThreshold { get; set; }
         public bool IncludePostInPercentage { get; set; }
-        
+        public int GracePeriod { get; set; }
+
 
         private Dictionary<string, int> processedCache;
         private const int OVER_PERCENT_SCORE = 10;
@@ -43,6 +44,7 @@ namespace DirtBag.Modules {
             PercentageThreshold = settings.PercentageThreshold;
             IncludePostInPercentage = settings.IncludePostInPercentage;
             RemovalFlair = settings.RemovalFlair;
+            GracePeriod = settings.GracePeriod;
         }
 
         public async Task<Dictionary<string, PostAnalysisResults>> Analyze( List<Post> posts ) {
@@ -134,12 +136,12 @@ namespace DirtBag.Modules {
                     postHistory[postChannelID].Remove( post.Id );
                 }
                 double percent = ( (double) channelPosts / totalPosts ) * 100;
-                if ( percent > PercentageThreshold ) {
+                if ( percent > PercentageThreshold && channelPosts > GracePeriod ) {
                     var score = new AnalysisScore();
                     score.ModuleName = "SelfPromotionCombustor";
                     score.ReportReason = $"SelfPromo: {Math.Round( percent, 2 )}%";
                     score.Reason = $"Self Promotion for channel '{postChannelName}' with a posting percentage of {Math.Round( percent, 2 )}. Found PostIDs: {string.Join( ", ", postHistory[postChannelID] )}";
-                    score.Score = OVER_PERCENT_SCORE;
+                    score.Score = OVER_PERCENT_SCORE * Settings.ScoreMultiplier;
                     score.RemovalFlair = RemovalFlair;
 
                     toReturn[post.Id].Scores.Add( score );
@@ -164,6 +166,8 @@ namespace DirtBag.Modules {
         public int PercentageThreshold { get; set; }
         [JsonProperty]
         public bool IncludePostInPercentage { get; set; }
+        [JsonProperty]
+        public int GracePeriod { get; set; }
 
         public SelfPromotionCombustorSettings() {
             SetDefaultSettings();
@@ -177,6 +181,7 @@ namespace DirtBag.Modules {
             PercentageThreshold = 10;
             RemovalFlair = new Flair( "10%", "red", 1 );
             IncludePostInPercentage = false;
+            GracePeriod = 3;
         }
     }
 }

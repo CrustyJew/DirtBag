@@ -176,7 +176,7 @@ namespace DirtBag {
                 else {
                     var prevScores = original.AnalysisResults.Scores.Where( os => combinedAnalysis.Scores.Count( cs => cs.ModuleName == os.ModuleName ) == 0 ).ToList();
                     combinedAnalysis.Scores.AddRange( prevScores );
-                    combinedAnalysis.AnalyzingModule = original.AnalysisResults.AnalyzingModule | combinedAnalysis.AnalyzingModule;
+                    combinedAnalysis.AnalyzingModule = original.SeenByModules | combinedAnalysis.AnalyzingModule;
                 }
                 if ( combinedAnalysis.TotalScore >= Settings.RemoveScoreThreshold && Settings.RemoveScoreThreshold > 0 ) {
                     ProcessedPost removed = removedPreviously.SingleOrDefault( p => p.PostID == combinedAnalysis.Post.Id );
@@ -212,7 +212,7 @@ namespace DirtBag {
                     //processed post needs updated in
                     if ( unseen ) {
                         try {
-                            ProcessedPost.AddProcessedPost( original ); 
+                            //ProcessedPost.AddProcessedPost( original ); 
                         }
                         catch ( Exception ex ) {
                             Console.WriteLine( "Error adding new post as processed. Messaage : {0}", "\r\n Inner Exception : " + ex.InnerException.Message );
@@ -220,7 +220,7 @@ namespace DirtBag {
                     }
                     else {
                         try {
-                            ProcessedPost.UpdateProcessedPost( original ); 
+                            //ProcessedPost.UpdateProcessedPost( original ); 
                         }
                         catch ( Exception ex ) {
                             Console.WriteLine( "Error updating processed post. Messaage : {0}", "\r\n Inner Exception : " + (ex.InnerException!= null ? ex.InnerException.Message : "null") );
@@ -270,15 +270,16 @@ namespace DirtBag {
                 else if ( !mods.Contains( message.Author.ToLower() ) ) {
                     message.Reply($"You aren't a mod of {post.SubredditName}! What are you doing here? Go on! GIT!");
                 }
-                else if ( post.AuthorName == "[deleted]" ) {
-                    message.Reply( "The OP deleted the post so I can't check it. Sorry (read in Canadian accent)!" );
-                }
                 else {
                     //omg finally analyze the damn thing
                     PostAnalysisResults result;
                     var original = ProcessedPost.GetProcessed( new List<string>() { post.Id } ).SingleOrDefault();
                     if ( (int) original.SeenByModules == ActiveModules.Sum( a => (int) a.ModuleEnum ) ) {
                         result = original.AnalysisResults;
+                    }
+                    else if( post.AuthorName == "[deleted]" ) {
+                        message.Reply( "The OP deleted the post, and I don't have it cached so I can't check it. Sorry (read in Canadian accent)!" );
+                        continue;
                     }
                     else {
                         result = await AnalyzePost( post );
