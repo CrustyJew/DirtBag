@@ -1,15 +1,18 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using RedditSharp.Things;
+using Newtonsoft.Json;
 
 namespace DirtBag.Modules {
-	class PostAnalysisResults {
+	public class PostAnalysisResults {
+        [JsonIgnore]
 		public double TotalScore {
 			get {
 				return Scores.Count > 0 ? Scores.Select( s => s.Score ).Aggregate( ( s, t ) => s + t ) : 0;
 			}
-		}
-		public string ReportReason {
+        }
+        [JsonIgnore]
+        public string ReportReason {
 			get {
 				var reason = string.Join( ", ", Scores.Select( s => s.ReportReason ) );
 				if (reason.Length > 100 ) {
@@ -17,18 +20,21 @@ namespace DirtBag.Modules {
 				}
 				return reason;
 			}
-		}
+        }
+        [JsonIgnore]
         public bool HasFlair {
             get {
                 return Scores.Where( f => f.RemovalFlair != null ).Count() > 0;
             }
         }
+        [JsonIgnore]
         public string FlairText {
             get {
                 return string.Join( " / ", Scores.Where( f => f.RemovalFlair != null ).Select( f => f.RemovalFlair.Text ).Distinct() );
             }
         }
 
+        [JsonIgnore]
         public string FlairClass {
             get {
                 Flair highestPrio = null;
@@ -38,16 +44,21 @@ namespace DirtBag.Modules {
                 return highestPrio.Class;
             }
         }
-
+        [JsonIgnore]
         public Post Post { get; set; }
+        [JsonIgnore]
+        public Modules AnalyzingModule { get; set; }
 
-		public List<AnalysisScore> Scores { get; set; }
-
-		public PostAnalysisResults() {
+        [JsonProperty]
+        public List<AnalysisScore> Scores { get; set; }
+        
+        public PostAnalysisResults() {
 			Scores = new List<AnalysisScore>();
-		}
-		public PostAnalysisResults(Post post ) :this() {
+        }
+        
+        public PostAnalysisResults(Post post, Modules module ) :this() {
 			Post = post;
+            AnalyzingModule = module;
 		}
 
 	}

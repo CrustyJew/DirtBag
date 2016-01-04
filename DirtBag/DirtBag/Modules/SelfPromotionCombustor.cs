@@ -17,6 +17,8 @@ namespace DirtBag.Modules {
                 return "Self Promotion Combustor";
             }
         }
+        public Modules ModuleEnum { get { return Modules.SelfPromotionCombustor; } }
+        public bool MultiScan { get { return false; } }
 
         public IModuleSettings Settings { get; set; }
         public RedditSharp.Reddit RedditClient { get; set; }
@@ -24,6 +26,9 @@ namespace DirtBag.Modules {
         public Flair RemovalFlair { get; set; }
         public int PercentageThreshold { get; set; }
         public bool IncludePostInPercentage { get; set; }
+        public int GracePeriod { get; set; }
+
+
         private Dictionary<string, int> processedCache;
         private const int OVER_PERCENT_SCORE = 10;
         public SelfPromotionCombustor() {
@@ -39,17 +44,15 @@ namespace DirtBag.Modules {
             PercentageThreshold = settings.PercentageThreshold;
             IncludePostInPercentage = settings.IncludePostInPercentage;
             RemovalFlair = settings.RemovalFlair;
+            GracePeriod = settings.GracePeriod;
         }
 
         public async Task<Dictionary<string, PostAnalysisResults>> Analyze( List<Post> posts ) {
             var toReturn = new Dictionary<string, PostAnalysisResults>();
-            var unseenPosts = posts.Where( p => !processedCache.Keys.Contains( p.Id ) ).ToList();
-            //called here after .ToList() so it marks them incase the process runs long (will run long on first start up)
-            ManageCache( posts );
-            foreach ( var post in unseenPosts ) { //TODO error handling
+            foreach ( var post in posts ) { //TODO error handling
                 var youTubePosts = new Dictionary<string, List<Post>>();
 
-                toReturn.Add( post.Id, new PostAnalysisResults( post ) );
+                toReturn.Add( post.Id, new PostAnalysisResults( post, ModuleEnum ) );
                 string postYTID = YouTubeHelpers.ExtractVideoId( post.Url.ToString() );
                 Task<Logging.UserPostingHistory> hist;
                 if ( !string.IsNullOrEmpty( postYTID ) ) {
@@ -63,6 +66,7 @@ namespace DirtBag.Modules {
                     continue;
                 }
                 bool success = false;
+                int nonYTPosts = 0;
                 int tries = 0;
                 while ( !success && tries < 3 ) {
                     success = true;
@@ -74,6 +78,9 @@ namespace DirtBag.Modules {
                             if ( !string.IsNullOrEmpty( ytID ) ) {
                                 if ( !youTubePosts.ContainsKey( ytID ) ) youTubePosts.Add( ytID, new List<Post>() );
                                 youTubePosts[ytID].Add( post );
+                            }
+                            else {
+                                nonYTPosts++;
                             }
                         }
                     }
@@ -121,7 +128,7 @@ namespace DirtBag.Modules {
                     continue;
                 }
 
-                int totalPosts = postHistory.Sum( ph => ph.Value.Count );
+                int totalPosts = postHistory.Sum( ph => ph.Value.Count ) + nonYTPosts;
                 int channelPosts = postHistory[postChannelID].Count;
                 if ( !IncludePostInPercentage ) {
                     totalPosts--;
@@ -129,12 +136,12 @@ namespace DirtBag.Modules {
                     postHistory[postChannelID].Remove( post.Id );
                 }
                 double percent = ( (double) channelPosts / totalPosts ) * 100;
-                if ( percent > PercentageThreshold ) {
+                if ( percent > PercentageThreshold && channelPosts > GracePeriod ) {
                     var score = new AnalysisScore();
                     score.ModuleName = "SelfPromotionCombustor";
                     score.ReportReason = $"SelfPromo: {Math.Round( percent, 2 )}%";
                     score.Reason = $"Self Promotion for channel '{postChannelName}' with a posting percentage of {Math.Round( percent, 2 )}. Found PostIDs: {string.Join( ", ", postHistory[postChannelID] )}";
-                    score.Score = OVER_PERCENT_SCORE;
+                    score.Score = OVER_PERCENT_SCORE * Settings.ScoreMultiplier;
                     score.RemovalFlair = RemovalFlair;
 
                     toReturn[post.Id].Scores.Add( score );
@@ -142,23 +149,6 @@ namespace DirtBag.Modules {
             }
             return toReturn;
         }
-
-        private void ManageCache( List<Post> posts ) {
-
-            IEnumerable<string> postIDs = posts.Select( p => p.Id );
-            foreach ( var notSeen in processedCache.Where( c => !postIDs.Contains( c.Key ) ).ToArray() ) {
-                processedCache[notSeen.Key]++;
-            }
-            foreach ( string id in postIDs ) {
-                if ( processedCache.ContainsKey( id ) ) processedCache[id] = 0;
-                else processedCache.Add( id, 0 );
-            }
-            foreach ( var expired in processedCache.Where( c => c.Value > 3 ).ToArray() ) {
-                processedCache.Remove( expired.Key );
-            }
-
-        }
-
     }
 
     public class SelfPromotionCombustorSettings : IModuleSettings {
@@ -176,6 +166,8 @@ namespace DirtBag.Modules {
         public int PercentageThreshold { get; set; }
         [JsonProperty]
         public bool IncludePostInPercentage { get; set; }
+        [JsonProperty]
+        public int GracePeriod { get; set; }
 
         public SelfPromotionCombustorSettings() {
             SetDefaultSettings();
@@ -189,6 +181,7 @@ namespace DirtBag.Modules {
             PercentageThreshold = 10;
             RemovalFlair = new Flair( "10%", "red", 1 );
             IncludePostInPercentage = false;
+            GracePeriod = 3;
         }
     }
 }

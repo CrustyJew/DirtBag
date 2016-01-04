@@ -14,11 +14,14 @@ using RedditSharp.Things;
 namespace DirtBag.Modules {
     class UserStalker : IModule {
         public string ModuleName { get { return "UserStalker"; } }
+        public Modules ModuleEnum { get { return Modules.UserStalker; } }
+        public bool MultiScan { get { return false; } }
 
         public IModuleSettings Settings { get; set; }
         public Reddit RedditClient { get; set; }
         public string Subreddit { get; set; }
         public string YouTubeAPIKey { get; set; }
+        
         private Dictionary<string, int> processedCache;
         public UserStalker() {
             var key = ConfigurationManager.AppSettings["YouTubeAPIKey"];
@@ -38,8 +41,8 @@ namespace DirtBag.Modules {
             var modLog = ProcessModLog();
             var toReturn = new Dictionary<string, PostAnalysisResults>();
             var youTubePosts = new Dictionary<string, List<Post>>();
-            foreach ( var post in posts.Where( p => !processedCache.Keys.Contains( p.Id ) ) ) {
-                toReturn.Add( post.Id, new PostAnalysisResults( post ) );
+            foreach ( var post in posts ) {
+                toReturn.Add( post.Id, new PostAnalysisResults( post, ModuleEnum ) );
                 var ytID = YouTubeHelpers.ExtractVideoId( post.Url.ToString() );
 
                 if ( !string.IsNullOrEmpty( ytID ) ) {
@@ -47,7 +50,6 @@ namespace DirtBag.Modules {
                     youTubePosts[ytID].Add( post );
                 }
             }
-            ManageCache( posts );
             var yt = new YouTubeService( new BaseClientService.Initializer { ApiKey = YouTubeAPIKey } );
 
             var req = yt.Videos.List( "snippet" );
@@ -172,23 +174,6 @@ namespace DirtBag.Modules {
                 }
             }
         }
-
-        private void ManageCache( List<Post> posts ) {
-
-            IEnumerable<string> postIDs = posts.Select( p => p.Id );
-            foreach ( var notSeen in processedCache.Where( c => !postIDs.Contains( c.Key ) ).ToArray() ) {
-                processedCache[notSeen.Key]++;
-            }
-            foreach ( string id in postIDs ) {
-                if ( processedCache.ContainsKey( id ) ) processedCache[id] = 0;
-                else processedCache.Add( id, 0 );
-            }
-            foreach ( var expired in processedCache.Where( c => c.Value > 3 ).ToArray() ) {
-                processedCache.Remove( expired.Key );
-            }
-
-        }
-
 
     }
     public class UserStalkerSettings : IModuleSettings {

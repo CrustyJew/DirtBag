@@ -1,9 +1,16 @@
-﻿namespace DirtBag.Modules {
-	class AnalysisScore {
-		public double Score { get; set; }
-		public string Reason { get; set; }
-		public string ReportReason { get; set; }
+﻿using Newtonsoft.Json;
+
+namespace DirtBag.Modules {
+	public class AnalysisScore {
+        [JsonProperty]
+        public double Score { get; set; }
+        [JsonProperty]
+        public string Reason { get; set; }
+        [JsonProperty]
+        public string ReportReason { get; set; }
+        [JsonProperty]
         public Flair RemovalFlair { get; set; }
+        [JsonProperty]
         public string ModuleName { get; set; }
 		public AnalysisScore() {
 			Score = 0;

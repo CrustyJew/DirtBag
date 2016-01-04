@@ -51,7 +51,9 @@ namespace DirtBag.Logging {
                     "[ID] INTEGER NOT NULL PRIMARY KEY " + ( UseLocalDB ? "AUTOINCREMENT" : "IDENTITY" ) + ", " +
                     "[SubredditID] INTEGER NOT NULL, " +
                     "[PostID] varchar(20) NOT NULL, " +
-                    "[ActionID] INTEGER ); " +
+                    "[ActionID] INTEGER, "+
+                    "[SeenByModules] INTEGER, "+
+                    "[AnalysisResults] VARBINARY(2000) ); " + //varbinary uses less space than base64 encoding and storing as varchar
                     "";
                 con.Execute( initTables );
 
@@ -65,7 +67,7 @@ namespace DirtBag.Logging {
                     "SELECT SubName from SubReddits" +
                     ";" +
                     "INSERT INTO Actions (ActionName) " +
-                    "VALUES ('Report'),('Remove') " +
+                    "VALUES ('Report'),('Remove'),('None') " +
                     "EXCEPT " +
                     "SELECT ActionName from Actions" +
                     ";";
@@ -79,7 +81,7 @@ namespace DirtBag.Logging {
                     "INSERT (SubName) VALUES (ns.SubName); " +
                     "" +
                     "MERGE Actions WITH (HOLDLOCK) AS v " +
-                    "Using (VALUES ('Report'),('Remove')) AS nv (Action) " +
+                    "Using (VALUES ('Report'),('Remove'),('None')) AS nv (Action) " +
                     "ON v.ActionName = nv.Action " +
                     "WHEN NOT MATCHED BY TARGET THEN " +
                     "INSERT (ActionName) VALUES (nv.Action); ";

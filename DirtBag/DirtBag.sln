@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirtBag", "DirtBag\DirtBag.
 EndProject
 Project("{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}") = "SimmonsAPI", "SimmonsAPI\SimmonsAPI.njsproj", "{43467E3F-1DA2-479F-815C-92EF560B4B30}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirtBagTests", "DirtBagTests\DirtBagTests.csproj", "{16BC128A-B640-498A-8DFF-18B8E780A434}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{43467E3F-1DA2-479F-815C-92EF560B4B30}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{43467E3F-1DA2-479F-815C-92EF560B4B30}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{43467E3F-1DA2-479F-815C-92EF560B4B30}.Release|Any CPU.Build.0 = Release|Any CPU
+		{16BC128A-B640-498A-8DFF-18B8E780A434}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{16BC128A-B640-498A-8DFF-18B8E780A434}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{16BC128A-B640-498A-8DFF-18B8E780A434}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{16BC128A-B640-498A-8DFF-18B8E780A434}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

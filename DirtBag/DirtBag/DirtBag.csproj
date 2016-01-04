@@ -157,6 +157,7 @@
   <ItemGroup>
     <Compile Include="Flair.cs" />
     <Compile Include="Helpers\PostEqualityComparer.cs" />
+    <Compile Include="Helpers\ProcessedPostHelpers.cs" />
     <Compile Include="Helpers\RedditWebAgent.cs" />
     <Compile Include="Helpers\YouTubeHelpers.cs" />
     <Compile Include="Logging\Channel.cs" />
@@ -170,6 +171,7 @@
     <Compile Include="Modules\IModule.cs" />
     <Compile Include="Modules\IModuleSettings.cs" />
     <Compile Include="Modules\LicensingSmasher.cs" />
+    <Compile Include="Modules\ModulesEnum.cs" />
     <Compile Include="Modules\PostAnalysisResults.cs" />
     <Compile Include="Modules\SelfPromotionCombustor.cs" />
     <Compile Include="Modules\UserStalker.cs" />
