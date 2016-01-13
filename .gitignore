@@ -212,7 +212,7 @@ GeneratedArtifacts/
 _Pvt_Extensions/
 ModelManifest.xml
 
-
+*/public/libs/**
 
 ##### FILES/LOCATIONS TO IGNORE FOR NODE PROJECTS #####
 # Logs
