@@ -212,7 +212,7 @@ namespace DirtBag {
                     //processed post needs updated in
                     if ( unseen ) {
                         try {
-                            //ProcessedPost.AddProcessedPost( original ); 
+                            ProcessedPost.AddProcessedPost( original ); 
                         }
                         catch ( Exception ex ) {
                             Console.WriteLine( "Error adding new post as processed. Messaage : {0}", "\r\n Inner Exception : " + ex.InnerException.Message );
@@ -220,7 +220,7 @@ namespace DirtBag {
                     }
                     else {
                         try {
-                            //ProcessedPost.UpdateProcessedPost( original ); 
+                            ProcessedPost.UpdateProcessedPost( original ); 
                         }
                         catch ( Exception ex ) {
                             Console.WriteLine( "Error updating processed post. Messaage : {0}", "\r\n Inner Exception : " + (ex.InnerException!= null ? ex.InnerException.Message : "null") );
