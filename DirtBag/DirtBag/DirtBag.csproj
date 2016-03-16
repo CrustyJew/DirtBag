@@ -15,6 +15,7 @@
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
     <TargetFrameworkProfile />
+    <IsWebBootstrapper>false</IsWebBootstrapper>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -27,7 +28,6 @@
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
@@ -123,6 +123,10 @@
       <HintPath>..\packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="RedditSharp, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>lib\RedditSharp.dll</HintPath>
+    </Reference>
     <Reference Include="Owin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f0ebd12fd5e55cc5, processorArchitecture=MSIL">
       <HintPath>..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
       <Private>True</Private>
@@ -181,15 +185,26 @@
   <ItemGroup>
     <Compile Include="Controllers\PostAnalysisController.cs" />
     <Compile Include="Controllers\RedditConnectionController.cs" />
+    <Compile Include="Flair.cs" />
     <Compile Include="Helpers\PostEqualityComparer.cs" />
+    <Compile Include="Helpers\ProcessedPostHelpers.cs" />
     <Compile Include="Helpers\RedditWebAgent.cs" />
+    <Compile Include="Helpers\YouTubeHelpers.cs" />
+    <Compile Include="Logging\Channel.cs" />
     <Compile Include="Logging\DirtBagConnection.cs" />
+    <Compile Include="Logging\PostRemoval.cs" />
     <Compile Include="Logging\ProcessedPost.cs" />
+    <Compile Include="Logging\UserAnalysis.cs" />
+    <Compile Include="Logging\UserPost.cs" />
+    <Compile Include="Logging\UserPostingHistory.cs" />
     <Compile Include="Modules\AnalysisScore.cs" />
     <Compile Include="Modules\IModule.cs" />
     <Compile Include="Modules\IModuleSettings.cs" />
     <Compile Include="Modules\LicensingSmasher.cs" />
+    <Compile Include="Modules\ModulesEnum.cs" />
     <Compile Include="Modules\PostAnalysisResults.cs" />
+    <Compile Include="Modules\SelfPromotionCombustor.cs" />
+    <Compile Include="Modules\UserStalker.cs" />
     <Compile Include="Modules\YouTubeSpamDetector.cs" />
     <Compile Include="PostTypes.cs" />
     <Compile Include="Program.cs" />
@@ -207,12 +222,7 @@
     <None Include="PrivateConfig.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\..\..\Source\Repos\RedditSharp\RedditSharp\RedditSharp.csproj">
-      <Project>{a368cb75-75f0-4489-904d-b5cebb0fe624}</Project>
-      <Name>RedditSharp</Name>
-    </ProjectReference>
+    <None Include="Properties\webjob-publish-settings.json" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.6">
@@ -226,7 +236,11 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <None Include="lib\RedditSharp.dll" />
+    <None Include="lib\RedditSharp.pdb" />
+    <None Include="lib\RedditSharp.XML" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets" Condition="Exists('..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
@@ -237,6 +251,7 @@
     <Error Condition="!Exists('..\packages\System.Data.SQLite.Core.1.0.98.1\build\net45\System.Data.SQLite.Core.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\System.Data.SQLite.Core.1.0.98.1\build\net45\System.Data.SQLite.Core.targets'))" />
   </Target>
   <Import Project="..\packages\System.Data.SQLite.Core.1.0.98.1\build\net45\System.Data.SQLite.Core.targets" Condition="Exists('..\packages\System.Data.SQLite.Core.1.0.98.1\build\net45\System.Data.SQLite.Core.targets')" />
+  <Import Project="..\packages\Microsoft.Web.WebJobs.Publish.1.0.4\tools\webjobs.targets" Condition="Exists('..\packages\Microsoft.Web.WebJobs.Publish.1.0.4\tools\webjobs.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -74,15 +73,13 @@ namespace DirtBag.Helpers {
         /// <summary>
         /// UTC DateTime of last request made to Reddit API
         /// </summary>
-        public DateTime LastRequest {
-            get { return _lastRequest; }
-        }
+        public DateTime LastRequest => _lastRequest;
+
         /// <summary>
         /// UTC DateTime of when the last burst started
         /// </summary>
-        public DateTime BurstStart {
-            get { return _burstStart; }
-        }
+        public DateTime BurstStart => _burstStart;
+
         /// <summary>
         /// Number of requests made during the current burst 
         /// </summary>
@@ -94,7 +91,7 @@ namespace DirtBag.Helpers {
         public JToken CreateAndExecuteRequest( string url ) {
             Uri uri;
             if ( !Uri.TryCreate( url, UriKind.Absolute, out uri ) ) {
-                if ( !Uri.TryCreate( String.Format( "{0}://{1}{2}", Protocol, RootDomain, url ), UriKind.Absolute, out uri ) )
+                if ( !Uri.TryCreate($"{Protocol}://{RootDomain}{url}", UriKind.Absolute, out uri ) )
                     throw new Exception( "Could not parse Uri" );
             }
             var request = CreateGet( uri );
@@ -118,7 +115,7 @@ namespace DirtBag.Helpers {
         /// <returns></returns>
         public JToken ExecuteRequest( HttpWebRequest request ) {
             EnforceRateLimit();
-            HttpWebResponse response = (HttpWebResponse) request.GetResponse();
+            var response = (HttpWebResponse) request.GetResponse();
             var result = GetResponseString( response.GetResponseStream() );
 
             JToken json;
@@ -142,11 +139,13 @@ namespace DirtBag.Helpers {
                         }
                     }
                 }
-                catch {
+                catch
+                {
+                    // ignored
                 }
             }
             else {
-                json = JToken.Parse( "{'method':'" + response.Method + "','uri':'" + response.ResponseUri.AbsoluteUri + "','status':'" + response.StatusCode.ToString() + "'}" );
+                json = JToken.Parse( "{'method':'" + response.Method + "','uri':'" + response.ResponseUri.AbsoluteUri + "','status':'" + response.StatusCode + "'}" );
             }
             return json;
 
@@ -192,27 +191,33 @@ namespace DirtBag.Helpers {
                     _lastRequest = DateTime.UtcNow;
                     _requestsThisBurst++;
                     break;
+                case RateLimitMode.None:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
         }
 
-        public HttpWebRequest CreateRequest( string url, string method ) {
+        public HttpWebRequest CreateRequest(string url, string method)
+        {
             EnforceRateLimit();
             bool prependDomain;
             // IsWellFormedUriString returns true on Mono for some reason when using a string like "/api/me"
-            if ( Type.GetType( "Mono.Runtime" ) != null )
-                prependDomain = !url.StartsWith( "http://" ) && !url.StartsWith( "https://" );
+            if (Type.GetType("Mono.Runtime") != null)
+                prependDomain = !url.StartsWith("http://") && !url.StartsWith("https://");
             else
-                prependDomain = !Uri.IsWellFormedUriString( url, UriKind.Absolute );
+                prependDomain = !Uri.IsWellFormedUriString(url, UriKind.Absolute);
 
             HttpWebRequest request;
-            if ( prependDomain )
-                request = (HttpWebRequest) WebRequest.Create( String.Format( "{0}://{1}{2}", Protocol, RootDomain, url ) );
+            if (prependDomain)
+                request = (HttpWebRequest) WebRequest.Create($"{Protocol}://{RootDomain}{url}");
             else
-                request = (HttpWebRequest) WebRequest.Create( url );
+                request = (HttpWebRequest) WebRequest.Create(url);
             request.CookieContainer = Cookies;
-            if ( Type.GetType( "Mono.Runtime" ) != null ) {
-                var cookieHeader = Cookies.GetCookieHeader( new Uri( "http://reddit.com" ) );
-                request.Headers.Set( "Cookie", cookieHeader );
+            if (Type.GetType("Mono.Runtime") != null)
+            {
+                var cookieHeader = Cookies.GetCookieHeader(new Uri("http://reddit.com"));
+                request.Headers.Set("Cookie", cookieHeader);
             }
             if (request.Address.Host.ToLower().Contains("oauth.reddit.com"))// use OAuth
             {
@@ -223,72 +228,89 @@ namespace DirtBag.Helpers {
             return request;
         }
 
-        private HttpWebRequest CreateRequest( Uri uri, string method ) {
+        private HttpWebRequest CreateRequest(Uri uri, string method)
+        {
             EnforceRateLimit();
-            var request = (HttpWebRequest) WebRequest.Create( uri );
+            var request = (HttpWebRequest) WebRequest.Create(uri);
             request.CookieContainer = Cookies;
-            if ( Type.GetType( "Mono.Runtime" ) != null ) {
-                var cookieHeader = Cookies.GetCookieHeader( new Uri( "http://reddit.com" ) );
-                request.Headers.Set( "Cookie", cookieHeader );
-            }
-            if ( RootDomain == "oauth.reddit.com" )// use OAuth
+            if (Type.GetType("Mono.Runtime") != null)
             {
-                request.Headers.Set( "Authorization", "bearer " + AccessToken );//Must be included in OAuth calls
+                var cookieHeader = Cookies.GetCookieHeader(new Uri("http://reddit.com"));
+                request.Headers.Set("Cookie", cookieHeader);
+            }
+            if (RootDomain == "oauth.reddit.com") // use OAuth
+            {
+                request.Headers.Set("Authorization", "bearer " + AccessToken); //Must be included in OAuth calls
             }
             request.Method = method;
             request.UserAgent = UserAgent + " - with RedditSharp by /u/sircmpwn";
             return request;
         }
 
-        public HttpWebRequest CreateGet( string url ) {
-            return CreateRequest( url, "GET" );
+        public HttpWebRequest CreateGet(string url)
+        {
+            return CreateRequest(url, "GET");
         }
 
-        private HttpWebRequest CreateGet( Uri url ) {
-            return CreateRequest( url, "GET" );
+        private HttpWebRequest CreateGet(Uri url)
+        {
+            return CreateRequest(url, "GET");
         }
 
-        public HttpWebRequest CreatePost( string url ) {
-            var request = CreateRequest( url, "POST" );
+        public HttpWebRequest CreatePost(string url)
+        {
+            var request = CreateRequest(url, "POST");
             request.ContentType = "application/x-www-form-urlencoded";
             return request;
         }
 
-        public string GetResponseString( Stream stream ) {
-            var data = new StreamReader( stream ).ReadToEnd();
+        public string GetResponseString(Stream stream)
+        {
+            var data = new StreamReader(stream).ReadToEnd();
             stream.Close();
             return data;
         }
 
-        public void WritePostBody( Stream stream, object data, params string[] additionalFields ) {
+        public void WritePostBody(Stream stream, object data, params string[] additionalFields)
+        {
             var type = data.GetType();
-            var properties = type.GetProperties( BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public );
-            string value = "";
-            foreach ( var property in properties ) {
-                var attr = property.GetCustomAttributes( typeof( RedditAPINameAttribute ), false ).FirstOrDefault() as RedditAPINameAttribute;
-                string name = attr == null ? property.Name : attr.Name;
-                var entry = Convert.ToString( property.GetValue( data, null ) );
-                value += name + "=" + HttpUtility.UrlEncode( entry ).Replace( ";", "%3B" ).Replace( "&", "%26" ) + "&";
+            var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            var value = "";
+            foreach (var property in properties)
+            {
+                var attr = property.GetCustomAttributes(typeof (RedditApiNameAttribute), false).FirstOrDefault() as RedditApiNameAttribute;
+                var name = attr == null ? property.Name : attr.Name;
+                var entry = Convert.ToString(property.GetValue(data, null));
+                var urlEncode = HttpUtility.UrlEncode(entry);
+                if (urlEncode != null)
+                    value += name + "=" + urlEncode.Replace(";", "%3B").Replace("&", "%26") + "&";
             }
-            for ( int i = 0; i < additionalFields.Length; i += 2 ) {
-                var entry = Convert.ToString( additionalFields[i + 1] ) ?? string.Empty;
-                value += additionalFields[i] + "=" + HttpUtility.UrlEncode( entry ).Replace( ";", "%3B" ).Replace( "&", "%26" ) + "&";
+            for (var i = 0; i < additionalFields.Length; i += 2)
+            {
+                var entry = Convert.ToString(additionalFields[i + 1]) ?? string.Empty;
+                var urlEncode = HttpUtility.UrlEncode(entry);
+                if (urlEncode != null)
+                    value += additionalFields[i] + "=" + urlEncode.Replace(";", "%3B").Replace("&", "%26") + "&";
             }
-            value = value.Remove( value.Length - 1 ); // Remove trailing &
-            var raw = Encoding.UTF8.GetBytes( value );
-            stream.Write( raw, 0, raw.Length );
+            value = value.Remove(value.Length - 1); // Remove trailing &
+            var raw = Encoding.UTF8.GetBytes(value);
+            stream.Write(raw, 0, raw.Length);
             stream.Close();
         }
     }
-    [AttributeUsage( AttributeTargets.Field | AttributeTargets.Property )]
-    internal class RedditAPINameAttribute : Attribute {
+
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+    internal class RedditApiNameAttribute : Attribute
+    {
         internal string Name { get; private set; }
 
-        internal RedditAPINameAttribute( string name ) {
+        internal RedditApiNameAttribute(string name)
+        {
             Name = name;
         }
 
-        public override string ToString() {
+        public override string ToString()
+        {
             return Name;
         }
     }

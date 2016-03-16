@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using RedditSharp.Things;
 
 namespace DirtBag.Helpers {
-	class PostIdEqualityComparer : IEqualityComparer<RedditSharp.Things.Post> {
+	class PostIdEqualityComparer : IEqualityComparer<Post> {
 		public bool Equals( Post x, Post y ) {
 			return x.Id == y.Id;
 		}
