@@ -1,15 +1,13 @@
 ﻿using Owin;
 using System.Web.Http;
+using Thinktecture.IdentityModel;
 namespace DirtBag {
-    public class Startup {
+    public partial class Startup {
         public void Configuration(IAppBuilder appBuilder ) {
             HttpConfiguration config = new HttpConfiguration();
-            config.Routes.MapHttpRoute(
-                name: "DefaultApi",
-                routeTemplate: "api/{controller}/{action}",
-                defaults: new {} 
-            );
-
+            WebApiConfig.Register( config );
+            config.Filters.Add( new AuthorizeAttribute() );
+            ConfigureAuth( appBuilder );
             appBuilder.UseWebApi( config );
         }
     }

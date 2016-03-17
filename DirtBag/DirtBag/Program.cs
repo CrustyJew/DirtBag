@@ -235,7 +235,8 @@ namespace DirtBag {
                     }
 
             Console.WriteLine($"Successfully processed {results.Keys.Count} posts.\r\nIgnored posts: {ignoredCounter}\r\nReported Posts: {reportedCounter}\r\nRemoved Posts: {removedCounter}" );
-                }
+
+        }
         internal static async Task<PostAnalysisResults> AnalyzePost( Post post ) {
             var postTasks = ActiveModules.Select(module => module.Analyze(new List<Post> {post})).ToList();
             var results = new PostAnalysisResults( post, Modules.Modules.None );
