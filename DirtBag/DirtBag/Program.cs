@@ -26,24 +26,30 @@ namespace DirtBag {
 
         private static readonly ManualResetEvent WaitHandle = new ManualResetEvent( false );
         public const double VersionNumber = 1.0;
-        static void Main(string[] args)
-        {
+        static void Main( string[] args ) {
             ActiveModules = new List<IModule>();
             //Instantiate and throw away a Reddit instance so the static constructor won't interfere with the WebAgent later.
             new Reddit();
             var conn = new DirtBagConnection();
             var sub = ConfigurationManager.AppSettings["Subreddit"];
-            conn.InitializeConnection(new[] { sub });
+            conn.InitializeConnection( new[] { sub } );
             Initialize();
-            string baseAddress = "http://localhost:9009/";
-            WebApp.Start<Startup>( url: baseAddress );
+            string baseAddresses = System.Configuration.ConfigurationManager.AppSettings["ApiListeningUrls"];
+            if ( !string.IsNullOrWhiteSpace( baseAddresses ) ) {
+                var opts = new StartOptions();
+                foreach ( string address in baseAddresses.Split( ',' ) ) {
+                    opts.Urls.Add( address );
+                }
+
+                WebApp.Start<Startup>( opts );
+            }
             while ( true ) {
                 var x = Console.ReadLine();
                 System.Diagnostics.Debug.WriteLine( x );
             }
             WaitHandle.WaitOne(); //Go the fuck to sleep
 
-            
+
 
         }
 
@@ -88,10 +94,10 @@ namespace DirtBag {
         private static void StopTimer() {
             TheKeeper?.Dispose();
             TheWatcher?.Dispose();
-            }
+        }
         private static void CheckBurstStats( object s ) {
             var agent = (RedditWebAgent) s;
-            Console.WriteLine("Last Request: {0}\r\nBurst Start: {1}\r\nRequests this Burst: {2}", agent.LastRequest, agent.BurstStart, agent.RequestsThisBurst);
+            Console.WriteLine( "Last Request: {0}\r\nBurst Start: {1}\r\nRequests this Burst: {2}", agent.LastRequest, agent.BurstStart, agent.RequestsThisBurst );
         }
         private static async void ProcessPosts( object s ) {
             var sub = Client.GetSubreddit( Subreddit );
@@ -144,12 +150,12 @@ namespace DirtBag {
                 List<Post> postsList = new List<Post>();
                 if ( !module.MultiScan ) {
                     //only add unseen posts
-                    postsList.AddRange( posts.Where( ph => alreadyProcessed.Count( ap => ap.PostID == ph.Id && ap.SeenByModules.HasFlag(module.ModuleEnum) ) == 0 ) );
-            }
+                    postsList.AddRange( posts.Where( ph => alreadyProcessed.Count( ap => ap.PostID == ph.Id && ap.SeenByModules.HasFlag( module.ModuleEnum ) ) == 0 ) );
+                }
                 else {
                     postsList = posts.ToList();
                 }
-                if( postsList.Count > 0 ) postTasks.Add( Task.Run( ()=>module.Analyze( postsList ) ) );
+                if ( postsList.Count > 0 ) postTasks.Add( Task.Run( () => module.Analyze( postsList ) ) );
             }
 
             var results = new Dictionary<string, PostAnalysisResults>();
@@ -216,29 +222,29 @@ namespace DirtBag {
                     original.Action = action;
                     //processed post needs updated in
                     if ( unseen ) {
-                    try {
-                            ProcessedPost.AddProcessedPost( original ); 
-                    }
-                    catch ( Exception ex ) {
-                            Console.WriteLine( "Error adding new post as processed. Messaage : {0}", "\r\n Inner Exception : " + ex.InnerException.Message );
-                    }
-                }
-                    else {
                         try {
-                            ProcessedPost.UpdateProcessedPost( original ); 
+                            ProcessedPost.AddProcessedPost( original );
                         }
                         catch ( Exception ex ) {
-                            Console.WriteLine( "Error updating processed post. Messaage : {0}", "\r\n Inner Exception : " + (ex.InnerException!= null ? ex.InnerException.Message : "null") );
+                            Console.WriteLine( "Error adding new post as processed. Messaage : {0}", "\r\n Inner Exception : " + ex.InnerException.Message );
                         }
                     }
+                    else {
+                        try {
+                            ProcessedPost.UpdateProcessedPost( original );
+                        }
+                        catch ( Exception ex ) {
+                            Console.WriteLine( "Error updating processed post. Messaage : {0}", "\r\n Inner Exception : " + ( ex.InnerException != null ? ex.InnerException.Message : "null" ) );
                         }
                     }
+                }
+            }
 
-            Console.WriteLine($"Successfully processed {results.Keys.Count} posts.\r\nIgnored posts: {ignoredCounter}\r\nReported Posts: {reportedCounter}\r\nRemoved Posts: {removedCounter}" );
+            Console.WriteLine( $"Successfully processed {results.Keys.Count} posts.\r\nIgnored posts: {ignoredCounter}\r\nReported Posts: {reportedCounter}\r\nRemoved Posts: {removedCounter}" );
 
         }
         internal static async Task<PostAnalysisResults> AnalyzePost( Post post ) {
-            var postTasks = ActiveModules.Select(module => module.Analyze(new List<Post> {post})).ToList();
+            var postTasks = ActiveModules.Select( module => module.Analyze( new List<Post> { post } ) ).ToList();
             var results = new PostAnalysisResults( post, Modules.Modules.None );
 
             while ( postTasks.Count > 0 ) {
@@ -251,17 +257,16 @@ namespace DirtBag {
                 }
             }
             return results;
-            }
+        }
         private static async void ProcessMessages( object s ) {
             var messages = Client.User.UnreadMessages;
             var mods = new List<string>();
             mods.AddRange( Client.GetSubreddit( Subreddit ).Moderators.Select( m => m.Name.ToLower() ).ToList() ); //TODO when enabling multiple subs, fix this
 
-            foreach (var message in messages.Where(unread => unread.Kind == "t4").Cast<PrivateMessage>())
-            {
+            foreach ( var message in messages.Where( unread => unread.Kind == "t4" ).Cast<PrivateMessage>() ) {
                 message.SetAsRead();
-                if (message.Subject.ToLower() != "validate" && message.Subject.ToLower() != "check" &&
-                    message.Subject.ToLower() != "analyze") continue;
+                if ( message.Subject.ToLower() != "validate" && message.Subject.ToLower() != "check" &&
+                    message.Subject.ToLower() != "analyze" ) continue;
                 Post post;
                 try {
                     post = Client.GetPost( new Uri( message.Body ) );
@@ -271,10 +276,10 @@ namespace DirtBag {
                     continue;
                 }
                 if ( post.SubredditName.ToLower() != Subreddit.ToLower() ) { //TODO when enabling multiple subreddits, this needs tweaked!
-                    message.Reply($"I don't have any rules for {post.SubredditName}.");
+                    message.Reply( $"I don't have any rules for {post.SubredditName}." );
                 }
                 else if ( !mods.Contains( message.Author.ToLower() ) ) {
-                    message.Reply($"You aren't a mod of {post.SubredditName}! What are you doing here? Go on! GIT!");
+                    message.Reply( $"You aren't a mod of {post.SubredditName}! What are you doing here? Go on! GIT!" );
                 }
                 else {
                     //omg finally analyze the damn thing
@@ -283,7 +288,7 @@ namespace DirtBag {
                     if ( (int) original.SeenByModules == ActiveModules.Sum( a => (int) a.ModuleEnum ) ) {
                         result = original.AnalysisResults;
                     }
-                    else if( post.AuthorName == "[deleted]" ) {
+                    else if ( post.AuthorName == "[deleted]" ) {
                         message.Reply( "The OP deleted the post, and I don't have it cached so I can't check it. Sorry (read in Canadian accent)!" );
                         continue;
                     }
@@ -292,21 +297,21 @@ namespace DirtBag {
                     }
                     var reply = new StringBuilder();
                     reply.AppendLine(
-                        $"Analysis results for \"[{post.Title}]({post.Permalink})\" submitted by /u/{post.AuthorName} to /r/{post.SubredditName}");
+                        $"Analysis results for \"[{post.Title}]({post.Permalink})\" submitted by /u/{post.AuthorName} to /r/{post.SubredditName}" );
                     reply.AppendLine();
                     var action = "None";
                     if ( Settings.RemoveScoreThreshold > 0 && result.TotalScore > Settings.RemoveScoreThreshold ) action = "Remove";
                     else if ( Settings.ReportScoreThreshold > 0 && result.TotalScore > Settings.ReportScoreThreshold ) action = "Report";
-                    reply.AppendLine($"##Action Taken: {action} with a score of {result.TotalScore}");
+                    reply.AppendLine( $"##Action Taken: {action} with a score of {result.TotalScore}" );
                     reply.AppendLine();
                     reply.AppendLine(
-                        $"**/r/{post.SubredditName}'s thresholds** --- Remove : **{(Settings.RemoveScoreThreshold > 0 ? Settings.RemoveScoreThreshold.ToString() : "Disabled")}** , Report : **{(Settings.ReportScoreThreshold > 0 ? Settings.ReportScoreThreshold.ToString() : "Disabled")}**");
+                        $"**/r/{post.SubredditName}'s thresholds** --- Remove : **{( Settings.RemoveScoreThreshold > 0 ? Settings.RemoveScoreThreshold.ToString() : "Disabled" )}** , Report : **{( Settings.ReportScoreThreshold > 0 ? Settings.ReportScoreThreshold.ToString() : "Disabled" )}**" );
                     reply.AppendLine();
                     reply.AppendLine( "Module| Score |Reason" );
                     reply.AppendLine( ":--|:--:|:--" );
                     foreach ( var score in result.Scores ) {
-                        reply.AppendLine($"{score.ModuleName}|{score.Score}|{score.Reason}");
-        }
+                        reply.AppendLine( $"{score.ModuleName}|{score.Score}|{score.Reason}" );
+                    }
                     message.Reply( reply.ToString() );
 
                 }
