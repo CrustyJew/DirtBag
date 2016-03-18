@@ -193,6 +193,7 @@
   <ItemGroup>
     <Compile Include="App_Start\WebApiConfig.cs" />
     <Compile Include="App_Start\Startup.Auth.cs" />
+    <Compile Include="BotFunctions\AutoModWrangler.cs" />
     <Compile Include="Controllers\PostAnalysisController.cs" />
     <Compile Include="Controllers\RedditConnectionController.cs" />
     <Compile Include="Flair.cs" />
@@ -231,6 +232,7 @@
     <None Include="packages.config" />
     <None Include="PrivateConfig.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
     </None>
     <None Include="Properties\webjob-publish-settings.json" />
   </ItemGroup>
