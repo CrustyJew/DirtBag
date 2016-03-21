@@ -208,6 +208,7 @@
     <Compile Include="Logging\UserAnalysis.cs" />
     <Compile Include="Logging\UserPost.cs" />
     <Compile Include="Logging\UserPostingHistory.cs" />
+    <Compile Include="Models\BannedEntity.cs" />
     <Compile Include="Modules\AnalysisScore.cs" />
     <Compile Include="Modules\IModule.cs" />
     <Compile Include="Modules\IModuleSettings.cs" />
