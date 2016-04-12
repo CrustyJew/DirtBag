@@ -201,6 +201,7 @@
     <Compile Include="Helpers\ProcessedPostHelpers.cs" />
     <Compile Include="Helpers\RedditWebAgent.cs" />
     <Compile Include="Helpers\YouTubeHelpers.cs" />
+    <Compile Include="Logging\BannedEntities.cs" />
     <Compile Include="Logging\Channel.cs" />
     <Compile Include="Logging\DirtBagConnection.cs" />
     <Compile Include="Logging\PostRemoval.cs" />

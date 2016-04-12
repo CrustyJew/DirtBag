@@ -42,7 +42,7 @@ namespace DirtBag.Logging {
                 else initTables += "if not exists( select * from sys.tables t join sys.schemas s on ( t.schema_id = s.schema_id ) where s.name = SCHEMA_NAME() and t.name = 'Actions' ) Create table ";
                 initTables += "" +
                     "[Actions]( " +
-                    "[ID] INTEGER NOT NULL PRIMARY KEY " + (UseLocalDB?"AUTOINCREMENT":"IDENTITY") +", " +
+                    "[ID] INTEGER NOT NULL PRIMARY KEY " + ( UseLocalDB ? "AUTOINCREMENT" : "IDENTITY" ) + ", " +
                     "[ActionName] varchar(50) NOT NULL); ";
                 if ( UseLocalDB ) initTables += "CREATE TABLE IF NOT EXISTS ";
                 else initTables += "if not exists( select * from sys.tables t join sys.schemas s on ( t.schema_id = s.schema_id ) where t.name = 'ProcessedPosts' ) Create table ";
@@ -51,11 +51,21 @@ namespace DirtBag.Logging {
                     "[ID] INTEGER NOT NULL PRIMARY KEY " + ( UseLocalDB ? "AUTOINCREMENT" : "IDENTITY" ) + ", " +
                     "[SubredditID] INTEGER NOT NULL, " +
                     "[PostID] varchar(20) NOT NULL, " +
-                    "[ActionID] INTEGER, "+
-                    "[SeenByModules] INTEGER, "+
+                    "[ActionID] INTEGER, " +
+                    "[SeenByModules] INTEGER, " +
                     "[AnalysisResults] VARBINARY(2000) ); " + //varbinary uses less space than base64 encoding and storing as varchar
                     "";
-                con.Execute( initTables );
+                if ( UseLocalDB ) initTables += "CREATE TABLE IF NOT EXISTS ";
+                else initTables += "if not exists( select * from sys.tables t join sys.schemas s on ( t.schema_id = s.schema_id ) where t.name = 'ProcessedPosts' ) Create table ";
+                initTables += @"
+                    [BannedEntities]( 
+                    [ID] INTEGER NOT NULL PRIMARY KEY " + ( UseLocalDB ? "AUTOINCREMENT" : "IDENTITY" ) +
+                    @", 
+                    [SubredditID] INTEGER, 
+                    [EntityString] varchar(100) NOT NULL,
+                    [BannedBy] varchar(50) NOT NULL,
+                    [BanDate] DATETIME,
+                    [ThingID] varchar(20) );";
 
                 var subs = "('" + string.Join( "'),('", subreddits ) + "') ";
                 var seedData = "";
