@@ -44,8 +44,8 @@ namespace DirtBag.Modules {
             LicenserMatching = new Regex( "^" + string.Join( "$|^", settings.KnownLicensers.Keys ) + "$", RegexOptions.IgnoreCase );
         }
         private const int STRINGMATCH_SCORE = 3;
-        private const int ATTRIBUTION_SCORE = 1;
-        private const int ATTRIBUTION_MATCH_SCORE = 7; //can only have 1 attribution score so it can be > 10
+        private const int ATTRIBUTION_SCORE = 2;
+        private const int ATTRIBUTION_MATCH_SCORE = 10; //can only have 1 attribution score so it can be > 10
         private static Regex VideoID = new Regex( @"(?:youtube\.com/(?:(?:watch|attribution_link)\?(?:.*(?:&|%3F|&amp;))?v(?:=|%3D)|embed/|v/)|youtu\.be/)([a-zA-Z0-9-_]{11})" );
         private static string YouTubeScrapeFormat = "https://youtu.be/{0}";
 
@@ -111,6 +111,7 @@ namespace DirtBag.Modules {
                 var score = ScoreYouTubeMetaData( scrapeBody );
                 if ( score != null ) {
                     foreach ( var post in ytPosts[dictItem.Key] ) {
+                        results[post.Id].Scores.Clear();
                         results[post.Id].Scores.Add( score );
                     }
                 }

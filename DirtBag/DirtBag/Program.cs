@@ -97,7 +97,7 @@ namespace DirtBag {
 
             //avoid getting unnecessary posts to keep requests lower
             if ( ActiveModules.Any( m => m.Settings.PostTypes.HasFlag( PostType.New ) ) ) {
-                newPosts = sub.New.Take( 50 ).ToList();
+                newPosts = sub.New.Take( 100 ).ToList();
             }
             if ( ActiveModules.Any( m => m.Settings.PostTypes.HasFlag( PostType.Hot ) ) ) {
                 hotPosts = sub.Hot.Take( 50 ).ToList();
@@ -254,8 +254,15 @@ namespace DirtBag {
             foreach (var message in messages.Where(unread => unread.Kind == "t4").Cast<PrivateMessage>())
             {
                 message.SetAsRead();
-                if (message.Subject.ToLower() != "validate" && message.Subject.ToLower() != "check" &&
-                    message.Subject.ToLower() != "analyze") continue;
+                string subject = message.Subject.ToLower();
+                List<string> args = subject.Split( '-' ).Select( p => p.Trim() ).ToList();
+
+                bool force = args.Count > 1 && args.Contains( "force" );
+                if ( ! subject.Contains("validate") && !subject.Contains("check") &&
+                    !subject.Contains("analyze" ) ) {
+                    message.Reply( "Whatchu talkin bout Willis" );
+                    continue;
+                }
                 Post post;
                 try {
                     post = Client.GetPost( new Uri( message.Body ) );
@@ -274,7 +281,7 @@ namespace DirtBag {
                     //omg finally analyze the damn thing
                     PostAnalysisResults result;
                     var original = ProcessedPost.GetProcessed( new List<string>() { post.Id } ).SingleOrDefault();
-                    if ( (int) original.SeenByModules == ActiveModules.Sum( a => (int) a.ModuleEnum ) ) {
+                    if ( (int) original.SeenByModules == ActiveModules.Sum( a => (int) a.ModuleEnum ) && !force && original.AnalysisResults != null ) {
                         result = original.AnalysisResults;
                     }
                     else if( post.AuthorName == "[deleted]" ) {
@@ -289,8 +296,8 @@ namespace DirtBag {
                         $"Analysis results for \"[{post.Title}]({post.Permalink})\" submitted by /u/{post.AuthorName} to /r/{post.SubredditName}");
                     reply.AppendLine();
                     var action = "None";
-                    if ( Settings.RemoveScoreThreshold > 0 && result.TotalScore > Settings.RemoveScoreThreshold ) action = "Remove";
-                    else if ( Settings.ReportScoreThreshold > 0 && result.TotalScore > Settings.ReportScoreThreshold ) action = "Report";
+                    if ( Settings.RemoveScoreThreshold > 0 && result.TotalScore >= Settings.RemoveScoreThreshold ) action = "Remove";
+                    else if ( Settings.ReportScoreThreshold > 0 && result.TotalScore >= Settings.ReportScoreThreshold ) action = "Report";
                     reply.AppendLine($"##Action Taken: {action} with a score of {result.TotalScore}");
                     reply.AppendLine();
                     reply.AppendLine(
