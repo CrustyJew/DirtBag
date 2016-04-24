@@ -111,7 +111,9 @@ namespace DirtBag.Modules {
                 var score = ScoreYouTubeMetaData( scrapeBody );
                 if ( score != null ) {
                     foreach ( var post in ytPosts[dictItem.Key] ) {
-                        results[post.Id].Scores.Clear();
+                        if ( score.Score == 10 ) {
+                            results[post.Id].Scores.Clear();
+                        }
                         results[post.Id].Scores.Add( score );
                     }
                 }
