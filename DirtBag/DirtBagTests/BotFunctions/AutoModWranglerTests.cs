@@ -11,7 +11,8 @@ namespace DirtBag.BotFunctions.Tests {
     [TestClass()]
     public class AutoModWranglerTests {
         [TestMethod()]
-        public void GetAutomodConfigTest() {
+        public async Task AddToBanListTest() {
+
             var Agent = new RedditWebAgent();
             RedditWebAgent.EnableRateLimit = true;
             RedditWebAgent.RateLimit = RedditWebAgent.RateLimitMode.Burst;
@@ -23,8 +24,12 @@ namespace DirtBag.BotFunctions.Tests {
             Auth.Login();
             Agent.AccessToken = Auth.AccessToken;
 
-            AutoModWrangler w = new AutoModWrangler( new RedditSharp.Reddit( Agent, false ).GetSubreddit( "GooAway" ) );
-            w.GetAutomodConfig();
+            AutoModWrangler w = new AutoModWrangler( new RedditSharp.Reddit( Agent, true ).GetSubreddit( "GooAway" ) );
+            await w.AddToBanList( new List<Models.BannedEntity>() { new Models.BannedEntity() { BanDate = DateTime.UtcNow, BannedBy = "DirtBagTests", BanReason = "DirtBagTests", EntityString = "DirtBagTests", SubName = "GooAway", ThingID = "66666" } } );
+
+            var list = await w.GetBannedList( "GooAway" );
+            int id = list.Where( l => l.ThingID == "66666" && l.BannedBy == "DirtBagTests" ).Select(l=>l.ID).First();
+            await w.RemoveFromBanList( id, "GooAway", "DirtBagTests" );
         }
     }
 }

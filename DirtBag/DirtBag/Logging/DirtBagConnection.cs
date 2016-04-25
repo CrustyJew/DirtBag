@@ -45,7 +45,7 @@ namespace DirtBag.Logging {
                     "[ID] INTEGER NOT NULL PRIMARY KEY " + ( UseLocalDB ? "AUTOINCREMENT" : "IDENTITY" ) + ", " +
                     "[ActionName] varchar(50) NOT NULL); ";
                 if ( UseLocalDB ) initTables += "CREATE TABLE IF NOT EXISTS ";
-                else initTables += "if not exists( select * from sys.tables t join sys.schemas s on ( t.schema_id = s.schema_id ) where t.name = 'ProcessedPosts' ) Create table ";
+                else initTables += "if not exists( select * from sys.tables t join sys.schemas s on ( t.schema_id = s.schema_id ) where s.name = SCHEMA_NAME() and t.name = 'ProcessedPosts' ) Create table ";
                 initTables += "" +
                     "[ProcessedPosts]( " +
                     "[ID] INTEGER NOT NULL PRIMARY KEY " + ( UseLocalDB ? "AUTOINCREMENT" : "IDENTITY" ) + ", " +
@@ -56,16 +56,32 @@ namespace DirtBag.Logging {
                     "[AnalysisResults] VARBINARY(2000) ); " + //varbinary uses less space than base64 encoding and storing as varchar
                     "";
                 if ( UseLocalDB ) initTables += "CREATE TABLE IF NOT EXISTS ";
-                else initTables += "if not exists( select * from sys.tables t join sys.schemas s on ( t.schema_id = s.schema_id ) where t.name = 'ProcessedPosts' ) Create table ";
-                initTables += @"
+                else initTables += "if not exists( select * from sys.tables t join sys.schemas s on ( t.schema_id = s.schema_id ) where s.name = SCHEMA_NAME() and t.name = 'BannedEntities' ) Create table ";
+                initTables += $@"
                     [BannedEntities]( 
-                    [ID] INTEGER NOT NULL PRIMARY KEY " + ( UseLocalDB ? "AUTOINCREMENT" : "IDENTITY" ) +
-                    @", 
+                    [ID] INTEGER NOT NULL PRIMARY KEY {( UseLocalDB ? "AUTOINCREMENT" : "IDENTITY")} , 
                     [SubredditID] INTEGER, 
                     [EntityString] varchar(100) NOT NULL,
                     [BannedBy] varchar(50) NOT NULL,
+                    [BanReason] varchar(255),
                     [BanDate] DATETIME,
                     [ThingID] varchar(20) );";
+
+                if ( UseLocalDB ) initTables += "CREATE TABLE IF NOT EXISTS ";
+                else initTables += "if not exists( select * from sys.tables t join sys.schemas s on ( t.schema_id = s.schema_id ) where s.name = SCHEMA_NAME() and t.name = 'BannedEntities_History' ) Create table ";
+                initTables += $@"
+                    [BannedEntities_History]( 
+                    [ID] INTEGER NOT NULL PRIMARY KEY {( UseLocalDB ? "AUTOINCREMENT" : "IDENTITY" )} , 
+                    [DeletedTimestamp] DATETIME NOT NULL,
+                    [DeletedBy] varchar(50) NOT NULL,
+                    [SubredditID] INTEGER, 
+                    [EntityString] varchar(100) NOT NULL,
+                    [BannedBy] varchar(50) NOT NULL,
+                    [BanReason] varchar(255),
+                    [BanDate] DATETIME,
+                    [ThingID] varchar(20) );";
+
+                con.Execute( initTables );
 
                 var subs = "('" + string.Join( "'),('", subreddits ) + "') ";
                 var seedData = "";

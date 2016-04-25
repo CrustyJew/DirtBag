@@ -49,8 +49,34 @@ namespace DirtBag.BotFunctions {
             return true;
         }
 
+        public async Task<bool> RemoveFromBanList(int id,string subName, string modName ) {
+            Logging.BannedEntities bannedEnts = new Logging.BannedEntities();
+            string entName = await bannedEnts.RemoveBannedEntity( id, subName, modName );
 
-        private async Task<bool> SaveAutoModConfig( string reason ) {
+            bool done = false;
+            int count = 1;
+            while ( !done && count < 5 ) {
+                try {
+                    done = await SaveAutoModConfig( $"{modName} unbanned {entName}" );
+                }
+                catch ( WebException ex ) {
+                    if ( ( ex.Response as HttpWebResponse ).StatusCode == HttpStatusCode.Forbidden ) {
+                        throw;
+                    }
+                    else count++;
+                }
+
+            }
+            return true;
+        }
+
+        public Task<IEnumerable<Models.BannedEntity>> GetBannedList(string subName ) {
+            Logging.BannedEntities bannedEnts = new Logging.BannedEntities();
+            return bannedEnts.GetBannedEntities( subName );
+        }
+
+
+        public async Task<bool> SaveAutoModConfig( string editReason ) {
 
             RedditSharp.WikiPage automodWiki;
             try {
@@ -88,7 +114,7 @@ namespace DirtBag.BotFunctions {
             updatedWiki = updatedWiki.Remove( startBotSection, botSectionLength );
             updatedWiki = updatedWiki.Insert( startBotSection, String.Format( GetDefaultBotConfigSection(), entsString ) );
 
-            SubReddit.Wiki.EditPage( AUTOMOD_WIKI_PAGE, updatedWiki, reason: reason );
+            SubReddit.Wiki.EditPage( AUTOMOD_WIKI_PAGE, updatedWiki, reason: editReason );
             return true;
 
 
@@ -97,9 +123,10 @@ namespace DirtBag.BotFunctions {
         private string GetDefaultBotConfigSection() {
             string config = @"
 ---
-author+media_author_url: [{0}]
+author:
+    name+media_author_url: [{0}]
 action: remove
-action_reason: ""Dirtbag Banned Author/Channel : {{match}}""
+action_reason: ""Dirtbag Banned Author/Channel : {{{{match}}}}""
 priority: 9001
 ---
 ";

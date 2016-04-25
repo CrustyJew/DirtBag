@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace DirtBag.Models {
     public class BannedEntity {
+        public int ID { get; set; }
         public string SubName { get; set; }
         public string EntityString { get; set; }
         public string BannedBy { get; set; }
