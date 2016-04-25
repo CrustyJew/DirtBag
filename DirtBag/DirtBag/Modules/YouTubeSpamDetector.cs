@@ -82,8 +82,9 @@ namespace DirtBag.Modules {
             var commentCountScore = ( settings.CommentCountThreshold.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
             var totalVotesScore = ( settings.VoteCountThreshold.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
 
-            var channels = new Dictionary<string, List<Post>>();
+           
             for ( var i = 0; i < youTubePosts.Keys.Count; i += 50 ) {
+                var channels = new Dictionary<string, List<Post>>();
                 req.Id = string.Join( ",", youTubePosts.Keys.Skip( i ).Take( 50 ) );
                 var response = await req.ExecuteAsync();
 
