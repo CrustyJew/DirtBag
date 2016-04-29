@@ -195,6 +195,7 @@
     <Compile Include="App_Start\Startup.Auth.cs" />
     <Compile Include="BotFunctions\AutoModWrangler.cs" />
     <Compile Include="Controllers\AutomodWranglerController.cs" />
+    <Compile Include="Controllers\InfoController.cs" />
     <Compile Include="Controllers\PostAnalysisController.cs" />
     <Compile Include="Controllers\RedditConnectionController.cs" />
     <Compile Include="Flair.cs" />
