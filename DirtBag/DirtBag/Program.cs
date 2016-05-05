@@ -324,6 +324,7 @@ namespace DirtBag {
             if ( Settings.YouTubeSpamDetector.Enabled ) ActiveModules.Add( new YouTubeSpamDetector( Settings.YouTubeSpamDetector, Client, Subreddit ) );
             if ( Settings.UserStalker.Enabled ) ActiveModules.Add( new UserStalker( Settings.UserStalker, Client, Subreddit ) );
             if ( Settings.SelfPromotionCombustor.Enabled ) ActiveModules.Add( new SelfPromotionCombustor( Settings.SelfPromotionCombustor, Client ) );
+            if ( Settings.HighTechBanHammer.Enabled ) ActiveModules.Add( new HighTechBanHammer( Settings.HighTechBanHammer, Client.GetSubreddit(Subreddit) ) );
             /*** End Load Modules ***/
         }
     }

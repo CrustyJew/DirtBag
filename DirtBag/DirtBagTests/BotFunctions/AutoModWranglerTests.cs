@@ -25,11 +25,11 @@ namespace DirtBag.BotFunctions.Tests {
             Agent.AccessToken = Auth.AccessToken;
 
             AutoModWrangler w = new AutoModWrangler( new RedditSharp.Reddit( Agent, true ).GetSubreddit( "GooAway" ) );
-            await w.AddToBanList( new List<Models.BannedEntity>() { new Models.BannedEntity() { BanDate = DateTime.UtcNow, BannedBy = "DirtBagTests", BanReason = "DirtBagTests", EntityString = "DirtBagTests", SubName = "GooAway", ThingID = "66666" } } );
+            await w.AddToBanList( new List<Models.BannedEntity>() { new Models.BannedEntity() { BanDate = DateTime.UtcNow, BannedBy = "DirtBagTests", BanReason = "DirtBagTests", EntityString = "DirtBagTests", Type= Models.BannedEntity.EntityType.User, SubName = "GooAway", ThingID = "66666" } } );
 
-            var list = await w.GetBannedList( "GooAway" );
+            var list = await w.GetBannedList();
             int id = list.Where( l => l.ThingID == "66666" && l.BannedBy == "DirtBagTests" ).Select(l=>l.ID).First();
-            await w.RemoveFromBanList( id, "GooAway", "DirtBagTests" );
+            await w.RemoveFromBanList( id, "DirtBagTests" );
         }
     }
 }

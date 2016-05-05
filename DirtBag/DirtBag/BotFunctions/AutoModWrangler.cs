@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Runtime.Caching;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace DirtBag.BotFunctions {
     public class AutoModWrangler {
-        public RedditSharp.Things.Subreddit SubReddit { get; set; }
+        public RedditSharp.Things.Subreddit Subreddit { get; set; }
 
         private const string AUTOMOD_WIKI_PAGE = "config/automoderator";
         private const string WIKI_SECTION_START_IDENTIFIER = "#***DIRTBAG BOT SECTION***";
@@ -16,22 +17,31 @@ namespace DirtBag.BotFunctions {
         private string wikiContent = "";
         private int startBotSection;
         private int botSectionLength;
+        private static MemoryCache cache = MemoryCache.Default;
+        private const string CACHE_PREFIX = "BannedEntities:";
 
         public AutoModWrangler() {
         }
 
-        public AutoModWrangler( RedditSharp.Things.Subreddit subReddit ) {
-            SubReddit = subReddit;
+        public AutoModWrangler( RedditSharp.Things.Subreddit subreddit ) {
+            Subreddit = subreddit;
         }
 
         public async Task<bool> AddToBanList( IEnumerable<DirtBag.Models.BannedEntity> entities ) {
-            Logging.BannedEntities bannedEnts = new Logging.BannedEntities();
-            await bannedEnts.LogNewBannedEntities( entities );
-            string reason = $"Banned {string.Join( ",", entities.Select( e => e.EntityString + ":" + e.BanReason ) )} by {string.Join( ",", entities.Select( e => e.BannedBy ).Distinct() )}";
-            if ( reason.Length > 255 ) reason = $"Banned {string.Join( ",", entities.Select( e => e.EntityString ) )} for {string.Join( ",", entities.Select( e => e.BanReason ).Distinct() )} by {string.Join( ",", entities.Select( e => e.BannedBy ).Distinct() )}";
+            DAL.BannedEntities bannedEntDAL = new DAL.BannedEntities();
+            await bannedEntDAL.LogNewBannedEntities( entities );
+
+            var newList = await bannedEntDAL.GetBannedEntities( Subreddit.Name );
+            cache.Set( CACHE_PREFIX + Subreddit, newList, DateTimeOffset.Now.AddMinutes( 30 ) );
+
+            var userEntities = entities.Where( e => e.Type == Models.BannedEntity.EntityType.User );
+            string reason = $"Banned {string.Join( ",", userEntities.Select( e => e.EntityString + ":" + e.BanReason ) )} by {string.Join( ",", userEntities.Select( e => e.BannedBy ).Distinct() )}";
+            if ( reason.Length > 255 ) reason = $"Banned {string.Join( ",", userEntities.Select( e => e.EntityString ) )} for {string.Join( ",", userEntities.Select( e => e.BanReason ).Distinct() )} by {string.Join( ",", userEntities.Select( e => e.BannedBy ).Distinct() )}";
             if ( reason.Length > 255 ) reason = "Banned lots of things and the summary is too long for the description.. RIP";
 
             bool done = false;
+            //only needs to update config if there was a user added
+            done = userEntities.Count() <= 0;
             int count = 1;
             while ( !done && count < 5 ) {
                 try {
@@ -49,11 +59,15 @@ namespace DirtBag.BotFunctions {
             return true;
         }
 
-        public async Task<bool> RemoveFromBanList(int id,string subName, string modName ) {
-            Logging.BannedEntities bannedEnts = new Logging.BannedEntities();
-            string entName = await bannedEnts.RemoveBannedEntity( id, subName, modName );
+        public async Task<bool> RemoveFromBanList(int id, string modName ) {
+            DAL.BannedEntities bannedEntDAL = new DAL.BannedEntities();
+            string entName = await bannedEntDAL.RemoveBannedEntity( id, Subreddit.Name, modName );
+
+            var newList = await bannedEntDAL.GetBannedEntities( Subreddit.Name );
+            cache.Set( CACHE_PREFIX + Subreddit, newList, DateTimeOffset.Now.AddMinutes( 30 ) );
 
             bool done = false;
+            done = string.IsNullOrWhiteSpace( entName );
             int count = 1;
             while ( !done && count < 5 ) {
                 try {
@@ -70,17 +84,27 @@ namespace DirtBag.BotFunctions {
             return true;
         }
 
-        public Task<IEnumerable<Models.BannedEntity>> GetBannedList(string subName ) {
-            Logging.BannedEntities bannedEnts = new Logging.BannedEntities();
-            return bannedEnts.GetBannedEntities( subName );
+        public async Task<IEnumerable<Models.BannedEntity>> GetBannedList() {
+            DAL.BannedEntities bannedEntDAL = new DAL.BannedEntities();
+            var cacheVal = cache[CACHE_PREFIX + Subreddit];
+            if ( cacheVal == null ) {
+                var newList = await bannedEntDAL.GetBannedEntities( Subreddit.Name );
+                cache.Set( CACHE_PREFIX + Subreddit, newList, DateTimeOffset.Now.AddMinutes( 30 ) );
+                return newList;
+            }
+            return (IEnumerable<Models.BannedEntity>) cacheVal;
         }
 
+        public async Task<IEnumerable<Models.BannedEntity>> GetBannedList( Models.BannedEntity.EntityType type ) {
+            var list = await GetBannedList();
+            return list.Where( i => i.Type == type );
+        }
 
         public async Task<bool> SaveAutoModConfig( string editReason ) {
 
             RedditSharp.WikiPage automodWiki;
             try {
-                automodWiki = SubReddit.Wiki.GetPage( AUTOMOD_WIKI_PAGE );
+                automodWiki = Subreddit.Wiki.GetPage( AUTOMOD_WIKI_PAGE );
                 wikiContent = automodWiki.MarkdownContent;
             }
             catch ( WebException ex ) {
@@ -108,13 +132,13 @@ namespace DirtBag.BotFunctions {
             if ( botSectionLength < 0 ) { throw new Exception( "End section identifier is before the start identifier" ); }
             botConfigSection = wikiContent.Substring( startBotSection, botSectionLength );
 
-            Logging.BannedEntities bannedEnts = new Logging.BannedEntities();
-            var ents = await bannedEnts.GetBannedEntities( SubReddit.Name );
+
+            var ents = await GetBannedList( Models.BannedEntity.EntityType.User );
             string entsString = string.Join( ", ", ents.Select( e => "\"" + e.EntityString + "\"" ) );
             updatedWiki = updatedWiki.Remove( startBotSection, botSectionLength );
             updatedWiki = updatedWiki.Insert( startBotSection, String.Format( GetDefaultBotConfigSection(), entsString ) );
 
-            SubReddit.Wiki.EditPage( AUTOMOD_WIKI_PAGE, updatedWiki, reason: editReason );
+            Subreddit.Wiki.EditPage( AUTOMOD_WIKI_PAGE, updatedWiki, reason: editReason );
             return true;
 
 
@@ -124,7 +148,7 @@ namespace DirtBag.BotFunctions {
             string config = @"
 ---
 author:
-    name+media_author_url: [{0}]
+    name: [{0}]
 action: remove
 action_reason: ""Dirtbag Banned Author/Channel : {{{{match}}}}""
 priority: 9001

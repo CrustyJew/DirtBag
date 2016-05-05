@@ -17,7 +17,7 @@ namespace DirtBag.Controllers {
         [Route( "{subname?}" )]
         public Task<IEnumerable<Models.BannedEntity>> Get( string subname = "" ) {
             string sub = string.IsNullOrWhiteSpace( subname ) ? Program.Subreddit : subname;
-            return wrangler.GetBannedList( sub );
+            return wrangler.GetBannedList( );
         }
 
         [HttpPost]
@@ -30,7 +30,7 @@ namespace DirtBag.Controllers {
         [Route( "{subname?}" )]
         public Task Delete( int id, string modName, string subname = "" ) {
             string sub = string.IsNullOrWhiteSpace( subname ) ? Program.Subreddit : subname;
-            return wrangler.RemoveFromBanList( id, sub, modName );
+            return wrangler.RemoveFromBanList( id, modName );
         }
 
     }
