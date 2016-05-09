@@ -270,7 +270,7 @@ namespace DirtBag {
 
                 bool force = args.Count > 1 && args.Contains( "force" );
                 if ( ! subject.Contains("validate") && !subject.Contains("check") &&
-                    !subject.Contains("analyze" ) ) {
+                    !subject.Contains("analyze" ) && !subject.Contains("test") && !subject.Contains("verify") ) {
                     message.Reply( "Whatchu talkin bout Willis" );
                     continue;
                 }
