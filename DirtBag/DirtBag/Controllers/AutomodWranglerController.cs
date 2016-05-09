@@ -13,25 +13,27 @@ namespace DirtBag.Controllers {
         public AutomodWranglerController() {
             wrangler = new BotFunctions.AutoModWrangler( Program.Client.GetSubreddit( Program.Subreddit ) );
         }
-        [HttpGet]
-        [Route( "{subname?}" )]
+        [HttpGet][Route( "{subname?}" )]
         public Task<IEnumerable<Models.BannedEntity>> Get( string subname = "" ) {
             string sub = string.IsNullOrWhiteSpace( subname ) ? Program.Subreddit : subname;
             return wrangler.GetBannedList( );
         }
 
-        [HttpPost]
-        [Route( "" )]
+        [HttpPost][Route( "" )]
         public Task Post( IEnumerable<Models.BannedEntity> entities ) {
             return wrangler.AddToBanList( entities );
         }
 
-        [HttpDelete]
-        [Route( "{subname?}" )]
+        [HttpDelete][Route( "{subname?}" )]
         public Task Delete( int id, string modName, string subname = "" ) {
             string sub = string.IsNullOrWhiteSpace( subname ) ? Program.Subreddit : subname;
             return wrangler.RemoveFromBanList( id, modName );
         }
 
+        [HttpPut][Route("{subname?}/{id}")]
+        public Task<bool> UpdateBanReason(int id, string modName, [FromBody] string banReason, string subname = "" ) {
+            string sub = string.IsNullOrWhiteSpace( subname ) ? Program.Subreddit : subname;
+            return wrangler.UpdateBanReason( id, subname, modName, banReason );
+        }
     }
 }

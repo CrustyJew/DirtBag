@@ -73,8 +73,9 @@ namespace DirtBag.Logging {
                 initTables += $@"
                     [BannedEntities_History]( 
                     [ID] INTEGER NOT NULL PRIMARY KEY {( UseLocalDB ? "AUTOINCREMENT" : "IDENTITY" )} , 
-                    [DeletedTimestamp] DATETIME NOT NULL,
-                    [DeletedBy] varchar(50) NOT NULL,
+                    [HistTimestamp] DATETIME NOT NULL,
+                    [HistAction] varchar(1) NOT NULL,
+                    [HistUser] varchar(50) NOT NULL,
                     [SubredditID] INTEGER, 
                     [EntityString] varchar(100) NOT NULL,
                     [EntityType] tinyint NOT NULL,

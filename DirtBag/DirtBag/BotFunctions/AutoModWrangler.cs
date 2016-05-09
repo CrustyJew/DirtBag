@@ -84,6 +84,16 @@ namespace DirtBag.BotFunctions {
             return true;
         }
 
+        public async Task<bool> UpdateBanReason(int id, string subredditName, string modName, string banReason ) {
+            DAL.BannedEntities bannedEntDAL = new DAL.BannedEntities();
+            var toReturn = await bannedEntDAL.UpdateBanReason( id, subredditName, modName, banReason );
+
+            var newList = await bannedEntDAL.GetBannedEntities( Subreddit.Name );
+            cache.Set( CACHE_PREFIX + Subreddit, newList, DateTimeOffset.Now.AddMinutes( 30 ) );
+
+            return toReturn;
+        }
+
         public async Task<IEnumerable<Models.BannedEntity>> GetBannedList() {
             DAL.BannedEntities bannedEntDAL = new DAL.BannedEntities();
             var cacheVal = cache[CACHE_PREFIX + Subreddit];

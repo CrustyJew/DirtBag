@@ -57,7 +57,7 @@ where sub.SubName like @subredditName AND be.EntityType = 1
         public async Task<string> RemoveBannedEntity(int id, string subredditName, string modName ) {
             string query = @"
 delete be
-output GETUTCDATE() as 'DeletedTimestamp', @modName as 'DeletedBy', DELETED.SubredditID, DELETED.EntityString, DELETED.EntityType, DELETED.BannedBy, DELETED.BanReason, DELETED.BanDate, DELETED.ThingID INTO BannedEntities_History
+output GETUTCDATE() as 'HistTimestamp', 'D' as 'HistAction', @modName as 'HistUser', DELETED.SubredditID, DELETED.EntityString, DELETED.EntityType, DELETED.BannedBy, DELETED.BanReason, DELETED.BanDate, DELETED.ThingID INTO BannedEntities_History
 output DELETED.EntityString, DELETED.EntityType
 from BannedEntities be
 inner join Subreddits sub on sub.ID = be.SubredditID
@@ -68,6 +68,22 @@ AND be.Id = @id
                 dynamic results = (await conn.QueryAsync<dynamic>( query, new { id, subredditName, @modName } )).FirstOrDefault();
                 if ( results.EntityType == 2 ) return results.EntityString;
                 return "";
+            }
+        }
+
+        public async Task<bool> UpdateBanReason( int id, string subredditName, string modName, string banReason ) {
+            string query = @"
+update be
+SET be.BanReason = @banReason
+OUTPUT GETUTCDATE() as 'HistTimestamp', 'U' as 'HistAction', @modName as 'HistUser', INSERTED.SubredditID, INSERTED.EntityString, INSERTED.EntityType, INSERTED.BannedBy, INSERTED.BanReason, INSERTED.BanDate, INSERTED.ThingID INTO BannedEntities_History
+FROM BannedEntities be
+inner join Subreddits sub on sub.ID = be.SubredditID
+where sub.SubName like @subredditName AND be.id = @id
+";
+            using ( var conn = DirtBagConnection.GetConn() ) {
+                var results = await conn.ExecuteAsync( query, new { id, subredditName, modName, banReason } );
+                if ( results == 1 ) return true;
+                return false;
             }
         }
     }
