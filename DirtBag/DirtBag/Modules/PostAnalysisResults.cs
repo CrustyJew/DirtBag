@@ -10,9 +10,9 @@ namespace DirtBag.Modules {
 			get {
 				return Scores.Count > 0 ? Scores.Select( s => s.Score ).Aggregate( ( s, t ) => s + t ) : 0;
 			}
-        }
+		}
         [JsonIgnore]
-        public string ReportReason {
+		public string ReportReason {
 			get {
 				var reason = string.Join( ", ", Scores.Select( s => s.ReportReason ) );
 				if (reason.Length > 100 ) {
@@ -20,7 +20,7 @@ namespace DirtBag.Modules {
 				}
 				return reason;
 			}
-        }
+		}
         [JsonIgnore]
         public bool HasFlair {
             get {
@@ -50,11 +50,11 @@ namespace DirtBag.Modules {
         public Modules AnalyzingModule { get; set; }
 
         [JsonProperty]
-        public List<AnalysisScore> Scores { get; set; }
-        
-        public PostAnalysisResults() {
+		public List<AnalysisScore> Scores { get; set; }
+
+		public PostAnalysisResults() {
 			Scores = new List<AnalysisScore>();
-        }
+		}
         
         public PostAnalysisResults(Post post, Modules module ) :this() {
 			Post = post;

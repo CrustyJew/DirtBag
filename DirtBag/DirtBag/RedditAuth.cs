@@ -4,7 +4,7 @@ using System.Threading;
 using RedditSharp;
 
 namespace DirtBag {
-    class RedditAuth {
+    public class RedditAuth {
 
         public string AccessToken { get; private set; }
 

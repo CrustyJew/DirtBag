@@ -32,6 +32,8 @@ namespace DirtBag {
         public UserStalkerSettings UserStalker { get; set; }
         [JsonProperty]
         public SelfPromotionCombustorSettings SelfPromotionCombustor { get; set; }
+        [JsonProperty]
+        public HighTechBanHammerSettings HighTechBanHammer { get; set; }
         /*** END MODULE SETTINGS ***/
 
         public event EventHandler OnSettingsModified;
@@ -120,6 +122,13 @@ namespace DirtBag {
                 }
                 else {
                     SelfPromotionCombustor = sets.SelfPromotionCombustor;
+                }
+                if(sets.HighTechBanHammer == null ) {
+                    HighTechBanHammer = new HighTechBanHammerSettings();
+                    addedDefaults = true;
+                }
+                else {
+                    HighTechBanHammer = sets.HighTechBanHammer;
                 }
                 /***End Module Defaults ***/
                 if ( addedDefaults ) {

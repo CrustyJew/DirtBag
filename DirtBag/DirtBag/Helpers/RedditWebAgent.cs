@@ -219,9 +219,9 @@ namespace DirtBag.Helpers {
                 var cookieHeader = Cookies.GetCookieHeader(new Uri("http://reddit.com"));
                 request.Headers.Set("Cookie", cookieHeader);
             }
-            if (request.Host == "oauth.reddit.com") // use OAuth
+            if (request.Address.Host.ToLower().Contains("oauth.reddit.com"))// use OAuth
             {
-                request.Headers.Set("Authorization", "bearer " + AccessToken); //Must be included in OAuth calls
+                request.Headers.Set( "Authorization", "bearer " + AccessToken);//Must be included in OAuth calls
             }
             request.Method = method;
             request.UserAgent = UserAgent + " - with RedditSharp by /u/sircmpwn";
