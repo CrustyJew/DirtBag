@@ -11,9 +11,15 @@ using DirtBag.Modules;
 using RedditSharp;
 using RedditSharp.Things;
 using Microsoft.Owin.Hosting;
+using Microsoft.WindowsAzure.ServiceRuntime;
+using System.Diagnostics;
 
 namespace DirtBag {
-    class Program {
+    class Program : RoleEntryPoint {
+        private static IDisposable _app;
+        private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+        private readonly ManualResetEvent runCompleteEvent = new ManualResetEvent( false );
+
         public static RedditWebAgent Agent { get; set; }
         public static Reddit Client { get; set; }
         public static RedditAuth Auth { get; set; }
@@ -35,22 +41,59 @@ namespace DirtBag {
             conn.InitializeConnection( new[] { sub } );
             Initialize();
             string baseAddresses = System.Configuration.ConfigurationManager.AppSettings["ApiListeningUrls"];
+            baseAddresses += "," + string.Join(",",args);
             if ( !string.IsNullOrWhiteSpace( baseAddresses ) ) {
                 var opts = new StartOptions();
                 foreach ( string address in baseAddresses.Split( ',' ) ) {
-                    opts.Urls.Add( address );
+                    if ( !string.IsNullOrWhiteSpace( address ) ) {
+                        opts.Urls.Add( address );
+                    }
                 }
 
-                WebApp.Start<Startup>( opts );
+                _app = WebApp.Start<Startup>( opts );
             }
-            while ( true ) {
-                var x = Console.ReadLine();
-                System.Diagnostics.Debug.WriteLine( x );
-            }
+
             WaitHandle.WaitOne(); //Go the fuck to sleep
 
 
 
+        }
+        public override void Run() {
+            Trace.TraceInformation( "Dirtbag Worker Role is running" );
+
+            try {
+                this.RunAsync( this.cancellationTokenSource.Token ).Wait();
+            }
+            finally {
+                this.runCompleteEvent.Set();
+            }
+        }
+        private async Task RunAsync( CancellationToken cancellationToken ) {
+            // TODO: Replace the following with your own logic.
+            while ( !cancellationToken.IsCancellationRequested ) {
+                Trace.TraceInformation( "Working" );
+                await Task.Delay( 10000 );
+            }
+        }
+        public override bool OnStart() {
+
+            var endpoints = RoleEnvironment.CurrentRoleInstance.InstanceEndpoints;
+            List<string> endpts = new List<string>();
+            foreach(var end in endpoints.Values ) {
+                if ( end.Protocol.StartsWith( "http" ) ) {
+                    endpts.Add( String.Format( "{0}://{1}", end.Protocol, end.IPEndpoint ) );
+                }
+            }
+            Trace.WriteLine( string.Join( ", ", endpts ) );
+            Task.Factory.StartNew(()=>Main( endpts.ToArray() ));
+            return base.OnStart();
+        }
+        public override void OnStop() {
+            if ( _app != null ) {
+                _app.Dispose();
+            }
+            WaitHandle.Close();
+            base.OnStop();
         }
 
         public static void Initialize() {

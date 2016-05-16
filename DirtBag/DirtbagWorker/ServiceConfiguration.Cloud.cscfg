@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ServiceConfiguration serviceName="DirtbagWorker" xmlns="http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceConfiguration" osFamily="4" osVersion="*" schemaVersion="2015-04.2.6">
+  <Role name="DirtBag">
+    <Instances count="1" />
+    <ConfigurationSettings>
+      <Setting name="Microsoft.WindowsAzure.Plugins.Diagnostics.ConnectionString" value="DefaultEndpointsProtocol=https;AccountName=snoonotes;AccountKey=qeh9ia89K2X9VI4eC9HJz88d30Z15a0V9Cb2wfnPdMLLYkYa7bjcKmFjxPqA92X9jndbw5OZQyDwxc0ZjPWMBw==" />
+      <Setting name="Microsoft.WindowsAzure.Plugins.RemoteAccess.Enabled" value="true" />
+      <Setting name="Microsoft.WindowsAzure.Plugins.RemoteAccess.AccountUsername" value="meepster23" />
+      <Setting name="Microsoft.WindowsAzure.Plugins.RemoteAccess.AccountEncryptedPassword" value="MIIBnQYJKoZIhvcNAQcDoIIBjjCCAYoCAQAxggFOMIIBSgIBADAyMB4xHDAaBgNVBAMME1dpbmRvd3MgQXp1cmUgVG9vbHMCED3wwBxbz+K2QTBRBq/Yui0wDQYJKoZIhvcNAQEBBQAEggEAB8Fc9UuwlK6N812xPoth/OT5CX7NSiSA/eqOIqw7m9XWQtXVFEFTFP2mceWzIg/AYCp9jU9nfYp0vbEwLguFpNCKZb/XFjWWX+dvhMs6euq8klBvDWOIdO58V1PpU49MSBnanU26AMFR5XgnbhRT89hNlsy0SRHduTta4rU86iIq6efprQ6eKK35O7qWknuWuRc825W7NlOOil23m+mDN2XZlmTVoDaLa9kqbmYpxZY2C85z0B+K6rmHaKBE4X/dw3R1UcYPhTzjsCQuIxeGitpLIbOrzMIlXQI1KMiSZMK37PTzo/7r6xdKg5vSob1vMhTkPTuU0eM7CB2HJHO9WjAzBgkqhkiG9w0BBwEwFAYIKoZIhvcNAwcECL/h39UCLu3BgBCCTsLcNs4JrNvbfpZwbCfF" />
+      <Setting name="Microsoft.WindowsAzure.Plugins.RemoteAccess.AccountExpiration" value="2017-05-16T23:59:59.0000000-05:00" />
+      <Setting name="Microsoft.WindowsAzure.Plugins.RemoteForwarder.Enabled" value="true" />
+      <Setting name="APPINSIGHTS_INSTRUMENTATIONKEY" value="76972b1d-2ff5-403d-afad-68ac778c3e6f" />
+    </ConfigurationSettings>
+    <Certificates>
+      <Certificate name="SN" thumbprint="4A8EBA3BA27577803F5E88574CDFE95E4D58F945" thumbprintAlgorithm="sha1" />
+      <Certificate name="Microsoft.WindowsAzure.Plugins.RemoteAccess.PasswordEncryption" thumbprint="8F58C8BD7582A461053D86FBB8E466C80FC0C603" thumbprintAlgorithm="sha1" />
+    </Certificates>
+  </Role>
+</ServiceConfiguration>

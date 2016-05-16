@@ -52,6 +52,7 @@ namespace DirtBag.BotFunctions {
                         throw;
                     }
                     else count++;
+                    await Task.Delay( 100 );
                 }
 
             }
@@ -78,6 +79,7 @@ namespace DirtBag.BotFunctions {
                         throw;
                     }
                     else count++;
+                    await Task.Delay( 100 );
                 }
 
             }

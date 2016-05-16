@@ -16,8 +16,10 @@ namespace DirtBag {
             string appSet = System.Configuration.ConfigurationManager.AppSettings["BasicAuthUsers"];
             if ( !string.IsNullOrWhiteSpace( appSet ) ) {
                 foreach ( string ident in appSet.Split( ';' ) ) {
-                    string[] login = ident.Split( ',' );
-                    basicUsers.Add( login[0].Trim().ToLower(), login[1].Trim() );
+                    if ( !string.IsNullOrWhiteSpace( ident ) ) {
+                        string[] login = ident.Split( ',' );
+                        basicUsers.Add( login[0].Trim().ToLower(), login[1].Trim() );
+                    }
                 }
             }
             Func<string, string, Task<IEnumerable<Claim>>> validateUser = ( string uname, string password ) => {
