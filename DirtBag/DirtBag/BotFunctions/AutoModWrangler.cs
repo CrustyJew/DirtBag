@@ -117,7 +117,7 @@ namespace DirtBag.BotFunctions {
             RedditSharp.WikiPage automodWiki;
             try {
                 automodWiki = Subreddit.Wiki.GetPage( AUTOMOD_WIKI_PAGE );
-                wikiContent = automodWiki.MarkdownContent;
+                wikiContent = WebUtility.HtmlDecode( automodWiki.MarkdownContent );
             }
             catch ( WebException ex ) {
                 if ( ( ex.Response as HttpWebResponse ).StatusCode == HttpStatusCode.NotFound ) {
@@ -127,17 +127,21 @@ namespace DirtBag.BotFunctions {
                     throw;
                 }
             }
-            string updatedWiki = wikiContent;
             string botConfigSection = "";
             bool noStart = false;
             bool noEnd = false;
             if ( !wikiContent.Contains( WIKI_SECTION_START_IDENTIFIER ) ) noStart = true;
             if ( !wikiContent.Contains( WIKI_SECTION_END_IDENTIFIER ) ) noEnd = true;
 
-            if ( noStart && noEnd ) { wikiContent += $@"
+            if ( noStart && noEnd ) {
+                wikiContent += $@"
 {WIKI_SECTION_START_IDENTIFIER + GetDefaultBotConfigSection() + WIKI_SECTION_END_IDENTIFIER}
-"; }
+";
+            }
+
             else if ( noStart || noEnd ) throw new Exception( "Wiki contains a start or an end section, but not both" );
+
+            string updatedWiki = wikiContent;
 
             startBotSection = wikiContent.IndexOf( WIKI_SECTION_START_IDENTIFIER ) + WIKI_SECTION_START_IDENTIFIER.Length;
             botSectionLength = wikiContent.IndexOf( WIKI_SECTION_END_IDENTIFIER, startBotSection ) - startBotSection;
