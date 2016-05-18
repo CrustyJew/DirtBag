@@ -2,7 +2,7 @@
 <DiagnosticsConfiguration xmlns="http://schemas.microsoft.com/ServiceHosting/2010/10/DiagnosticsConfiguration">
   <PublicConfig xmlns="http://schemas.microsoft.com/ServiceHosting/2010/10/DiagnosticsConfiguration">
     <WadCfg>
-      <DiagnosticMonitorConfiguration overallQuotaInMB="4096">
+      <DiagnosticMonitorConfiguration overallQuotaInMB="4096" sinks="applicationInsights.errors">
         <DiagnosticInfrastructureLogs scheduledTransferLogLevelFilter="Error" />
         <Directories scheduledTransferPeriod="PT1M">
           <IISLogs containerName="wad-iis-logfiles" />
@@ -29,11 +29,19 @@
         </CrashDumps>
         <Logs scheduledTransferPeriod="PT1M" scheduledTransferLogLevelFilter="Error" />
       </DiagnosticMonitorConfiguration>
+      <SinksConfig>
+        <Sink name="applicationInsights">
+          <ApplicationInsights>76972b1d-2ff5-403d-afad-68ac778c3e6f</ApplicationInsights>
+          <Channels>
+            <Channel logLevel="Error" name="errors" />
+          </Channels>
+        </Sink>
+      </SinksConfig>
     </WadCfg>
-    <StorageAccount />
+    <StorageAccount>snoonotes</StorageAccount>
   </PublicConfig>
   <PrivateConfig xmlns="http://schemas.microsoft.com/ServiceHosting/2010/10/DiagnosticsConfiguration">
-    <StorageAccount endpoint="" />
+    <StorageAccount name="snoonotes" key="qeh9ia89K2X9VI4eC9HJz88d30Z15a0V9Cb2wfnPdMLLYkYa7bjcKmFjxPqA92X9jndbw5OZQyDwxc0ZjPWMBw==" endpoint="https://core.windows.net" />
   </PrivateConfig>
   <IsEnabled>true</IsEnabled>
 </DiagnosticsConfiguration>

@@ -3,7 +3,6 @@
   <WorkerRole name="DirtBag" vmsize="Small">
     <ConfigurationSettings>
       <Setting name="Microsoft.WindowsAzure.Plugins.Diagnostics.ConnectionString" />
-      <Setting name="APPINSIGHTS_INSTRUMENTATIONKEY" />
     </ConfigurationSettings>
     <Endpoints>
       <InputEndpoint name="SnooNotes" protocol="https" port="443" certificate="SN" localPort="443" />
@@ -12,8 +11,6 @@
       <Certificate name="SN" storeLocation="LocalMachine" storeName="My" />
     </Certificates>
     <Imports>
-      <Import moduleName="RemoteAccess" />
-      <Import moduleName="RemoteForwarder" />
     </Imports>
   </WorkerRole>
 </ServiceDefinition>

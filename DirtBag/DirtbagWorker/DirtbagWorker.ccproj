@@ -49,14 +49,10 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="DirtBagContent\" />
-    <Folder Include="DirtbagWorkerRoleContent\" />
     <Folder Include="Profiles" />
-    <Folder Include="TestWorkerRoleContent\" />
   </ItemGroup>
   <ItemGroup>
     <DiagnosticsConfiguration Include="DirtBagContent\diagnostics.wadcfgx" />
-    <DiagnosticsConfiguration Include="DirtbagWorkerRoleContent\diagnostics.wadcfgx" />
-    <DiagnosticsConfiguration Include="TestWorkerRoleContent\diagnostics.wadcfgx" />
   </ItemGroup>
   <ItemGroup>
     <PublishProfile Include="Profiles\dirtbagProduction.azurePubxml" />

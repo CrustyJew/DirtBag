@@ -47,7 +47,7 @@ namespace DirtBag.Modules {
         private const int ATTRIBUTION_SCORE = 2;
         private const int ATTRIBUTION_MATCH_SCORE = 10; //can only have 1 attribution score so it can be > 10
         private static Regex VideoID = new Regex( @"(?:youtube\.com/(?:(?:watch|attribution_link)\?(?:.*(?:&|%3F|&amp;))?v(?:=|%3D)|embed/|v/)|youtu\.be/)([a-zA-Z0-9-_]{11})" );
-        private static string YouTubeScrapeFormat = "https://youtu.be/{0}";
+        private static string YouTubeScrapeFormat = "https://youtube.com/watch?v={0}";
 
         private Regex TermMatching;
         private Regex LicenserMatching;
