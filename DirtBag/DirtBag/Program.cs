@@ -19,6 +19,7 @@ namespace DirtBag {
         private static IDisposable _app;
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private readonly ManualResetEvent runCompleteEvent = new ManualResetEvent( false );
+        private static List<string> endpts;
 
         public static RedditWebAgent Agent { get; set; }
         public static Reddit Client { get; set; }
@@ -72,20 +73,20 @@ namespace DirtBag {
             // TODO: Replace the following with your own logic.
             while ( !cancellationToken.IsCancellationRequested ) {
                 Trace.TraceInformation( "Working" );
-                await Task.Delay( 10000 );
+
+                await Task.Factory.StartNew( () => Main( endpts.ToArray() ) );
             }
         }
         public override bool OnStart() {
 
             var endpoints = RoleEnvironment.CurrentRoleInstance.InstanceEndpoints;
-            List<string> endpts = new List<string>();
+            endpts = new List<string>();
             foreach(var end in endpoints.Values ) {
                 if ( end.Protocol.StartsWith( "http" ) ) {
                     endpts.Add( String.Format( "{0}://{1}", end.Protocol, end.IPEndpoint ) );
                 }
             }
             Trace.WriteLine( string.Join( ", ", endpts ) );
-            Task.Factory.StartNew(()=>Main( endpts.ToArray() ));
             return base.OnStart();
         }
         public override void OnStop() {
