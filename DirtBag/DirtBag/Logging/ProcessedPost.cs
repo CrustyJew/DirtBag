@@ -3,6 +3,7 @@ using System.Linq;
 using System.IO.Compression;
 using Dapper;
 using Newtonsoft.Json;
+using System.Data;
 
 namespace DirtBag.Logging {
     public class ProcessedPost {
@@ -64,19 +65,24 @@ namespace DirtBag.Logging {
         }
 
         public static List<ProcessedPost> GetProcessed( List<string> postIDs ) {
-            var query = "" +
-                "select sub.SubName, p.PostID, act.ActionName as \"Action\",p.SeenByModules, p.AnalysisResults " +
-                "from ProcessedPosts p " +
-                "inner join Subreddits sub on sub.ID = p.SubredditID " +
-                "inner join Actions act on act.ID = p.ActionID " +
-                "where p.PostID in @postIDs " +
-                ";";
+            var tableParam = new DataTable();
+            tableParam.Columns.Add( "postID", typeof( string ) );
+            foreach ( string postID in postIDs ) {
+                tableParam.Rows.Add( postID );
+            }
+            var query = @"
+select sub.SubName, p.PostID, act.ActionName as ""Action"",p.SeenByModules, p.AnalysisResults 
+from ProcessedPosts p 
+inner join Subreddits sub on sub.ID = p.SubredditID 
+inner join Actions act on act.ID = p.ActionID 
+inner join @postIDs pids on pids.PostID = p.PostID
+;";
 
             using ( var conn = DirtBagConnection.GetConn() ) {
                 return conn.Query<ProcessedPost, byte[], ProcessedPost>( query, ( pp, b ) => {
                     pp.AnalysisResults = Helpers.ProcessedPostHelpers.InflateAndDeserializeResults( b );
                     return pp;
-                }, splitOn: "AnalysisResults", param: new { postIDs } ).ToList();
+                }, splitOn: "AnalysisResults", param: new { postIDs = tableParam.AsTableValuedParameter("postIDs") } ).ToList();
             }
         }
     }
