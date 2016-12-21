@@ -244,6 +244,7 @@
     <Compile Include="Logging\UserPost.cs" />
     <Compile Include="Logging\UserPostingHistory.cs" />
     <Compile Include="Models\AnalysisRequest.cs" />
+    <Compile Include="Models\AnalysisResults.cs" />
     <Compile Include="Models\Author.cs" />
     <Compile Include="Models\BannedEntity.cs" />
     <Compile Include="Modules\AnalysisScore.cs" />

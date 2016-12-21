@@ -41,7 +41,7 @@ namespace DirtBag {
             var conn = new DirtBagConnection();
             var sub = ConfigurationManager.AppSettings["Subreddit"];
             conn.InitializeConnection( new[] { sub } );
-            Initialize();
+            Task.Factory.StartNew(Initialize);
             string baseAddresses = System.Configuration.ConfigurationManager.AppSettings["ApiListeningUrls"];
             baseAddresses += "," + string.Join(",",args);
             if ( !string.IsNullOrWhiteSpace( baseAddresses ) ) {
@@ -51,7 +51,7 @@ namespace DirtBag {
                         opts.Urls.Add( address );
                     }
                 }
-
+                Console.WriteLine( "Starting web app. Listening on: " + String.Join( ", ", opts.Urls ) );
                 _app = WebApp.Start<Startup>( opts );
             }
 
@@ -122,8 +122,7 @@ namespace DirtBag {
             BotWebAgent.UserAgent = uAgent;
             BotWebAgent.Protocol = "https";
 
-            Auth.Login();
-            Agent.AccessToken = Auth.AccessToken;
+            
             //BurstDebug = new Timer( CheckBurstStats, Agent, 0, 20000 );
             Client = new Reddit( Agent, true );
 
@@ -316,7 +315,7 @@ namespace DirtBag {
             return results;
         }
         private static async void ProcessMessages() {
-            var messages = Client.User.PrivateMessages.GetListingStream();
+            var messages = Client.User.UnreadMessages.GetListingStream();
             
             var mods = new List<string>();
             mods.AddRange( Client.GetSubreddit( Subreddit ).Moderators.Select( m => m.Name.ToLower() ).ToList() ); //TODO when enabling multiple subs, fix this
