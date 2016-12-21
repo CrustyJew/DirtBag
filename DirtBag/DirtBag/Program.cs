@@ -282,7 +282,7 @@ namespace DirtBag {
                             ProcessedPost.AddProcessedPost( original ); 
                         }
                         catch ( Exception ex ) {
-                            Console.WriteLine( "Error adding new post as processed. Messaage : {0}", "\r\n Inner Exception : " + ex.InnerException.Message );
+                            Console.WriteLine( "Error adding new post as processed. Messaage : {0}", "\r\n Inner Exception : " + ex.InnerException?.Message );
                         }
                     }
                     else {
