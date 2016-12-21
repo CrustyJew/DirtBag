@@ -13,6 +13,7 @@ using RedditSharp.Things;
 using Microsoft.Owin.Hosting;
 using Microsoft.WindowsAzure.ServiceRuntime;
 using System.Diagnostics;
+using System.Net;
 
 namespace DirtBag {
     class Program : RoleEntryPoint {
@@ -21,7 +22,7 @@ namespace DirtBag {
         private readonly ManualResetEvent runCompleteEvent = new ManualResetEvent( false );
         private static List<string> endpts;
 
-        public static RedditWebAgent Agent { get; set; }
+        public static BotWebAgent Agent { get; set; }
         public static Reddit Client { get; set; }
         public static RedditAuth Auth { get; set; }
         public static BotSettings Settings { get; set; }
@@ -80,6 +81,7 @@ namespace DirtBag {
         public override bool OnStart() {
 
             var endpoints = RoleEnvironment.CurrentRoleInstance.InstanceEndpoints;
+            ServicePointManager.DefaultConnectionLimit = 12;
             endpts = new List<string>();
             foreach(var end in endpoints.Values ) {
                 if ( end.Protocol.StartsWith( "http" ) ) {
@@ -103,13 +105,22 @@ namespace DirtBag {
             if ( string.IsNullOrEmpty( uAgent ) ) throw new Exception( "Provide setting 'UserAgentString' in AppConfig to avoid Reddit throttling!" );
             if ( string.IsNullOrEmpty( sub ) ) throw new Exception( "Provide setting 'Subreddit' in AppConfig" );
             Subreddit = sub;
-            Agent = new RedditWebAgent();
-            RedditWebAgent.EnableRateLimit = true;
-            RedditWebAgent.RateLimit = RedditWebAgent.RateLimitMode.Burst;
-            RedditWebAgent.RootDomain = "oauth.reddit.com";
-            RedditWebAgent.UserAgent = uAgent;
-            RedditWebAgent.Protocol = "https";
-            Auth = new RedditAuth( Agent );
+            string uname = ConfigurationManager.AppSettings["BotUsername"];
+            string pass = ConfigurationManager.AppSettings["BotPassword"];
+            string clientId = ConfigurationManager.AppSettings["ClientID"];
+            string clientSecret = ConfigurationManager.AppSettings["ClientSecret"];
+            string redirectUri = ConfigurationManager.AppSettings["RedirectURI"];
+            if ( string.IsNullOrEmpty( uname ) ) throw new Exception( "Missing 'BotUsername' in config" );
+            if ( string.IsNullOrEmpty( pass ) ) throw new Exception( "Missing 'BotPassword' in config" );
+            if ( string.IsNullOrEmpty( clientId ) ) throw new Exception( "Missing 'ClientID' in config" );
+            if ( string.IsNullOrEmpty( clientSecret ) ) throw new Exception( "Missing 'ClientSecret' in config" );
+            if ( string.IsNullOrEmpty( redirectUri ) ) throw new Exception( "Missing 'RedirectURI' in config" );
+            Agent = new BotWebAgent(uname,pass,clientId,clientSecret,redirectUri);
+            BotWebAgent.EnableRateLimit = true;
+            BotWebAgent.RateLimit = BotWebAgent.RateLimitMode.Burst;
+            BotWebAgent.RootDomain = "oauth.reddit.com";
+            BotWebAgent.UserAgent = uAgent;
+            BotWebAgent.Protocol = "https";
 
             Auth.Login();
             Agent.AccessToken = Auth.AccessToken;
@@ -121,6 +132,9 @@ namespace DirtBag {
             Settings.Subreddit = Subreddit;
             Settings.Initialize( Client );
 
+            while ( true ) {
+                Task.Factory.StartNew( ProcessMessages ).Wait();
+            }
         }
 
         private static void Settings_OnSettingsModified( object sender, EventArgs e ) {
@@ -132,7 +146,6 @@ namespace DirtBag {
 
         private static void StartTimer() {
             TheKeeper = new Timer( ProcessPosts, null, 0, Settings.RunEveryXMinutes * 60 * 1000 );
-            TheWatcher = new Timer( ProcessMessages, null, 0, Settings.RunEveryXMinutes * 30 * 1000 ); //cheat a bit
         }
 
         private static void StopTimer() {
@@ -140,7 +153,7 @@ namespace DirtBag {
             TheWatcher?.Dispose();
         }
         private static void CheckBurstStats( object s ) {
-            var agent = (RedditWebAgent) s;
+            var agent = (BotWebAgent) s;
             Console.WriteLine( "Last Request: {0}\r\nBurst Start: {1}\r\nRequests this Burst: {2}", agent.LastRequest, agent.BurstStart, agent.RequestsThisBurst );
         }
         private static async void ProcessPosts( object s ) {
@@ -302,8 +315,9 @@ namespace DirtBag {
             }
             return results;
         }
-        private static async void ProcessMessages( object s ) {
-            var messages = Client.User.UnreadMessages;
+        private static async void ProcessMessages() {
+            var messages = Client.User.PrivateMessages.GetListingStream();
+            
             var mods = new List<string>();
             mods.AddRange( Client.GetSubreddit( Subreddit ).Moderators.Select( m => m.Name.ToLower() ).ToList() ); //TODO when enabling multiple subs, fix this
 
