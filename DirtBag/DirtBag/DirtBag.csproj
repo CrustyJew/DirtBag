@@ -243,6 +243,8 @@
     <Compile Include="Logging\UserAnalysis.cs" />
     <Compile Include="Logging\UserPost.cs" />
     <Compile Include="Logging\UserPostingHistory.cs" />
+    <Compile Include="Models\AnalysisRequest.cs" />
+    <Compile Include="Models\Author.cs" />
     <Compile Include="Models\BannedEntity.cs" />
     <Compile Include="Modules\AnalysisScore.cs" />
     <Compile Include="Modules\HighTechBanHammer.cs" />
