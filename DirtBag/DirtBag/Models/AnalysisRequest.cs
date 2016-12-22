@@ -9,7 +9,16 @@ namespace DirtBag.Models {
         public string ThingID { get; set; }
         public AuthorInfo Author { get; set; }
         public DateTime EntryTime { get; set; }
-        public string VideoLink { get; set; }
+        public string VideoID { get; set; }
+        public int MyProperty { get; set; }
+
+        public enum Provider {
+            YouTube = 0,
+            Vimeo = 1,
+            VidMe = 2,
+            DailyMotion = 3,
+            Instagram = 4
+        }
 
     }
 }
