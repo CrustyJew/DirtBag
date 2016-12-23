@@ -14,6 +14,8 @@ namespace DirtBag {
             config.Formatters.Remove( config.Formatters.XmlFormatter );
             config.Formatters.JsonFormatter.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
             config.Formatters.JsonFormatter.UseDataContractJsonSerializer = false;
+
+            config.Filters.Add( new AuthorizeAttribute() );
             // Web API routes
             config.MapHttpAttributeRoutes();
 

@@ -6,7 +6,6 @@ namespace DirtBag {
         public void Configuration(IAppBuilder appBuilder ) {
             HttpConfiguration config = new HttpConfiguration();
             WebApiConfig.Register( config );
-            config.Filters.Add( new AuthorizeAttribute() );
             ConfigureAuth( appBuilder );
             appBuilder.UseWebApi( config );
         }

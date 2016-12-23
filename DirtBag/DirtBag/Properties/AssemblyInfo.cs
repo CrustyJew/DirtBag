@@ -7,9 +7,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle( "DirtBag" )]
 [assembly: AssemblyDescription( "" )]
 [assembly: AssemblyConfiguration( "" )]
-[assembly: AssemblyCompany( "Iowa Network Services" )]
+[assembly: AssemblyCompany( "" )]
 [assembly: AssemblyProduct( "DirtBag" )]
-[assembly: AssemblyCopyright( "Copyright © Iowa Network Services 2015" )]
+[assembly: AssemblyCopyright( "" )]
 [assembly: AssemblyTrademark( "" )]
 [assembly: AssemblyCulture( "" )]
 

@@ -183,6 +183,10 @@
       <HintPath>..\packages\Newtonsoft.Json.8.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Npgsql, Version=3.1.9.0, Culture=neutral, PublicKeyToken=5d8b90d52f46fda7, processorArchitecture=MSIL">
+      <HintPath>..\packages\Npgsql.3.1.9\lib\net45\Npgsql.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Owin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f0ebd12fd5e55cc5, processorArchitecture=MSIL">
       <HintPath>..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
       <Private>True</Private>
@@ -254,11 +258,15 @@
   <ItemGroup>
     <Compile Include="App_Start\WebApiConfig.cs" />
     <Compile Include="App_Start\Startup.Auth.cs" />
+    <Compile Include="BLL\SubredditSettingsBLL.cs" />
     <Compile Include="BotFunctions\AutoModWrangler.cs" />
     <Compile Include="Controllers\AutomodWranglerController.cs" />
     <Compile Include="Controllers\InfoController.cs" />
     <Compile Include="Controllers\PostAnalysisController.cs" />
     <Compile Include="Controllers\RedditConnectionController.cs" />
+    <Compile Include="Controllers\SubredditSettingsController.cs" />
+    <Compile Include="DAL\ProcessedPostDAL.cs" />
+    <Compile Include="DAL\SubredditSettingsDAL.cs" />
     <Compile Include="Flair.cs" />
     <Compile Include="Helpers\PostEqualityComparer.cs" />
     <Compile Include="Helpers\ProcessedPostHelpers.cs" />
@@ -275,6 +283,7 @@
     <Compile Include="Models\AnalysisResults.cs" />
     <Compile Include="Models\Author.cs" />
     <Compile Include="Models\BannedEntity.cs" />
+    <Compile Include="Models\ProcessedPost.cs" />
     <Compile Include="Modules\AnalysisScore.cs" />
     <Compile Include="Modules\HighTechBanHammer.cs" />
     <Compile Include="Modules\IModule.cs" />

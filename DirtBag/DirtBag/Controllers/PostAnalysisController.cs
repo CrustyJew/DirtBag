@@ -35,5 +35,12 @@ namespace DirtBag.Controllers {
             }
             return analysis;
         }
+
+        [Route( "Echo" ), HttpPost]
+        public Models.AnalysisRequest Echo( Models.AnalysisRequest req ) {
+            return req;
+        }
+
+
     }
 }
