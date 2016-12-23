@@ -6,27 +6,30 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace DirtBag.Models {
-    public class ProcessedPost {
+    public class ProcessedItem {
         [JsonProperty]
         public string SubName { get; set; }
         [JsonProperty]
-        public string PostID { get; set; }
+        public string ThingID { get; set; }
+
+        public AnalyzableTypes ThingType { get; set; }
         [JsonProperty]
         public string Action { get; set; }
         [JsonProperty]
         public Modules.Modules SeenByModules { get; set; }
         [JsonProperty]
-        public Modules.PostAnalysisResults AnalysisResults { get; set; }
+        public AnalysisDetails AnalysisDetails { get; set; }
 
-        public ProcessedPost() {
-
+        public ProcessedItem() {
+            AnalysisDetails = new AnalysisDetails();
         }
 
-        public ProcessedPost( string subName, string postID, string action ) {
+        public ProcessedItem( string subName, string thingID, string action, AnalyzableTypes type ) {
             SubName = subName;
-            PostID = postID;
+            ThingID = thingID;
             Action = action;
-            AnalysisResults = new Modules.PostAnalysisResults();
+            ThingType = type;
+            AnalysisDetails = new AnalysisDetails();
         }
     }
 }

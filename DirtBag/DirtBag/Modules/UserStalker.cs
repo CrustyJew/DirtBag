@@ -122,7 +122,8 @@ namespace DirtBag.Modules {
             //and would certainly introduce more issues than it is probably worth unless more info is tacked on to some of the 
             //categories later on.
             using ( var con = DirtBagConnection.GetConn() ) {
-                bool useLocalDB = DirtBagConnection.UseLocalDB;
+                //bool useLocalDB = DirtBagConnection.UseLocalDB;
+                bool useLocalDB = false;
                 var initTables = "" +
                     ( useLocalDB ?
                         "CREATE TABLE IF NOT EXISTS " :

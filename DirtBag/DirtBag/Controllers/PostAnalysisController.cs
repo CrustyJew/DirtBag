@@ -12,12 +12,12 @@ namespace DirtBag.Controllers {
         [Route( "{sub}" )]
         public async Task<Models.AnalysisResults> Analyze( string sub, Models.AnalysisRequest req ) {
             var analysis = new Models.AnalysisResults();
-            Modules.PostAnalysisResults results = new Modules.PostAnalysisResults();
+            Models.AnalysisDetails results = new Models.AnalysisDetails();
             string[] reasons = { "Some module no likey", "spam spam spam", "HEY, LISTEN!", "Giggity giggity", "Totally not a canned response", "OOPS" };
             string[] modules = { "GrrSmash", "StronkSpam", "JukinBribeSystem", "SpezDBEditor" };
             Random rngJesus = new Random( (int) DateTime.UtcNow.Ticks );
             for ( int i = 0; i < rngJesus.Next( 0, 10 ); i++ ) {
-                var score = new Modules.AnalysisScore( Math.Round( rngJesus.NextDouble() * 10, 2 ), reasons[rngJesus.Next( 0, reasons.Length )], reasons[rngJesus.Next( 0, reasons.Length )], modules[rngJesus.Next( 0, modules.Length )] );
+                var score = new Models.AnalysisScore( Math.Round( rngJesus.NextDouble() * 10, 2 ), reasons[rngJesus.Next( 0, reasons.Length )], reasons[rngJesus.Next( 0, reasons.Length )], modules[rngJesus.Next( 0, modules.Length )], i );
                 if ( rngJesus.Next( 0, 10 ) > 6 ) {
                     score.RemovalFlair = new DirtBag.Flair( "FlairText" + i, "FlairCSS" + i, rngJesus.Next( 1, 5 ) );
                 }

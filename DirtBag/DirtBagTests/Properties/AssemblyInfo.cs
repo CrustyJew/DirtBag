@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle( "DirtBagTests" )]
 [assembly: AssemblyDescription( "" )]
 [assembly: AssemblyConfiguration( "" )]
-[assembly: AssemblyCompany( "Iowa Network Services" )]
+[assembly: AssemblyCompany( "" )]
 [assembly: AssemblyProduct( "DirtBagTests" )]
-[assembly: AssemblyCopyright( "Copyright © Iowa Network Services 2015" )]
+[assembly: AssemblyCopyright( "Copyright ©  2016" )]
 [assembly: AssemblyTrademark( "" )]
 [assembly: AssemblyCulture( "" )]
 
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible( false )]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid( "16bc128a-b640-498a-8dff-18b8e780a434" )]
+[assembly: Guid( "b5d83ee5-2850-44c9-bd6e-f97ddfcf8af0" )]
 
 // Version information for an assembly consists of the following four values:
 //

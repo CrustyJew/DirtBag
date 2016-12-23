@@ -1,27 +1,21 @@
 ﻿using System;
-using System.Configuration;
-using System.Data.Common;
-using System.Data.SqlClient;
-using System.IO;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using Dapper;
 
-namespace DirtBag.Logging {
-    class DirtBagConnection {
+namespace DirtBag.DAL {
+    public class DatabaseInitializationSQL {
+        private IDbConnection conn;
 
-        public string SQLConnString { get; set; }
-        public string LocalDBFile { get; set; }
+        public DatabaseInitializationSQL( IDbConnection dbConn ) {
+            conn = dbConn;
+        }
 
-        private DbConnection dbConn;
-        public void InitializeConnection( string[] subreddits ) {
-
-            SQLConnString = ConfigurationManager.AppSettings["SQLConnString"];
-            if ( string.IsNullOrEmpty( SQLConnString ) ) {
-                throw new Exception( "No SQLConnString specified!" );
-            }
-
-
-            using ( var con = GetConn() ) {
-                var initTables = @"
+        public async Task InitializeTablesAndData() {
+            string initTables = @"
 if not exists( select * from sys.tables t join sys.schemas s on ( t.schema_id = s.schema_id ) where s.name = SCHEMA_NAME() and t.name = 'Subreddits' ) 
 CREATE TABLE
 [SubReddits]( 
@@ -36,15 +30,15 @@ CREATE TABLE
     [ActionName] varchar(50) NOT NULL
 );
 
-if not exists( select * from sys.tables t join sys.schemas s on ( t.schema_id = s.schema_id ) where s.name = SCHEMA_NAME() and t.name = 'ProcessedPosts' )
+if not exists( select * from sys.tables t join sys.schemas s on ( t.schema_id = s.schema_id ) where s.name = SCHEMA_NAME() and t.name = 'ProcessedItems' )
 CREATE TABLE
-[ProcessedPosts]( 
+[ProcessedItems]( 
     [ID] INTEGER NOT NULL PRIMARY KEY IDENTITY, 
     [SubredditID] INTEGER NOT NULL, 
-    [PostID] varchar(20) NOT NULL, 
+    [ThingID] varchar(20) NOT NULL, 
+    [ThingType] tinyint NOT NULL,
     [ActionID] INTEGER, 
-    [SeenByModules] INTEGER, 
-    [AnalysisResults] VARBINARY(2000) --varbinary uses less space than base64 encoding and storing as varchar
+    [SeenByModules] INTEGER
 ); 
 
 if not exists( select * from sys.tables t join sys.schemas s on ( t.schema_id = s.schema_id ) where s.name = SCHEMA_NAME() and t.name = 'BannedEntities' ) 
@@ -81,51 +75,22 @@ CREATE TABLE
 [AnalysisScores](
     [SubredditID] INTEGER NOT NULL,
     [ModuleID] INTEGER NOT NULL,
-    [PostID] varchar(20) NOT NULL,
-    [Score] DOUBLE,
+    [ThingID] varchar(20) NOT NULL,
+    [Score] float,
     [Reason] varchar(1000),
     [ReportReason] varchar(255),
     [FlairText] varchar(255),
     [FlairClass] varchar(255),
     [FlairPriority] smallint
 );
-";
-
-                con.Execute( initTables );
-
-                var subs = "('" + string.Join( "'),('", subreddits ) + "') ";
-                var seedData = @"
-MERGE Subreddits WITH (HOLDLOCK) AS s 
-Using (VALUES "  + subs + @") AS ns (SubName) 
-ON s.SubName = ns.SubName 
-WHEN NOT MATCHED BY TARGET THEN 
-INSERT (SubName) VALUES (ns.SubName); 
 
 MERGE Actions WITH (HOLDLOCK) AS v 
 Using (VALUES ('Report'),('Remove'),('None')) AS nv (Action) 
 ON v.ActionName = nv.Action 
 WHEN NOT MATCHED BY TARGET THEN 
-INSERT (ActionName) VALUES (nv.Action); ";
-                
-                con.Execute( seedData );
-
-            }
-        }
-
-        public static DbConnection GetConn() {
-            string sqlConnString = ConfigurationManager.AppSettings["SQLConnString"];
-            if ( string.IsNullOrEmpty( sqlConnString ) ) {
-                throw new Exception( "No SQLConnString specified!" );
-            }
-            return new SqlConnection( sqlConnString );
-        }
-
-        public static DbConnection GetSentinelConn() {
-            string postgresSqlConn = ConfigurationManager.AppSettings["SQLConnString"];
-            if ( string.IsNullOrEmpty( postgresSqlConn ) ) {
-                throw new Exception( "No postgresSqlConn specified!" );
-            }
-            return new Npgsql.NpgsqlConnection( postgresSqlConn );
+INSERT (ActionName) VALUES (nv.Action);
+";
+            await conn.ExecuteAsync( initTables );
         }
     }
 }

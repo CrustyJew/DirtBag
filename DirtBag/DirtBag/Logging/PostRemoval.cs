@@ -36,7 +36,7 @@ namespace DirtBag.Logging {
                     "up.Subreddit = @sub ";
                 var time = conn.Query<DateTime?>( query, new { sub } ).Single();
                 if ( !time.HasValue ) return null;
-                if ( DirtBagConnection.UseLocalDB ) return time.Value.ToUniversalTime();
+                //if ( DirtBagConnection.UseLocalDB ) return time.Value.ToUniversalTime();
                 else return time.Value;
             }
         }

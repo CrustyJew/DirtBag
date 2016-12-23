@@ -10,7 +10,7 @@ namespace DirtBag.Models {
     public class AnalysisResults {
         [JsonConverter( typeof( StringEnumConverter ) )]
         public Action RequiredAction { get; set; }
-        public Modules.PostAnalysisResults AnalysisDetails { get; set; }
+        public AnalysisDetails AnalysisDetails { get; set; }
         
 
         public enum Action {
