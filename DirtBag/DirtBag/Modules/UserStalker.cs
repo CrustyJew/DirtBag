@@ -10,6 +10,7 @@ using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using RedditSharp;
 using RedditSharp.Things;
+using DirtBag.Models;
 
 namespace DirtBag.Modules {
     class UserStalker : IModule {
@@ -36,13 +37,13 @@ namespace DirtBag.Modules {
             Settings = settings;
         }
 
-        public async Task<Dictionary<string, PostAnalysisResults>> Analyze( List<Post> posts ) {
+        public async Task<Dictionary<string, AnalysisDetails>> Analyze( List<Post> posts ) {
             //return await Task.Run( () => {
             var modLog = ProcessModLog();
-            var toReturn = new Dictionary<string, PostAnalysisResults>();
+            var toReturn = new Dictionary<string, AnalysisDetails>();
             var youTubePosts = new Dictionary<string, List<Post>>();
             foreach ( var post in posts ) {
-                toReturn.Add( post.Id, new PostAnalysisResults( post, ModuleEnum ) );
+                toReturn.Add( post.Id, new AnalysisDetails( post, ModuleEnum ) );
                 var ytID = YouTubeHelpers.ExtractVideoId( post.Url.ToString() );
 
                 if ( !string.IsNullOrEmpty( ytID ) ) {

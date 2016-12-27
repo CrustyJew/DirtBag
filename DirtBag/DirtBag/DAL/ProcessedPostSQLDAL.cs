@@ -77,7 +77,12 @@ where sub.SubName like @SubName
             await conn.ExecuteAsync( scoresUpdate, asParams );
         }
 
-        public async Task<Models.ProcessedItem> ReadProcessedItem( string thingID, string subName ) {
+        public async Task<Models.ProcessedItem> ReadProcessedItem(string thingID, string subName ) {
+            var items = await ReadProcessedItems( new string[] { thingID }, subName );
+            return items.FirstOrDefault();
+        }
+
+        public async Task<IEnumerable<Models.ProcessedItem>> ReadProcessedItems( IEnumerable<string> thingIDs, string subName ) {
             string query = @"
 SELECT subs.SubName, pp.ThingID, pp.ThingType, act.ActionName as 'Action', pp.SeenByModules, 
     scores.Score, scores.Reason, scores.ReportReason, scores.ModuleID, 
@@ -90,24 +95,34 @@ WHERE
 pp.ThingID = @thingID
 AND subs.SubName = @subName
 ";
-            Models.ProcessedItem toReturn = null;
+            List<Dictionary<string, object>> piParams = new List<Dictionary<string, object>>();
+            foreach(string thing in thingIDs ) {
+                piParams.Add( new Dictionary<string, object>() {
+                    {"thingID", thing },
+                    {"subName", subName }
+                } );
+            }
+
+
+            Dictionary<string, Models.ProcessedItem> toReturn = new Dictionary<string, Models.ProcessedItem>();
 
             var result = await conn.QueryAsync<Models.ProcessedItem, Models.AnalysisScore, Flair, Models.ProcessedItem>(
                 query,
                 ( pi, score, flair ) => {
-                    if ( toReturn == null ) {
-                        toReturn = pi;
+                    Models.ProcessedItem item;
+                    if ( !toReturn.TryGetValue(pi.ThingID, out item) ) {
+                        item = pi;
+                        toReturn.Add( item.ThingID, item );
                     }
-
                     score.RemovalFlair = flair;
-                    toReturn.AnalysisDetails.Scores.Add( score );
+                    item.AnalysisDetails.Scores.Add( score );
 
                     return pi;
                 },
                 splitOn: "Score,Text",
-                param: new { thingID, subName } );
+                param: piParams );
 
-            return toReturn;
+            return toReturn.Values.AsEnumerable();
         }
     }
 }

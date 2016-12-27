@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
-namespace DirtBag.Modules {
+namespace DirtBag.Models {
     public interface IModuleSettings {
 		[JsonProperty]
         bool Enabled { get; set; }

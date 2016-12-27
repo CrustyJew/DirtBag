@@ -14,6 +14,7 @@ using Microsoft.Owin.Hosting;
 using Microsoft.WindowsAzure.ServiceRuntime;
 using System.Diagnostics;
 using System.Net;
+using DirtBag.Models;
 
 namespace DirtBag {
     class Program : RoleEntryPoint {
@@ -157,7 +158,7 @@ namespace DirtBag {
         }
         private static async void ProcessPosts( object s ) {
             var sub = Client.GetSubreddit( Subreddit );
-
+            var ppBLL = new BLL.ProcessedPostBLL(new DAL.ProcessedPostSQLDAL(new SqlConnection ))
             var newPosts = new List<Post>();
             var hotPosts = new List<Post>();
             var risingPosts = new List<Post>();
@@ -188,7 +189,7 @@ namespace DirtBag {
             reportedPreviously.AddRange( alreadyProcessed.Where( p => p.Action.ToLower() == "report" ) );
 
 
-            var postTasks = new List<Task<Dictionary<string, PostAnalysisResults>>>();
+            var postTasks = new List<Task<Dictionary<string, AnalysisDetails>>>();
 
 
             foreach ( var module in ActiveModules ) {
@@ -214,7 +215,7 @@ namespace DirtBag {
                 if ( postsList.Count > 0 ) postTasks.Add( Task.Run( () => module.Analyze( postsList ) ) );
             }
 
-            var results = new Dictionary<string, PostAnalysisResults>();
+            var results = new Dictionary<string, AnalysisDetails>();
             while ( postTasks.Count > 0 ) {
                 var finishedTask = await Task.WhenAny( postTasks );
                 postTasks.Remove( finishedTask );
@@ -279,7 +280,7 @@ namespace DirtBag {
                     //processed post needs updated in
                     if ( unseen ) {
                         try {
-                            ProcessedPost.AddProcessedPost( original ); 
+                            //ProcessedPost.AddProcessedPost( original ); //TODO
                         }
                         catch ( Exception ex ) {
                             Console.WriteLine( "Error adding new post as processed. Messaage : {0}", "\r\n Inner Exception : " + ex.InnerException?.Message );
@@ -287,7 +288,7 @@ namespace DirtBag {
                     }
                     else {
                         try {
-                            ProcessedPost.UpdateProcessedPost( original ); 
+                            //ProcessedPost.UpdateProcessedPost( original ); //TODO
                         }
                         catch ( Exception ex ) {
                             Console.WriteLine( "Error updating processed post. Messaage : {0}", "\r\n Inner Exception : " + ( ex.InnerException != null ? ex.InnerException.Message : "null" ) );
@@ -299,9 +300,9 @@ namespace DirtBag {
             Console.WriteLine( $"Successfully processed {results.Keys.Count} posts.\r\nIgnored posts: {ignoredCounter}\r\nReported Posts: {reportedCounter}\r\nRemoved Posts: {removedCounter}" );
 
         }
-        internal static async Task<PostAnalysisResults> AnalyzePost( Post post ) {
+        internal static async Task<AnalysisDetails> AnalyzePost( Post post ) {
             var postTasks = ActiveModules.Select( module => module.Analyze( new List<Post> { post } ) ).ToList();
-            var results = new PostAnalysisResults( post, Modules.Modules.None );
+            var results = new AnalysisDetails( post, Modules.Modules.None );
 
             while ( postTasks.Count > 0 ) {
                 var finishedTask = await Task.WhenAny( postTasks );

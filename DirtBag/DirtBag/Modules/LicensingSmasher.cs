@@ -13,6 +13,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using RedditSharp;
 using RedditSharp.Things;
+using DirtBag.Models;
 
 namespace DirtBag.Modules {
     class LicensingSmasher : IModule {
@@ -51,13 +52,13 @@ namespace DirtBag.Modules {
 
         private Regex TermMatching;
         private Regex LicenserMatching;
-        public async Task<Dictionary<string, PostAnalysisResults>> Analyze( List<Post> posts ) {
+        public async Task<Dictionary<string, AnalysisDetails>> Analyze( List<Post> posts ) {
 
-            var toReturn = new Dictionary<string, PostAnalysisResults>();
+            var toReturn = new Dictionary<string, AnalysisDetails>();
             var youTubePosts = new Dictionary<string, List<Post>>();
 
             foreach ( var post in posts ) {
-                toReturn.Add( post.Id, new PostAnalysisResults( post, ModuleEnum ) );
+                toReturn.Add( post.Id, new AnalysisDetails( post, ModuleEnum ) );
                 var ytID = YouTubeHelpers.ExtractVideoId( post.Url.ToString() );
 
                 if ( !string.IsNullOrEmpty( ytID ) ) {
@@ -84,7 +85,7 @@ namespace DirtBag.Modules {
                     termMatches.AddRange( TermMatching.Matches( vid.Snippet.Title ).Cast<Match>().Select( m => m.Value ).ToList().Distinct() );
                     if ( termMatches.Count > 0 ) {
                         foreach ( var post in redditPosts ) {
-                            toReturn[post.Id].Scores.Add( new AnalysisScore( STRINGMATCH_SCORE * Settings.ScoreMultiplier, "YouTube video title or description has the following term(s): " + string.Join( ", ", termMatches ), "Match: " + string.Join( ", ", termMatches ), ModuleName, RemovalFlair ) );
+                            toReturn[post.Id].Scores.Add( new AnalysisScore( STRINGMATCH_SCORE * Settings.ScoreMultiplier, "YouTube video title or description has the following term(s): " + string.Join( ", ", termMatches ), "Match: " + string.Join( ", ", termMatches ), ModuleEnum, RemovalFlair ) );
                         }
                     }
 
@@ -95,7 +96,7 @@ namespace DirtBag.Modules {
             return toReturn;
         }
 
-        private async Task ScrapeYouTube( Dictionary<string, List<Post>> ytPosts, Dictionary<string, PostAnalysisResults> results ) {
+        private async Task ScrapeYouTube( Dictionary<string, List<Post>> ytPosts, Dictionary<string, AnalysisDetails> results ) {
             var scrapes = new Dictionary<string, Task<string>>();
             foreach ( var id in ytPosts.Keys ) {
                 var c = new HttpClient();
@@ -130,47 +131,14 @@ namespace DirtBag.Modules {
                 var owner = node.GetAttributeValue( "content", "" );
                 if ( owner.Substring( owner.Length - 1 ) == "/" ) owner = owner.Substring( 0, owner.Length - 1 );
                 var match = LicenserMatching.Match( owner ).Value;
-                score = new AnalysisScore( ATTRIBUTION_SCORE * Settings.ScoreMultiplier, string.Format( "Video is monetized by '{0}'", owner ), "Monetized", ModuleName );
+                score = new AnalysisScore( ATTRIBUTION_SCORE * Settings.ScoreMultiplier, string.Format( "Video is monetized by '{0}'", owner ), "Monetized", ModuleEnum );
                 if ( !string.IsNullOrEmpty( match ) ) {
-                    score = new AnalysisScore( ATTRIBUTION_MATCH_SCORE * Settings.ScoreMultiplier, string.Format( "Video is licensed through a network : '{0}'", KnownLicensers[match] ), string.Format( "Video licensed by '{0}'", KnownLicensers[match] ), ModuleName, RemovalFlair );
+                    score = new AnalysisScore( ATTRIBUTION_MATCH_SCORE * Settings.ScoreMultiplier, string.Format( "Video is licensed through a network : '{0}'", KnownLicensers[match] ), string.Format( "Video licensed by '{0}'", KnownLicensers[match] ), ModuleEnum, RemovalFlair );
                     return score;
                 }
 
             }
             return score;
-        }
-    }
-
-    public class LicensingSmasherSettings : IModuleSettings {
-        [JsonProperty]
-        public bool Enabled { get; set; }
-        [JsonConverter( typeof( StringEnumConverter ) )]
-        [JsonProperty]
-        public PostType PostTypes { get; set; }
-        [JsonProperty]
-        public int EveryXRuns { get; set; }
-        [JsonProperty]
-        public Flair RemovalFlair { get; set; }
-        [JsonProperty]
-        public string[] MatchTerms { get; set; }
-        [JsonProperty]
-        public Dictionary<string, string> KnownLicensers { get; set; }
-
-        public double ScoreMultiplier { get; set; }
-
-        public LicensingSmasherSettings() {
-            SetDefaultSettings();
-        }
-
-        public void SetDefaultSettings() {
-            Enabled = false;
-            PostTypes = PostType.All;
-            EveryXRuns = 1;
-            ScoreMultiplier = 1;
-            MatchTerms = new[] { "jukin", "licensing", "break.com", "storyful", "rumble", "newsflare", "visualdesk", "viral spiral", "viralspiral", "rightser", "to use this video in a commercial", "media enquiries" };
-            //These are case sensitive for friendly name matching
-            KnownLicensers = new Dictionary<string, string> { { "H7XeNNPkVV3JZxXm-O-MCA", "Jukin Media" }, { "Newsflare", "Newsflare" }, { "3339WgBDKIcxTfywuSmG8w", "ViralHog" }, { "Storyful", "Storyful" }, { "rumble", "Rumble" }, { "Rightster_Entertainment_Affillia", "Viral Spiral" }, { "Break", "Break" } };
-            RemovalFlair = new Flair() { Class = "red", Priority = 1, Text = "R10" };
         }
     }
 }

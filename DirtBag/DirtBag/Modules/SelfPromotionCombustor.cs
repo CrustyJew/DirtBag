@@ -9,6 +9,7 @@ using Google.Apis.YouTube.v3;
 using Google.Apis.Services;
 using System.Configuration;
 using Newtonsoft.Json;
+using DirtBag.Models;
 
 namespace DirtBag.Modules {
     class SelfPromotionCombustor : IModule {
@@ -47,12 +48,12 @@ namespace DirtBag.Modules {
             GracePeriod = settings.GracePeriod;
         }
 
-        public async Task<Dictionary<string, PostAnalysisResults>> Analyze( List<Post> posts ) {
-            var toReturn = new Dictionary<string, PostAnalysisResults>();
+        public async Task<Dictionary<string, AnalysisDetails>> Analyze( List<Post> posts ) {
+            var toReturn = new Dictionary<string, AnalysisDetails>();
             foreach ( var post in posts ) { //TODO error handling
                 var youTubePosts = new Dictionary<string, List<Post>>();
 
-                toReturn.Add( post.Id, new PostAnalysisResults( post, ModuleEnum ) );
+                toReturn.Add( post.Id, new AnalysisDetails( post, ModuleEnum ) );
                 string postYTID = YouTubeHelpers.ExtractVideoId( post.Url.ToString() );
                 Task<Logging.UserPostingHistory> hist;
                 if ( !string.IsNullOrEmpty( postYTID ) ) {
@@ -138,7 +139,7 @@ namespace DirtBag.Modules {
                 double percent = ( (double) channelPosts / totalPosts ) * 100;
                 if ( percent > PercentageThreshold && channelPosts > GracePeriod ) {
                     var score = new AnalysisScore();
-                    score.ModuleName = "SelfPromotionCombustor";
+                    score.Module = ModuleEnum;
                     score.ReportReason = $"SelfPromo: {Math.Round( percent, 2 )}%";
                     score.Reason = $"Self Promotion for channel '{postChannelName}' with a posting percentage of {Math.Round( percent, 2 )}. Found PostIDs: {string.Join( ", ", postHistory[postChannelID] )}";
                     score.Score = OVER_PERCENT_SCORE * Settings.ScoreMultiplier;
@@ -148,40 +149,6 @@ namespace DirtBag.Modules {
                 }
             }
             return toReturn;
-        }
-    }
-
-    public class SelfPromotionCombustorSettings : IModuleSettings {
-        public bool Enabled { get; set; }
-
-        public int EveryXRuns { get; set; }
-
-        public PostType PostTypes { get; set; }
-
-        [JsonProperty]
-        public Flair RemovalFlair { get; set; }
-
-        public double ScoreMultiplier { get; set; }
-        [JsonProperty]
-        public int PercentageThreshold { get; set; }
-        [JsonProperty]
-        public bool IncludePostInPercentage { get; set; }
-        [JsonProperty]
-        public int GracePeriod { get; set; }
-
-        public SelfPromotionCombustorSettings() {
-            SetDefaultSettings();
-        }
-
-        public void SetDefaultSettings() {
-            Enabled = false;
-            EveryXRuns = 1;
-            PostTypes = PostType.New;
-            ScoreMultiplier = 1;
-            PercentageThreshold = 10;
-            RemovalFlair = new Flair( "10%", "red", 1 );
-            IncludePostInPercentage = false;
-            GracePeriod = 3;
         }
     }
 }

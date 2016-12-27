@@ -8,6 +8,7 @@ using System.Configuration;
 using Google.Apis.YouTube.v3;
 using Google.Apis.Services;
 using rs = RedditSharp.Things;
+using DirtBag.Models;
 
 namespace DirtBag.Modules {
     class HighTechBanHammer : IModule {
@@ -31,13 +32,13 @@ namespace DirtBag.Modules {
             Subreddit = subreddit;
         }
 
-        public async Task<Dictionary<string, PostAnalysisResults>> Analyze( List<rs.Post> posts ) {
-            var toReturn = new Dictionary<string, PostAnalysisResults>();
+        public async Task<Dictionary<string, AnalysisDetails>> Analyze( List<rs.Post> posts ) {
+            var toReturn = new Dictionary<string, AnalysisDetails>();
             var youTubePosts = new Dictionary<string, List<rs.Post>>();
             var amWrangler = new BotFunctions.AutoModWrangler( Program.Client.GetSubreddit( Program.Subreddit ) );
             var bannedChannels = amWrangler.GetBannedList( Models.BannedEntity.EntityType.Channel );
             foreach ( var post in posts ) { //TODO error handling
-                toReturn.Add( post.Id, new PostAnalysisResults( post, ModuleEnum ) );
+                toReturn.Add( post.Id, new AnalysisDetails( post, ModuleEnum ) );
                 string postYTID = YouTubeHelpers.ExtractVideoId( post.Url.ToString() );
 
                 if ( !string.IsNullOrWhiteSpace( postYTID ) ) {
@@ -57,30 +58,12 @@ namespace DirtBag.Modules {
                     if ( chan != null ) {
                         foreach ( var ytPost in youTubePosts[vid.Id] ) {
                             //ring 'er up
-                            toReturn[ytPost.Id].Scores.Add( new AnalysisScore( 9999, $"Channel ID: {chan.EntityString} was banned by {chan.BannedBy} on {chan.BanDate} for reason: {chan.BanReason}", "Banned Channel", ModuleName ) );
+                            toReturn[ytPost.Id].Scores.Add( new AnalysisScore( 9999, $"Channel ID: {chan.EntityString} was banned by {chan.BannedBy} on {chan.BanDate} for reason: {chan.BanReason}", "Banned Channel", ModuleEnum ) );
                         }
                     }
                 }
             }
             return toReturn;
-        }
-    }
-
-    public class HighTechBanHammerSettings : IModuleSettings {
-        public bool Enabled { get; set; }
-        public int EveryXRuns { get; set; }
-        public PostType PostTypes { get; set; }     
-        public double ScoreMultiplier { get; set; }
-
-        public HighTechBanHammerSettings() {
-            SetDefaultSettings();
-        }
-
-        public void SetDefaultSettings() {
-            Enabled = true;
-            EveryXRuns = 1;
-            PostTypes = PostType.New;
-            ScoreMultiplier = 99;
         }
     }
 }

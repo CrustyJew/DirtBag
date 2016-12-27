@@ -239,6 +239,7 @@
   <ItemGroup>
     <Compile Include="App_Start\WebApiConfig.cs" />
     <Compile Include="App_Start\Startup.Auth.cs" />
+    <Compile Include="BLL\ProcessedPostBLL.cs" />
     <Compile Include="BLL\SubredditSettingsBLL.cs" />
     <Compile Include="BotFunctions\AutoModWrangler.cs" />
     <Compile Include="Controllers\AutomodWranglerController.cs" />
@@ -251,13 +252,11 @@
     <Compile Include="DAL\SubredditSettingsDAL.cs" />
     <Compile Include="Flair.cs" />
     <Compile Include="Helpers\PostEqualityComparer.cs" />
-    <Compile Include="Helpers\ProcessedPostHelpers.cs" />
     <Compile Include="Helpers\YouTubeHelpers.cs" />
     <Compile Include="DAL\BannedEntitiesDAL.cs" />
     <Compile Include="Logging\Channel.cs" />
     <Compile Include="Logging\DirtBagConnection.cs" />
     <Compile Include="Logging\PostRemoval.cs" />
-    <Compile Include="Logging\ProcessedPost.cs" />
     <Compile Include="Logging\UserAnalysis.cs" />
     <Compile Include="Logging\UserPost.cs" />
     <Compile Include="Logging\UserPostingHistory.cs" />
@@ -268,14 +267,18 @@
     <Compile Include="Models\AnalyzableTypes.cs" />
     <Compile Include="Models\Author.cs" />
     <Compile Include="Models\BannedEntity.cs" />
+    <Compile Include="Models\HighTechBanHammerSettings.cs" />
+    <Compile Include="Models\IModuleSettings.cs" />
+    <Compile Include="Models\LicensingSmasherSettings.cs" />
     <Compile Include="Models\ProcessedPost.cs" />
-    <Compile Include="Modules\AnalysisScore.cs" />
+    <Compile Include="Models\SelfPromotionCombustorSettings.cs" />
+    <Compile Include="Models\SubredditSettings.cs" />
+    <Compile Include="Models\UserStalkerSettings.cs" />
+    <Compile Include="Models\YouTubeSpamDetectorSettings.cs" />
     <Compile Include="Modules\HighTechBanHammer.cs" />
     <Compile Include="Modules\IModule.cs" />
-    <Compile Include="Modules\IModuleSettings.cs" />
     <Compile Include="Modules\LicensingSmasher.cs" />
     <Compile Include="Modules\ModulesEnum.cs" />
-    <Compile Include="Modules\PostAnalysisResults.cs" />
     <Compile Include="Modules\SelfPromotionCombustor.cs" />
     <Compile Include="Modules\UserStalker.cs" />
     <Compile Include="Modules\YouTubeSpamDetector.cs" />
