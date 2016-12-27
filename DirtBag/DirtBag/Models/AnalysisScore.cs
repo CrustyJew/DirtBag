@@ -10,23 +10,20 @@ namespace DirtBag.Models {
         public string Reason { get; set; }
         public string ReportReason { get; set; }
         public Flair RemovalFlair { get; set; }
-        public string ModuleName { get; set; }
-        public int  ModuleID { get; set; }
+        public Modules.Modules Module { get; set; }
         public AnalysisScore() {
             Score = 0;
             Reason = "";
-            ModuleName = "";
         }
-        public AnalysisScore( double score, string reason, string reportReason, string moduleName, int moduleID ) {
+        public AnalysisScore( double score, string reason, string reportReason, Modules.Modules module ) {
             Score = score;
             Reason = reason;
             ReportReason = reportReason;
-            ModuleName = moduleName;
-            ModuleID = moduleID;
+            Module = module;
         }
 
-        public AnalysisScore( double score, string reason, string reportReason, string moduleName, int moduleID, Flair removalFlair )
-            : this( score, reason, reportReason, moduleName, moduleID ) {
+        public AnalysisScore( double score, string reason, string reportReason, Modules.Modules module, Flair removalFlair )
+            : this( score, reason, reportReason, module ) {
 
             RemovalFlair = removalFlair;
         }

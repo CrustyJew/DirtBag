@@ -33,7 +33,7 @@ where sub.SubName like @SubName
                 arParams.Add( new Dictionary<string, object>() {
                     {"ThingID", processed.ThingID },
                     {"SubName",processed.SubName },
-                    {"ModuleID",score.ModuleID },
+                    {"ModuleID",(int) score.Module },
                     {"Score", score.Score },
                     {"Reason",score.Reason },
                     {"ReportReason",score.ReportReason },
@@ -51,16 +51,30 @@ where sub.SubName like @SubName
 
         }
 
-        public async Task UpdatedAnalysisScores( string thingID, IEnumerable<Modules.AnalysisScore> scores ) {
+        public async Task UpdatedAnalysisScores( string thingID, string subName, IEnumerable<Models.AnalysisScore> scores ) {
+            List<Dictionary<string, object>> asParams = new List<Dictionary<string, object>>();
+            foreach ( var score in scores ) {
+                asParams.Add( new Dictionary<string, object>() {
+                    {"ThingID", thingID },
+                    {"SubName",subName },
+                    {"ModuleID", (int) score.Module },
+                    {"Score", score.Score },
+                    {"Reason",score.Reason },
+                    {"ReportReason",score.ReportReason },
+                    {"FlairText",score.RemovalFlair?.Text },
+                    {"FlairClass",score.RemovalFlair?.Class },
+                    {"FlairPriority",score.RemovalFlair?.Priority }
+                } );
+            }
             string scoresUpdate = @"
 DELETE FROM AnalysisScores WHERE ThingID = @thingID AND ModuleID = @ModuleID;
 
 INSERT INTO AnalysisScores([SubredditID], [ModuleID], [ThingID], [Score], [Reason], [ReportReason], [FlairText], [FlairClass], [FlairPriority])
-select sub.ID, @ModuleID, @PostID, @Score, @Reason, @ReportReason, @FlairText, @FlairClass, @FlairPriority
+select sub.ID, @ModuleID, @thingID, @Score, @Reason, @ReportReason, @FlairText, @FlairClass, @FlairPriority
 from Subreddits sub
 where sub.SubName like @SubName
 ;";
-            await conn.ExecuteAsync( scoresUpdate, new { scores, thingID } );
+            await conn.ExecuteAsync( scoresUpdate, asParams );
         }
 
         public async Task<Models.ProcessedItem> ReadProcessedItem( string thingID, string subName ) {
