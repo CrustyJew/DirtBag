@@ -6,13 +6,13 @@ using System.Threading.Tasks;
 
 namespace DirtBag.BLL {
     public class ProcessedPostBLL {
-        private DAL.ProcessedPostSQLDAL dal;
-        public ProcessedPostBLL(DAL.ProcessedPostSQLDAL ppDAL ) {
+        private DAL.ProcessedItemSQLDAL dal;
+        public ProcessedPostBLL(DAL.ProcessedItemSQLDAL ppDAL ) {
             dal = ppDAL;
         }
 
         public Task<Models.ProcessedItem> ReadProcessedPost(string thingID, string subreddit) {
-            return dal.ReadProcessedItem( thingID, subreddit );
+            return dal.ReadProcessedItemAsync( thingID, subreddit );
         }
     }
 }

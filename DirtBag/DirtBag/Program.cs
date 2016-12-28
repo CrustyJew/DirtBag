@@ -158,7 +158,7 @@ namespace DirtBag {
         }
         private static async void ProcessPosts( object s ) {
             var sub = Client.GetSubreddit( Subreddit );
-            var ppBLL = new BLL.ProcessedPostBLL(new DAL.ProcessedPostSQLDAL(new SqlConnection ))
+            var ppBLL = new BLL.ProcessedPostBLL(new DAL.ProcessedItemSQLDAL(new SqlConnection ))
             var newPosts = new List<Post>();
             var hotPosts = new List<Post>();
             var risingPosts = new List<Post>();

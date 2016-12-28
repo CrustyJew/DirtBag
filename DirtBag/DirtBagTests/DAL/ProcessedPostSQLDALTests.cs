@@ -10,10 +10,10 @@ using System.Data.SqlClient;
 namespace DirtBag.DAL.Tests {
     [TestFixture()]
     public class ProcessedPostSQLDALTests : DatabaseFixture {
-        private ProcessedPostSQLDAL dal;
+        private ProcessedItemSQLDAL dal;
         [SetUp]
         public void SetupTest() {
-            dal = new DAL.ProcessedPostSQLDAL( conn ); 
+            dal = new DAL.ProcessedItemSQLDAL( conn ); 
         }
 
         [Test()]
@@ -22,9 +22,9 @@ namespace DirtBag.DAL.Tests {
             processedPost.SeenByModules = Modules.Modules.HighTechBanHammer | Modules.Modules.UserStalker;
             processedPost.AnalysisDetails.Scores.Add( new Models.AnalysisScore( 1.11, "reason1", "report1", Modules.Modules.HighTechBanHammer ) );
             processedPost.AnalysisDetails.Scores.Add( new Models.AnalysisScore( 2, "reason2", "report2", Modules.Modules.UserStalker, new Flair( "flair5", "flaircss5", 1 ) ) );
-            dal.LogProcessedItem( processedPost ).Wait();
+            dal.LogProcessedItemAsync( processedPost ).Wait();
 
-            var result = dal.ReadProcessedItem( "12345", "testsubbie" ).Result;
+            var result = dal.ReadProcessedItemAsync( "12345", "testsubbie" ).Result;
             Assert.NotNull( result );
             Assert.IsTrue( result.Action == "Remove" && result.SeenByModules == (Modules.Modules.HighTechBanHammer | Modules.Modules.UserStalker) && result.ThingType == Models.AnalyzableTypes.Post
                 && result.AnalysisDetails.HasFlair && result.AnalysisDetails.FlairClass == "flaircss5" && result.AnalysisDetails.FlairText == "flair5"
@@ -33,7 +33,7 @@ namespace DirtBag.DAL.Tests {
 
         [Test()]
         public void ReadProcessedItemTest() {
-            var result = dal.ReadProcessedItem( "t1_test2", "testsubbie" ).Result;
+            var result = dal.ReadProcessedItemAsync( "t1_test2", "testsubbie" ).Result;
             Assert.NotNull( result );
             Assert.IsTrue( result.Action == "Report" && result.SeenByModules == Modules.Modules.LicensingSmasher && result.ThingType == Models.AnalyzableTypes.Comment
                 && result.AnalysisDetails.HasFlair && result.AnalysisDetails.FlairClass == "flairclass1" && result.AnalysisDetails.FlairText == "flair1 / flair2" 
@@ -42,8 +42,8 @@ namespace DirtBag.DAL.Tests {
 
         [Test()]
         public void UpdateScoresTest() {
-            dal.UpdatedAnalysisScores( "t1_test2", "testsubbie", new Models.AnalysisScore[] { new Models.AnalysisScore( 5.5, "updatedreason", "updatedreport", Modules.Modules.LicensingSmasher ) } ).Wait();
-            var result = dal.ReadProcessedItem( "t1_test2", "testsubbie" ).Result;
+            dal.UpdatedAnalysisScoresAsync( "t1_test2", "testsubbie", new Models.AnalysisScore[] { new Models.AnalysisScore( 5.5, "updatedreason", "updatedreport", Modules.Modules.LicensingSmasher ) } ).Wait();
+            var result = dal.ReadProcessedItemAsync( "t1_test2", "testsubbie" ).Result;
             Assert.NotNull( result );
             Assert.That( result.AnalysisDetails.Scores, Has.Count.EqualTo(1) );
             Assert.That( result.AnalysisDetails, Has.Property( "TotalScore" ).EqualTo( 5.5 ) );

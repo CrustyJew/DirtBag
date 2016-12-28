@@ -248,8 +248,12 @@
     <Compile Include="Controllers\RedditConnectionController.cs" />
     <Compile Include="Controllers\SubredditSettingsController.cs" />
     <Compile Include="DAL\DatabaseInitializationSQL.cs" />
-    <Compile Include="DAL\ProcessedPostSQLDAL.cs" />
-    <Compile Include="DAL\SubredditSettingsDAL.cs" />
+    <Compile Include="DAL\IProcessedItemDAL.cs" />
+    <Compile Include="DAL\ISubredditSettingsDAL.cs" />
+    <Compile Include="DAL\ProcessedItemSQLDAL.cs" />
+    <Compile Include="DAL\SubredditSettingsPostgresDAL.cs" />
+    <Compile Include="DAL\SubredditSettingsWikiDAL.cs" />
+    <Compile Include="DirtbagBot.cs" />
     <Compile Include="Flair.cs" />
     <Compile Include="Helpers\PostEqualityComparer.cs" />
     <Compile Include="Helpers\YouTubeHelpers.cs" />
