@@ -67,17 +67,18 @@ where sub.SubName like @SubName
                 } );
             }
             string scoresDeleteOld = @"
-DELETE FROM AnalysisScores WHERE ThingID = @thingID AND ModuleID = @ModuleID;
+DELETE FROM AnalysisScores WHERE ThingID = @ThingID AND ModuleID = @ModuleID;
 ";
             string scoresUpdate = @"
 INSERT INTO AnalysisScores([SubredditID], [ModuleID], [ThingID], [Score], [Reason], [ReportReason], [FlairText], [FlairClass], [FlairPriority])
-select sub.ID, @ModuleID, @thingID, @Score, @Reason, @ReportReason, @FlairText, @FlairClass, @FlairPriority
+select sub.ID, @ModuleID, @ThingID, @Score, @Reason, @ReportReason, @FlairText, @FlairClass, @FlairPriority
 from Subreddits sub
 where sub.SubName like @SubName
 ;";
             using ( var transactionScope = new TransactionScope( TransactionScopeAsyncFlowOption.Enabled ) ) {
                 await conn.ExecuteAsync( scoresDeleteOld, asParams );
                 await conn.ExecuteAsync( scoresUpdate, asParams );
+                transactionScope.Complete();
             }
         }
 
@@ -96,18 +97,9 @@ LEFT JOIN AnalysisScores scores on scores.subredditID = pp.subredditID AND pp.th
 LEFT JOIN Actions act on act.ID = pp.ActionID
 LEFT JOIN Subreddits subs on subs.ID = pp.SubredditID
 WHERE
-pp.ThingID = @thingID
+pp.ThingID IN @thingIDs
 AND subs.SubName = @subName
 ";
-            List<Dictionary<string, object>> piParams = new List<Dictionary<string, object>>();
-            foreach(string thing in thingIDs ) {
-                piParams.Add( new Dictionary<string, object>() {
-                    {"thingID", thing },
-                    {"subName", subName }
-                } );
-            }
-
-
             Dictionary<string, Models.ProcessedItem> toReturn = new Dictionary<string, Models.ProcessedItem>();
 
             var result = await conn.QueryAsync<Models.ProcessedItem, Models.AnalysisScore, Flair, Models.ProcessedItem>(
@@ -124,7 +116,7 @@ AND subs.SubName = @subName
                     return pi;
                 },
                 splitOn: "Score,Text",
-                param: piParams );
+                param: new { thingIDs, subName } );
 
             return toReturn.Values.AsEnumerable();
         }

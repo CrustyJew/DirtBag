@@ -82,7 +82,7 @@ CREATE TABLE
     [SubredditID] INTEGER NOT NULL,
     [ModuleID] INTEGER NOT NULL,
     [PostID] varchar(20) NOT NULL,
-    [Score] DOUBLE,
+    [Score] FLOAT,
     [Reason] varchar(1000),
     [ReportReason] varchar(255),
     [FlairText] varchar(255),

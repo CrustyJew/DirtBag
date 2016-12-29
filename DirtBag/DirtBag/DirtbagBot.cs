@@ -33,16 +33,20 @@ namespace DirtBag {
             client = redditClient;
             subSettingsDAL = settingsDAL;
             processedDAL = processedItemDAL;
+            ActiveModules = new List<IModule>();
         }
 
         public async Task StartBot() {
             Settings = await subSettingsDAL.GetSubredditSettingsAsync( Subreddit );
+            LoadModules();
             TheKeeper = new Timer( TimerTask, null, Settings.RunEveryXMinutes * 60 * 1000, Settings.RunEveryXMinutes * 60 * 1000 );
         }
 
         private void TimerTask( object s ) {
             TheKeeper.Dispose();
-            Task.Factory.StartNew( ProcessPosts ).Wait();
+            var processed = Task.Run( ProcessPosts );
+            processed.Wait();
+            var x = processed.Result;
             TheKeeper = new Timer( TimerTask, null, Settings.RunEveryXMinutes * 60 * 1000, Settings.RunEveryXMinutes * 60 * 1000 );
         }
 
@@ -211,76 +215,6 @@ namespace DirtBag {
                 }
             }
             return results;
-        }
-
-        private async Task ProcessMessages() {
-            var messages = client.User.UnreadMessages.GetListingStream();
-
-            var mods = new List<string>();
-            mods.AddRange( client.GetSubreddit( Subreddit ).Moderators.Select( m => m.Name.ToLower() ).ToList() ); //TODO when enabling multiple subs, fix this
-
-            foreach ( var message in messages.Where( unread => unread.Kind == "t4" ).Cast<PrivateMessage>() ) {
-                await Task.Factory.StartNew(message.SetAsRead);
-                string subject = message.Subject.ToLower();
-                List<string> args = subject.Split( '-' ).Select( p => p.Trim() ).ToList();
-
-                bool force = args.Count > 1 && args.Contains( "force" );
-                if ( !subject.Contains( "validate" ) && !subject.Contains( "check" ) &&
-                    !subject.Contains( "analyze" ) && !subject.Contains( "test" ) && !subject.Contains( "verify" ) ) {
-                    message.Reply( "Whatchu talkin bout Willis" );
-                    continue;
-                }
-                Post post;
-                try {
-                    post = await Task.Factory.StartNew( () => { return client.GetPost( new Uri( message.Body ) ); } );
-                }
-                catch {
-                    message.Reply( "That URL made me throw up in my mouth a little. Try again!" );
-                    continue;
-                }
-                if ( post.SubredditName.ToLower() != Subreddit.ToLower() ) { //TODO when enabling multiple subreddits, this needs tweaked!
-                    message.Reply( $"I don't have any rules for {post.SubredditName}." );
-                }
-                else if ( !mods.Contains( message.Author.ToLower() ) ) {
-                    message.Reply( $"You aren't a mod of {post.SubredditName}! What are you doing here? Go on! GIT!" );
-                }
-                else {
-                    //omg finally analyze the damn thing
-                    AnalysisDetails result;
-                    var original = await processedDAL.ReadProcessedItemAsync( post.Id, Subreddit );
-                    if ( !force && original.AnalysisDetails != null ) {
-                        result = original.AnalysisDetails;
-                    }
-                    else if ( post.AuthorName == "[deleted]" ) {
-                        message.Reply( "The OP deleted the post, and I don't have it cached so I can't check it. Sorry (read in Canadian accent)!" );
-                        continue;
-                    }
-                    else {
-                        result = await AnalyzePost( post );
-                    }
-                    var reply = new StringBuilder();
-                    reply.AppendLine(
-                        $"Analysis results for \"[{post.Title}]({post.Permalink})\" submitted by /u/{post.AuthorName} to /r/{post.SubredditName}" );
-                    reply.AppendLine();
-                    var action = "None";
-                    if ( Settings.RemoveScoreThreshold > 0 && result.TotalScore >= Settings.RemoveScoreThreshold ) action = "Remove";
-                    else if ( Settings.ReportScoreThreshold > 0 && result.TotalScore >= Settings.ReportScoreThreshold ) action = "Report";
-                    reply.AppendLine( $"##Actual Action Taken: {action} with a score of {result.TotalScore}" );
-                    reply.AppendLine();
-                    reply.AppendLine( $"##Action Based on Current Settings: {action} " );
-                    reply.AppendLine();
-                    reply.AppendLine(
-                        $"**/r/{post.SubredditName}'s thresholds** --- Remove : **{( Settings.RemoveScoreThreshold > 0 ? Settings.RemoveScoreThreshold.ToString() : "Disabled" )}** , Report : **{( Settings.ReportScoreThreshold > 0 ? Settings.ReportScoreThreshold.ToString() : "Disabled" )}**" );
-                    reply.AppendLine();
-                    reply.AppendLine( "Module| Score |Reason" );
-                    reply.AppendLine( ":--|:--:|:--" );
-                    foreach ( var score in result.Scores ) {
-                        reply.AppendLine( $"{score.Module.ToString()}|{score.Score}|{score.Reason}" );
-                    }
-                    message.Reply( reply.ToString() );
-
-                }
-            }
         }
 
         private void LoadModules() {

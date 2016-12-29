@@ -25,7 +25,7 @@ namespace DirtBag.DAL {
             catch ( WebException ex ) {
                 if ( ( ex.Response as HttpWebResponse ).StatusCode == HttpStatusCode.NotFound ) {
                     //Page doesn't exist, create it with defaults.
-                    var settings = await Task.Factory.StartNew( () => CreateWikiPage( wiki ) );
+                    var settings = CreateWikiPage( wiki );
                     return settings;
                 }
                 else if ( ( ex.Response as HttpWebResponse ).StatusCode == HttpStatusCode.Unauthorized ) {
@@ -36,16 +36,14 @@ namespace DirtBag.DAL {
                 }
             }
             if ( string.IsNullOrEmpty( settingsPage.MarkdownContent ) ) {
-                var settings = await Task.Factory.StartNew( () => CreateWikiPage( wiki ) );
+                var settings = CreateWikiPage( wiki );
                 return settings;
             }
 
 
             Models.SubredditSettings sets;
             try {
-                sets = await Task.Factory.StartNew( () => {
-                    return JsonConvert.DeserializeObject<Models.SubredditSettings>( settingsPage.MarkdownContent );
-                });
+                sets = JsonConvert.DeserializeObject<Models.SubredditSettings>( settingsPage.MarkdownContent );
             }
             catch {
                 throw new Exception( "Wikipage is corrupted. Fix it, clear wiki page, or delete the page to recreate with defaults." );
@@ -75,9 +73,8 @@ namespace DirtBag.DAL {
             }
             /***End Module Defaults ***/
             if ( addedDefaults ) {
-                await Task.Factory.StartNew( () => {
-                    wiki.EditPage( WikiPageName, JsonConvert.SerializeObject( this, Formatting.Indented, new StringEnumConverter() ).Replace( "\r\n  ", "\r\n\r\n    " ), reason: "Add module default" );
-                } );
+                wiki.EditPage( WikiPageName, JsonConvert.SerializeObject( this, Formatting.Indented, new StringEnumConverter() ).Replace( "\r\n  ", "\r\n\r\n    " ), reason: "Add module default" );
+                
                 sets.LastModified = DateTime.UtcNow.AddMinutes( 1 );
             }
             Console.WriteLine( "Settings in wiki changed or read for first time : Revision Date = {0}", sets.LastModified );

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DirtBag.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Caching;
@@ -9,13 +10,13 @@ namespace DirtBag.BLL {
     public class SubredditSettingsBLL {
         private static MemoryCache cache = MemoryCache.Default;
         private const string CACHE_PREFIX = "SubredditSettings:";
-        private DAL.SubredditSettingsDAL dal;
+        private DAL.ISubredditSettingsDAL dal;
 
-        public SubredditSettingsBLL(DAL.SubredditSettingsDAL ssDAL ) {
+        public SubredditSettingsBLL(DAL.ISubredditSettingsDAL ssDAL ) {
             dal = ssDAL;
         }
 
-        public Task<BotSettings> GetSubredditSettingsAsync( string subreddit) {
+        public Task<SubredditSettings> GetSubredditSettingsAsync( string subreddit) {
             return GetOrUpdateSettingsAsync( subreddit );
         }
 
@@ -25,9 +26,9 @@ namespace DirtBag.BLL {
             }
         }
 
-        private async Task<BotSettings> GetOrUpdateSettingsAsync(string subreddit ) {
+        private async Task<SubredditSettings> GetOrUpdateSettingsAsync(string subreddit ) {
             if(cache.Contains(CACHE_PREFIX + subreddit ) ) {
-                return (BotSettings) cache[CACHE_PREFIX + subreddit];
+                return (SubredditSettings) cache[CACHE_PREFIX + subreddit];
             }
             else {
                 var settings = await dal.GetSubredditSettingsAsync( subreddit );

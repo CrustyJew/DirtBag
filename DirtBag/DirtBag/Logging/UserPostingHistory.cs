@@ -11,7 +11,7 @@ namespace DirtBag.Logging {
             using ( var con = DirtBagConnection.GetConn() ) {
                 var query = "" +
                     "Select up.ChannelID, up.ThingID  " +
-                    "FROM dirtbag.UserPosts up " +
+                    "FROM UserPosts up " +
                     //"left JOIN dirtbag.PostRemovals rem on up.PostID = rem.PostID " +
                     "where username like @UserName " +
                     "and up.ChannelID is not null " +
