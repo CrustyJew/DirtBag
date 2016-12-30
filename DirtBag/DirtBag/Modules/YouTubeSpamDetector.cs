@@ -44,17 +44,16 @@ namespace DirtBag.Modules {
             Subreddit = sub;
             Settings = settings;
         }
-        public async Task<Dictionary<string, AnalysisDetails>> Analyze( List<Post> posts ) {
+        public async Task<Dictionary<string, AnalysisDetails>> Analyze( List<AnalysisRequest> requests ) {
 
             var toReturn = new Dictionary<string, AnalysisDetails>();
-            var youTubePosts = new Dictionary<string, List<Post>>();
-            foreach ( var post in posts ) {
-                var ytID = YouTubeHelpers.ExtractVideoId( post.Url.ToString() );
-                toReturn.Add( post.Id, new AnalysisDetails( post, ModuleEnum ) );
+            var youTubePosts = new Dictionary<string, List<AnalysisRequest>>();
+            foreach ( var request in requests ) {
+                toReturn.Add( request.ThingID, new AnalysisDetails( request.ThingID, ModuleEnum ) );
 
-                if ( !string.IsNullOrEmpty( ytID ) ) {
-                    if ( !youTubePosts.ContainsKey( ytID ) ) youTubePosts.Add( ytID, new List<Post>() );
-                    youTubePosts[ytID].Add( post );
+                if ( !string.IsNullOrEmpty( request.VideoID ) ) {
+                    if ( !youTubePosts.ContainsKey( request.VideoID ) ) youTubePosts.Add( request.VideoID, new List<AnalysisRequest>() );
+                    youTubePosts[request.VideoID].Add( request );
                 }
             }
 
@@ -70,7 +69,6 @@ namespace DirtBag.Modules {
             availWeight += settings.NegativeVoteRatio.Enabled ? settings.NegativeVoteRatio.Weight : 0;
             availWeight += settings.RedditAccountAgeThreshold.Enabled ? settings.RedditAccountAgeThreshold.Weight : 0;
             availWeight += settings.LicensedChannel.Enabled ? settings.LicensedChannel.Weight : 0;
-            availWeight += settings.ImgurSubmissionRatio.Enabled ? settings.ImgurSubmissionRatio.Weight : 0;
             availWeight += settings.CommentCountThreshold.Enabled ? settings.CommentCountThreshold.Weight : 0;
             availWeight += settings.VoteCountThreshold.Enabled ? settings.VoteCountThreshold.Weight : 0;
 
@@ -79,23 +77,22 @@ namespace DirtBag.Modules {
             var negativeVoteScore = ( settings.NegativeVoteRatio.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
             var redditAccountAgeScore = ( settings.RedditAccountAgeThreshold.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
             var licensedScore = ( settings.LicensedChannel.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
-            var imgurSubmissionRatioScore = ( settings.ImgurSubmissionRatio.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
             var commentCountScore = ( settings.CommentCountThreshold.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
             var totalVotesScore = ( settings.VoteCountThreshold.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
 
            
             for ( var i = 0; i < youTubePosts.Keys.Count; i += 50 ) {
-                var channels = new Dictionary<string, List<Post>>();
+                var channels = new Dictionary<string, List<AnalysisRequest>>();
                 req.Id = string.Join( ",", youTubePosts.Keys.Skip( i ).Take( 50 ) );
                 var response = await req.ExecuteAsync();
 
                 foreach ( var vid in response.Items ) {
-                    foreach ( var post in youTubePosts[vid.Id] ) {
-                        var scores = toReturn[post.Id].Scores;
+                    foreach ( var analysisReq in youTubePosts[vid.Id] ) {
+                        var scores = toReturn[analysisReq.ThingID].Scores;
                         if ( !channels.ContainsKey( vid.Snippet.ChannelId ) ) {
-                            channels[vid.Snippet.ChannelId] = new List<Post>();
+                            channels[vid.Snippet.ChannelId] = new List<AnalysisRequest>();
                         }
-                        channels[vid.Snippet.ChannelId].Add( post );
+                        channels[vid.Snippet.ChannelId].Add( analysisReq );
 
                         if ( settings.ViewCountThreshold.Enabled && vid.Statistics.ViewCount.Value <= (ulong) Math.Abs( settings.ViewCountThreshold.Value ) ) { //TODO Fix this math.abs nonsense with some validation
                             scores.Add( new AnalysisScore( viewCountScore, "View Count is below threshold", "Low Views", ModuleEnum ) );
@@ -112,26 +109,11 @@ namespace DirtBag.Modules {
                         if ( settings.VoteCountThreshold.Enabled && vid.Statistics.DislikeCount + vid.Statistics.LikeCount <= (ulong) Math.Abs( settings.VoteCountThreshold.Value ) ) { //TODO Fix this math.abs nonsense with some validation
                             scores.Add( new AnalysisScore( totalVotesScore, "Total vote count is below threshold", "Low Total Votes", ModuleEnum ) );
                         }
-                        DateTime authorCreated= DateTime.UtcNow;
-                        bool shadowbanned = false;
-                        try {
-                            authorCreated = post.Author.Created;
-                        }
-                        catch(WebException ex) {
-                            if( ( ex.Response as HttpWebResponse ).StatusCode == HttpStatusCode.NotFound ) {
-                                authorCreated = DateTime.UtcNow;
-                                shadowbanned = true;
-                            }
-                            else {
-                                throw;
-                            }
-                        }
-                        if ( settings.RedditAccountAgeThreshold.Enabled && authorCreated.AddDays( settings.RedditAccountAgeThreshold.Value ) >= DateTime.UtcNow ) {
+                        
+                        if ( settings.RedditAccountAgeThreshold.Enabled && analysisReq.Author.Created.AddDays( settings.RedditAccountAgeThreshold.Value ) >= DateTime.UtcNow ) {
                             scores.Add( new AnalysisScore( redditAccountAgeScore, "Reddit Account age is below threshold", "New Reddit Acct", ModuleEnum ) );
                         }
-                        if ( settings.ImgurSubmissionRatio.Enabled && !shadowbanned && ( (double) 100 / post.Author.Posts.Take( 100 ).Count( p => p.Domain.ToLower().Contains( "imgur" ) ) ) * 100 >= settings.ImgurSubmissionRatio.Value ) {
-                            scores.Add( new AnalysisScore( imgurSubmissionRatioScore, "User has Imgur submissions above threshold for last 100 posts", "Lots of Imgur", ModuleEnum ) );
-                        }
+                        
                     }
                 }
                 if ( settings.ChannelAgeThreshold.Enabled ) {
@@ -143,11 +125,11 @@ namespace DirtBag.Modules {
                     foreach ( var channel in chanResponse.Items ) {
                         //if the channel was created less than the settings.ChannelAgeThreshold days ago
                         DateTime channelCreationDate = channel.Snippet.PublishedAt.HasValue ? channel.Snippet.PublishedAt.Value : DateTime.UtcNow;
-                        foreach ( var post in channels[channel.Id] ) {
-                            if ( channelCreationDate.AddDays( settings.ChannelAgeThreshold.Value ) >= post.CreatedUTC ) {
+                        foreach ( var analysisReq in channels[channel.Id] ) {
+                            if ( channelCreationDate.AddDays( settings.ChannelAgeThreshold.Value ) >= analysisReq.EntryTime) {
 
                                 //Add the score to the posts
-                                toReturn[post.Id].Scores.Add( new AnalysisScore( chanAgeScore, "Channel Age Below Threshold", "Channel Age", ModuleEnum ) );
+                                toReturn[analysisReq.ThingID].Scores.Add( new AnalysisScore( chanAgeScore, "Channel Age Below Threshold", "Channel Age", ModuleEnum ) );
                             }
                         }
                     }

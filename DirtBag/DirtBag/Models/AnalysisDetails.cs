@@ -57,8 +57,7 @@ namespace DirtBag.Models {
                 return highestPrio?.Class;
             }
         }
-        [JsonIgnore]
-        public Post Post { get; set; }
+
         [JsonIgnore]
         public Modules.Modules AnalyzingModule { get; set; }
 
@@ -69,10 +68,20 @@ namespace DirtBag.Models {
             Scores = new List<AnalysisScore>();
         }
 
-        public AnalysisDetails( Post post, Modules.Modules module ) : this() {
-            Post = post;
+        public AnalysisDetails( string thingID, Modules.Modules module ) : this() {
+            ThingID = thingID;
+            string lthingID = thingID.ToLower();
+            if ( lthingID.StartsWith( "t1_" ) ) {
+                ThingType = AnalyzableTypes.Comment;
+            }
+            else if ( lthingID.StartsWith( "t3_" ) ) {
+                ThingType = AnalyzableTypes.Post;
+            }
             AnalyzingModule = module;
         }
+
+        public string ThingID { get; set; }
+        public Models.AnalyzableTypes ThingType { get; set; }
 
     }
 }

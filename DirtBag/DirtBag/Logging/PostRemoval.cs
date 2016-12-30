@@ -53,8 +53,8 @@ namespace DirtBag.Logging {
                     //"[ChannelName] varchar(200), " +
                     //"[Subreddit] varchar(100) ) " +
                     //"" +
-                    "insert into UserPosts (UserName,ThingID,Link,PostTime,ChannelID,ChannelName,Subreddit) " +
-                    "select @UserName, @ThingID, @Link, @PostTime, @ChannelID, @ChannelName, @Subreddit " +
+                    "insert into UserPosts (UserName,ThingID,VideoID,VideoSource,PostTime,ChannelID,ChannelName,Subreddit) " +
+                    "select @UserName, @ThingID, @VideoID,@VideoSource, @PostTime, @ChannelID, @ChannelName, @Subreddit " +
                     "WHERE NOT EXISTS " +
                     "(select PostID from UserPosts where Link = @Link) " +
                     "; " +
@@ -74,6 +74,8 @@ namespace DirtBag.Logging {
                     removal.Post.UserName,
                     removal.Post.ThingID,
                     removal.Post.Link,
+                    removal.Post.VideoID,
+                    removal.Post.VideoSource,
                     removal.Post.PostTime,
                     removal.Post.ChannelID,
                     removal.Post.ChannelName,

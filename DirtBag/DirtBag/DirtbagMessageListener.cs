@@ -19,7 +19,7 @@ namespace DirtBag {
         }
 
         public void StartListener() {
-            Task.Run( ()=>ProcessMessages() ).ConfigureAwait(false);
+            Task.Run( () => ProcessMessages() );
         }
 
         private async Task ProcessMessages() {

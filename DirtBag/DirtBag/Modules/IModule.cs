@@ -8,6 +8,6 @@ namespace DirtBag.Modules {
         Modules ModuleEnum { get; }
         bool MultiScan { get; }
         Models.IModuleSettings Settings { get; set; }
-        Task<Dictionary<string, Models.AnalysisDetails>> Analyze( List<Post> posts );
+        Task<Dictionary<string, Models.AnalysisDetails>> Analyze( List<Models.AnalysisRequest> requests );
     }
 }

@@ -255,6 +255,7 @@
   <ItemGroup>
     <Compile Include="App_Start\WebApiConfig.cs" />
     <Compile Include="App_Start\Startup.Auth.cs" />
+    <Compile Include="BLL\AnalyzePostBLL.cs" />
     <Compile Include="BLL\ProcessedPostBLL.cs" />
     <Compile Include="BLL\SubredditSettingsBLL.cs" />
     <Compile Include="BotFunctions\AutoModWrangler.cs" />
@@ -296,6 +297,7 @@
     <Compile Include="Models\SelfPromotionCombustorSettings.cs" />
     <Compile Include="Models\SubredditSettings.cs" />
     <Compile Include="Models\UserStalkerSettings.cs" />
+    <Compile Include="Models\VideoProvider.cs" />
     <Compile Include="Models\YouTubeSpamDetectorSettings.cs" />
     <Compile Include="Modules\HighTechBanHammer.cs" />
     <Compile Include="Modules\IModule.cs" />

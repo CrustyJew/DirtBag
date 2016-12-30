@@ -52,18 +52,20 @@ namespace DirtBag.Modules {
 
         private Regex TermMatching;
         private Regex LicenserMatching;
-        public async Task<Dictionary<string, AnalysisDetails>> Analyze( List<Post> posts ) {
+        public async Task<Dictionary<string, AnalysisDetails>> Analyze( List<AnalysisRequest> requests ) {
 
             var toReturn = new Dictionary<string, AnalysisDetails>();
-            var youTubePosts = new Dictionary<string, List<Post>>();
+            var youTubePosts = new Dictionary<string, List<string>>();
 
-            foreach ( var post in posts ) {
-                toReturn.Add( post.Id, new AnalysisDetails( post, ModuleEnum ) );
-                var ytID = YouTubeHelpers.ExtractVideoId( post.Url.ToString() );
+            foreach ( var request in requests ) {
+                if ( toReturn.ContainsKey( request.ThingID ) ) {
+                    continue; 
+                }
+                toReturn.Add( request.ThingID, new AnalysisDetails( request.ThingID, ModuleEnum ) );
 
-                if ( !string.IsNullOrEmpty( ytID ) ) {
-                    if ( !youTubePosts.ContainsKey( ytID ) ) youTubePosts.Add( ytID, new List<Post>() );
-                    youTubePosts[ytID].Add( post );
+                if ( !string.IsNullOrEmpty( request.VideoID ) ) {
+                    if ( !youTubePosts.ContainsKey( request.VideoID ) ) youTubePosts.Add( request.VideoID, new List<string>() );
+                    youTubePosts[request.VideoID].Add( request.ThingID );
                 }
 
             }
@@ -78,14 +80,14 @@ namespace DirtBag.Modules {
                 var response = await req.ExecuteAsync();
 
                 foreach ( var vid in response.Items ) {
-                    var redditPosts = youTubePosts[vid.Id];
+                    var redditThings = youTubePosts[vid.Id];
                     //var scores = toReturn[post.Id].Scores;
 
                     var termMatches = TermMatching.Matches( vid.Snippet.Description ).Cast<Match>().Select( m => m.Value ).ToList();
                     termMatches.AddRange( TermMatching.Matches( vid.Snippet.Title ).Cast<Match>().Select( m => m.Value ).ToList().Distinct() );
                     if ( termMatches.Count > 0 ) {
-                        foreach ( var post in redditPosts ) {
-                            toReturn[post.Id].Scores.Add( new AnalysisScore( STRINGMATCH_SCORE * Settings.ScoreMultiplier, "YouTube video title or description has the following term(s): " + string.Join( ", ", termMatches ), "Match: " + string.Join( ", ", termMatches ), ModuleEnum, RemovalFlair ) );
+                        foreach ( var thingID in redditThings ) {
+                            toReturn[thingID].Scores.Add( new AnalysisScore( STRINGMATCH_SCORE * Settings.ScoreMultiplier, "YouTube video title or description has the following term(s): " + string.Join( ", ", termMatches ), "Match: " + string.Join( ", ", termMatches ), ModuleEnum, RemovalFlair ) );
                         }
                     }
 
@@ -96,7 +98,7 @@ namespace DirtBag.Modules {
             return toReturn;
         }
 
-        private async Task ScrapeYouTube( Dictionary<string, List<Post>> ytPosts, Dictionary<string, AnalysisDetails> results ) {
+        private async Task ScrapeYouTube( Dictionary<string, List<string>> ytPosts, Dictionary<string, AnalysisDetails> results ) {
             var scrapes = new Dictionary<string, Task<string>>();
             foreach ( var id in ytPosts.Keys ) {
                 var c = new HttpClient();
@@ -104,18 +106,18 @@ namespace DirtBag.Modules {
             }
 
             while ( scrapes.Count > 0 ) {
-                var scrape = await Task.WhenAny( scrapes.Values );
+                var scrape = await Task.WhenAny( scrapes.Values ).ConfigureAwait(false);
                 var scrapeBody = await scrape;
                 var dictItem = scrapes.First( i => i.Value == scrape );
                 scrapes.Remove( dictItem.Key );
 
                 var score = ScoreYouTubeMetaData( scrapeBody );
                 if ( score != null ) {
-                    foreach ( var post in ytPosts[dictItem.Key] ) {
+                    foreach ( var thingID in ytPosts[dictItem.Key] ) {
                         if ( score.Score == 10 ) {
-                            results[post.Id].Scores.Clear();
+                            results[thingID].Scores.Clear();
                         }
-                        results[post.Id].Scores.Add( score );
+                        results[thingID].Scores.Add( score );
                     }
                 }
             }

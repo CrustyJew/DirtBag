@@ -32,18 +32,21 @@ namespace DirtBag.Modules {
             Subreddit = subreddit;
         }
 
-        public async Task<Dictionary<string, AnalysisDetails>> Analyze( List<rs.Post> posts ) {
+        public async Task<Dictionary<string, AnalysisDetails>> Analyze( List<AnalysisRequest> requests ) {
             var toReturn = new Dictionary<string, AnalysisDetails>();
-            var youTubePosts = new Dictionary<string, List<rs.Post>>();
+            var youTubePosts = new Dictionary<string, List<string>>();
             var amWrangler = new BotFunctions.AutoModWrangler( Program.Client.GetSubreddit( Program.Subreddit ) );
             var bannedChannels = amWrangler.GetBannedList( Models.BannedEntity.EntityType.Channel );
-            foreach ( var post in posts ) { //TODO error handling
-                toReturn.Add( post.Id, new AnalysisDetails( post, ModuleEnum ) );
-                string postYTID = YouTubeHelpers.ExtractVideoId( post.Url.ToString() );
+            foreach ( var request in requests ) { //TODO error handling
+                if ( toReturn.ContainsKey( request.ThingID ) ) {
+                    continue;
+                }
+                toReturn.Add( request.ThingID, new AnalysisDetails( request.ThingID, ModuleEnum ) );
+                
 
-                if ( !string.IsNullOrWhiteSpace( postYTID ) ) {
-                    if ( !youTubePosts.ContainsKey( postYTID ) ) youTubePosts.Add( postYTID, new List<rs.Post>() );
-                    youTubePosts[postYTID].Add( post );
+                if ( !string.IsNullOrWhiteSpace( request.VideoID ) ) {
+                    if ( !youTubePosts.ContainsKey( request.VideoID ) ) youTubePosts.Add( request.VideoID, new List<string>() );
+                    youTubePosts[request.VideoID].Add( request.ThingID );
                 }
             }
             var yt = new YouTubeService( new BaseClientService.Initializer { ApiKey = YouTubeAPIKey } );
@@ -56,9 +59,9 @@ namespace DirtBag.Modules {
                     //if the channel is banned
                     var chan = bannedChannels.Result.Where( c => c.EntityString == vid.Snippet.ChannelId ).FirstOrDefault();
                     if ( chan != null ) {
-                        foreach ( var ytPost in youTubePosts[vid.Id] ) {
+                        foreach ( var thingID in youTubePosts[vid.Id] ) {
                             //ring 'er up
-                            toReturn[ytPost.Id].Scores.Add( new AnalysisScore( 9999, $"Channel ID: {chan.EntityString} was banned by {chan.BannedBy} on {chan.BanDate} for reason: {chan.BanReason}", "Banned Channel", ModuleEnum ) );
+                            toReturn[thingID].Scores.Add( new AnalysisScore( 9999, $"Channel ID: {chan.EntityString} was banned by {chan.BannedBy} on {chan.BanDate} for reason: {chan.BanReason}", "Banned Channel", ModuleEnum ) );
                         }
                     }
                 }

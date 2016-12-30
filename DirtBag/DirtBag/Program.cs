@@ -132,7 +132,7 @@ namespace DirtBag {
             var wikiSettings = new DAL.SubredditSettingsWikiDAL( Client );
             var processedItemDAL = new DAL.ProcessedItemSQLDAL( DirtBagConnection.GetConn() );
             var bot = new DirtbagBot( sub, Agent, Client, wikiSettings, processedItemDAL );
-            Task.Run(()=>bot.StartBot()).ConfigureAwait(false);
+            Task.Run( () => bot.StartBot() );
 
             var messageListener = new DirtbagMessageListener( Client, processedItemDAL );
             messageListener.StartListener();

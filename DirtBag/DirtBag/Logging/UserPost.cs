@@ -18,10 +18,10 @@ namespace DirtBag.Logging {
             if ( post.Link.Length > 200 ) post.Link = post.Link.Substring( 0, 200 );
             using ( var conn = DirtBagConnection.GetConn() ) {
                 var query = "" +
-                    "insert into UserPosts (UserName,ThingID,Link,PostTime,ChannelID,ChannelName,Subreddit) " +
-                    "select @UserName, @ThingID, @Link, @PostTime, @ChannelID, @ChannelName, @Subreddit " +
+                    "insert into UserPosts (UserName,ThingID,PostTime,ChannelID,ChannelName,Subreddit) " +
+                    "select @UserName, @ThingID, @PostTime, @ChannelID, @ChannelName, @Subreddit " +
                     "WHERE NOT EXISTS " +
-                    "(select PostID from UserPosts where Link = @Link) " +
+                    "(select PostID from UserPosts where ThingID = @ThingID) " +
                     ";";
                 conn.Execute( query, new { post.UserName,post.ThingID, post.Link, post.PostTime, post.ChannelID, post.ChannelName, post.Subreddit } );
             }

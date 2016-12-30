@@ -39,15 +39,13 @@ namespace DirtBag {
         public async Task StartBot() {
             Settings = await subSettingsDAL.GetSubredditSettingsAsync( Subreddit );
             LoadModules();
-            TheKeeper = new Timer( TimerTask, null, Settings.RunEveryXMinutes * 60 * 1000, Settings.RunEveryXMinutes * 60 * 1000 );
         }
 
-        private void TimerTask( object s ) {
-            TheKeeper.Dispose();
-            var processed = Task.Run( ProcessPosts );
-            processed.Wait();
-            var x = processed.Result;
-            TheKeeper = new Timer( TimerTask, null, Settings.RunEveryXMinutes * 60 * 1000, Settings.RunEveryXMinutes * 60 * 1000 );
+        private async Task TimerTask( object s ) {
+            while ( true ) {
+                await ProcessPosts();
+                await Task.Delay( Settings.RunEveryXMinutes * 60 * 1000 );
+            }
         }
 
         private async Task ProcessPosts() {
@@ -110,6 +108,21 @@ namespace DirtBag {
                 else {
                     postsList = posts.ToList();
                 }
+                DateTime authorCreated = DateTime.UtcNow;
+                bool shadowbanned = false;
+                try {
+                    authorCreated = thingID.Author.Created;
+                }
+                catch ( WebException ex ) {
+                    if ( ( ex.Response as HttpWebResponse ).StatusCode == HttpStatusCode.NotFound ) {
+                        authorCreated = DateTime.UtcNow;
+                        shadowbanned = true;
+                    }
+                    else {
+                        throw;
+                    }
+                }
+
                 if ( postsList.Count > 0 ) postTasks.Add( Task.Run( () => module.Analyze( postsList ) ) );
             }
 
@@ -134,9 +147,9 @@ namespace DirtBag {
                 var combinedAnalysis = result.Value;
                 string action = "None"; //change to Enum at some point
                 bool unseen = false;
-                ProcessedItem original = alreadyProcessed.SingleOrDefault( p => p.ThingID == combinedAnalysis.Post.Id );
+                ProcessedItem original = alreadyProcessed.SingleOrDefault( p => p.ThingID == combinedAnalysis.ThingID );
                 if ( original == null ) {
-                    original = new ProcessedItem( Subreddit, combinedAnalysis.Post.Id, "invalid", AnalyzableTypes.Post );
+                    original = new ProcessedItem( Subreddit, combinedAnalysis.ThingID, "invalid", AnalyzableTypes.Post );
                     unseen = true;
                 }
                 else {
@@ -145,12 +158,13 @@ namespace DirtBag {
                     combinedAnalysis.AnalyzingModule = original.SeenByModules | combinedAnalysis.AnalyzingModule;
                 }
                 if ( combinedAnalysis.TotalScore >= Settings.RemoveScoreThreshold && Settings.RemoveScoreThreshold > 0 ) {
-                    ProcessedItem removed = removedPreviously.SingleOrDefault( p => p.ThingID == combinedAnalysis.Post.Id );
+                    ProcessedItem removed = removedPreviously.SingleOrDefault( p => p.ThingID == combinedAnalysis.ThingID );
                     if ( removed == null || removed.AnalysisDetails.TotalScore < combinedAnalysis.TotalScore ) {
                         //only remove the post if it wasn't previously removed by the bot, OR if the score has increased
-                        combinedAnalysis.Post.Remove();
+                       var post = ( client.GetThingByFullname( combinedAnalysis.ThingID ) as Post );
+                        post.Remove();
                         if ( combinedAnalysis.HasFlair ) {
-                            combinedAnalysis.Post.SetFlair( combinedAnalysis.FlairText, combinedAnalysis.FlairClass );
+                            post.SetFlair( combinedAnalysis.FlairText, combinedAnalysis.FlairClass );
                         }
                         removedCounter++;
                     }
@@ -160,9 +174,9 @@ namespace DirtBag {
                     action = "Remove";
                 }
                 else if ( combinedAnalysis.TotalScore >= Settings.ReportScoreThreshold && Settings.ReportScoreThreshold > 0 ) {
-                    if ( reportedPreviously.Count( p => p.ThingID == combinedAnalysis.Post.Id ) == 0 ) {
+                    if ( reportedPreviously.Count( p => p.ThingID == combinedAnalysis.ThingID ) == 0 ) {
                         //can't change report text or report an item again. Thanks Obama... err... Reddit...
-                        combinedAnalysis.Post.Report( VotableThing.ReportType.Other, combinedAnalysis.ReportReason );
+                        ( client.GetThingByFullname( combinedAnalysis.ThingID ) as Post ).Report( VotableThing.ReportType.Other, combinedAnalysis.ReportReason );
                         reportedCounter++;
                     }
                     action = "Report";

@@ -48,19 +48,19 @@ namespace DirtBag.Modules {
             GracePeriod = settings.GracePeriod;
         }
 
-        public async Task<Dictionary<string, AnalysisDetails>> Analyze( List<Post> posts ) {
+        public async Task<Dictionary<string, AnalysisDetails>> Analyze( List<AnalysisRequest> requests ) {
             var toReturn = new Dictionary<string, AnalysisDetails>();
-            foreach ( var post in posts ) { //TODO error handling
-                var youTubePosts = new Dictionary<string, List<Post>>();
+            foreach ( var request in requests ) { //TODO error handling
+                var youTubePosts = new Dictionary<string, List<string>>();
 
-                toReturn.Add( post.Id, new AnalysisDetails( post, ModuleEnum ) );
-                string postYTID = YouTubeHelpers.ExtractVideoId( post.Url.ToString() );
+                toReturn.Add( request.ThingID, new AnalysisDetails( request.ThingID, ModuleEnum ) );
+                
                 Task<Logging.UserPostingHistory> hist;
-                if ( !string.IsNullOrEmpty( postYTID ) ) {
+                if ( !string.IsNullOrEmpty( request.VideoID ) ) {
                     //It's a YouTube vid so we can kick off the analysis and get cookin
-                    hist = Logging.UserPostingHistory.GetUserPostingHistory( post.AuthorName );
-                    if ( !youTubePosts.ContainsKey( postYTID ) ) youTubePosts.Add( postYTID, new List<Post>() );
-                    youTubePosts[postYTID].Add( post );
+                    hist = Logging.UserPostingHistory.GetUserPostingHistory( request.Author.Name );
+                    if ( !youTubePosts.ContainsKey( request.VideoID ) ) youTubePosts.Add( request.VideoID, new List<string>() );
+                    youTubePosts[request.VideoID].Add( request.ThingID );
                 }
                 else {
                     //not a YouTube post, so bail out
@@ -72,13 +72,13 @@ namespace DirtBag.Modules {
                 while ( !success && tries < 3 ) {
                     success = true;
                     try {
-                        var recentPosts = RedditClient.Search<RedditSharp.Things.Post>( $"author:{post.AuthorName} self:no", RedditSharp.Sorting.New ).GetListing( 100, 100 );
+                        var recentPosts = RedditClient.Search<RedditSharp.Things.Post>( $"author:{request.Author.Name} self:no", RedditSharp.Sorting.New ).GetListing( 100, 100 );
                         foreach ( var recentPost in recentPosts ) {
                             string ytID = YouTubeHelpers.ExtractVideoId( recentPost.Url.ToString() );
 
                             if ( !string.IsNullOrEmpty( ytID ) ) {
-                                if ( !youTubePosts.ContainsKey( ytID ) ) youTubePosts.Add( ytID, new List<Post>() );
-                                youTubePosts[ytID].Add( post );
+                                if ( !youTubePosts.ContainsKey( ytID ) ) youTubePosts.Add( ytID, new List<string>() );
+                                youTubePosts[ytID].Add( request.ThingID );
                             }
                             else {
                                 nonYTPosts++;
@@ -90,7 +90,7 @@ namespace DirtBag.Modules {
                         tries++;
                         if(tries > 3 ) {
                             Console.WriteLine( $"Failed to get search results: {ex.Message}" );
-                            processedCache.Remove( post.Id );
+                            processedCache.Remove( request.ThingID);
                             break; 
                         }
                         await Task.Delay( 100 );
@@ -113,9 +113,9 @@ namespace DirtBag.Modules {
                         foreach ( var ytPost in youTubePosts[vid.Id] ) {
                             if ( !postHistory.ContainsKey( vid.Snippet.ChannelId ) ) postHistory.Add( vid.Snippet.ChannelId, new List<string>() );
                             //check to see if it already exists (aka wasnt deleted and showed up in search results)
-                            if ( !postHistory[vid.Snippet.ChannelId].Contains( ytPost.Id ) ) postHistory[vid.Snippet.ChannelId].Add( ytPost.Id );
+                            if ( !postHistory[vid.Snippet.ChannelId].Contains( ytPost ) ) postHistory[vid.Snippet.ChannelId].Add( ytPost );
 
-                            if ( vid.Id == postYTID ) {
+                            if ( vid.Id == request.ThingID ) {
                                 postChannelID = vid.Snippet.ChannelId;
                                 postChannelName = vid.Snippet.ChannelTitle;
                             }
@@ -125,7 +125,7 @@ namespace DirtBag.Modules {
 
                 if ( string.IsNullOrEmpty( postChannelID ) ) {
                     //shouldn't ever happen, but might if the video is deleted or the channel deleted or something
-                    Console.WriteLine( $"Channel for post {post.Id} by {post.AuthorName} couldn't be found" );
+                    Console.WriteLine( $"Channel for thing {request.ThingID} by {request.Author.Name} couldn't be found" );
                     continue;
                 }
 
@@ -134,7 +134,7 @@ namespace DirtBag.Modules {
                 if ( !IncludePostInPercentage ) {
                     totalPosts--;
                     channelPosts--;
-                    postHistory[postChannelID].Remove( post.Id );
+                    postHistory[postChannelID].Remove( request.ThingID );
                 }
                 double percent = ( (double) channelPosts / totalPosts ) * 100;
                 if ( percent > PercentageThreshold && channelPosts > GracePeriod ) {
@@ -145,7 +145,7 @@ namespace DirtBag.Modules {
                     score.Score = OVER_PERCENT_SCORE * Settings.ScoreMultiplier;
                     score.RemovalFlair = RemovalFlair;
 
-                    toReturn[post.Id].Scores.Add( score );
+                    toReturn[request.ThingID].Scores.Add( score );
                 }
             }
             return toReturn;

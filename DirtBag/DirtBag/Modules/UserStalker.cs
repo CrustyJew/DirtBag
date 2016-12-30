@@ -13,7 +13,7 @@ using RedditSharp.Things;
 using DirtBag.Models;
 
 namespace DirtBag.Modules {
-    class UserStalker : IModule {
+    class UserStalker {
         public string ModuleName { get { return "UserStalker"; } }
         public Modules ModuleEnum { get { return Modules.UserStalker; } }
         public bool MultiScan { get { return false; } }
@@ -43,7 +43,7 @@ namespace DirtBag.Modules {
             var toReturn = new Dictionary<string, AnalysisDetails>();
             var youTubePosts = new Dictionary<string, List<Post>>();
             foreach ( var post in posts ) {
-                toReturn.Add( post.Id, new AnalysisDetails( post, ModuleEnum ) );
+                toReturn.Add( post.Id, new AnalysisDetails( post.Id, ModuleEnum ) );
                 var ytID = YouTubeHelpers.ExtractVideoId( post.Url.ToString() );
 
                 if ( !string.IsNullOrEmpty( ytID ) ) {
