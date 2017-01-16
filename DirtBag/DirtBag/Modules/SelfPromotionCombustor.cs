@@ -29,17 +29,19 @@ namespace DirtBag.Modules {
         public bool IncludePostInPercentage { get; set; }
         public int GracePeriod { get; set; }
 
+        private DAL.UserPostingHistoryDAL _userPostHistDAL;
 
         private Dictionary<string, int> processedCache;
         private const int OVER_PERCENT_SCORE = 10;
-        public SelfPromotionCombustor() {
+        public SelfPromotionCombustor(DAL.UserPostingHistoryDAL postHistoryDAL) {
             var key = ConfigurationManager.AppSettings["YouTubeAPIKey"];
             if ( string.IsNullOrEmpty( key ) ) throw new Exception( "Provide setting 'YouTubeAPIKey' in AppConfig" );
             YouTubeAPIKey = key;
             processedCache = new Dictionary<string, int>();
+            _userPostHistDAL = postHistoryDAL;
         }
 
-        public SelfPromotionCombustor( SelfPromotionCombustorSettings settings, RedditSharp.Reddit client ) : this() {
+        public SelfPromotionCombustor( SelfPromotionCombustorSettings settings, RedditSharp.Reddit client, DAL.UserPostingHistoryDAL postHistoryDAL ) : this(postHistoryDAL) {
             RedditClient = client;
             Settings = settings;
             PercentageThreshold = settings.PercentageThreshold;
@@ -55,10 +57,10 @@ namespace DirtBag.Modules {
 
                 toReturn.Add( request.ThingID, new AnalysisDetails( request.ThingID, ModuleEnum ) );
                 
-                Task<Logging.UserPostingHistory> hist;
+                Task<Dictionary<string,string>> hist;
                 if ( !string.IsNullOrEmpty( request.VideoID ) ) {
                     //It's a YouTube vid so we can kick off the analysis and get cookin
-                    hist = Logging.UserPostingHistory.GetUserPostingHistory( request.Author.Name );
+                    hist = _userPostHistDAL.GetUserPostingHistoryAsync( request.Author.Name );
                     if ( !youTubePosts.ContainsKey( request.VideoID ) ) youTubePosts.Add( request.VideoID, new List<string>() );
                     youTubePosts[request.VideoID].Add( request.ThingID );
                 }
@@ -100,8 +102,14 @@ namespace DirtBag.Modules {
                     continue;
                 }
                 var yt = new YouTubeService( new BaseClientService.Initializer { ApiKey = YouTubeAPIKey } );
-
-                Dictionary<string, List<string>> postHistory = ( await hist ).PostingHistory;
+                var userPosts = await hist;
+                Dictionary<string, List<string>> postHistory = new Dictionary<string, List<string>>();
+                foreach(var post in userPosts ) {
+                    if ( !postHistory.ContainsKey( post.Value ) ) {
+                        postHistory.Add( post.Value, new List<string>() );
+                    }
+                    postHistory[post.Value].Add( post.Key );
+                }
                 string postChannelID = "";
                 string postChannelName = "";
                 var req = yt.Videos.List( "snippet" );

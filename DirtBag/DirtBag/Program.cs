@@ -26,7 +26,6 @@ namespace DirtBag {
 
         public static BotWebAgent Agent { get; set; }
         public static Reddit Client { get; set; }
-        public static RedditAuth Auth { get; set; }
         public static Models.SubredditSettings Settings { get; set; }
         public static string Subreddit { get; set; }
         public static Timer TheKeeper { get; set; }
@@ -131,7 +130,8 @@ namespace DirtBag {
             Client = new Reddit( Agent, true );
             var wikiSettings = new DAL.SubredditSettingsWikiDAL( Client );
             var processedItemDAL = new DAL.ProcessedItemSQLDAL( DirtBagConnection.GetConn() );
-            var bot = new DirtbagBot( sub, Agent, Client, wikiSettings, processedItemDAL );
+            var userHistDAL = new DAL.UserPostingHistoryDAL( DirtBagConnection.GetSentinelConn() );
+            var bot = new DirtbagBot( sub, Agent, Client, wikiSettings, processedItemDAL, userHistDAL );
             Task.Run( () => bot.StartBot() );
 
             var messageListener = new DirtbagMessageListener( Client, processedItemDAL );

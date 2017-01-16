@@ -17,15 +17,16 @@ namespace DirtBag.DAL {
             client = redditClient;
         }
         public async Task<Models.SubredditSettings> GetSubredditSettingsAsync( string subreddit ) {
-            var wiki = client.GetSubreddit( subreddit ).Wiki;
+            var wiki = (await client.GetSubredditAsync( subreddit ) ).Wiki;
+            
             WikiPage settingsPage;
             try {
-                settingsPage = wiki.GetPage( WikiPageName );
+                settingsPage = await wiki.GetPageAsync( WikiPageName );
             }
             catch ( WebException ex ) {
                 if ( ( ex.Response as HttpWebResponse ).StatusCode == HttpStatusCode.NotFound ) {
                     //Page doesn't exist, create it with defaults.
-                    var settings = CreateWikiPage( wiki );
+                    var settings = await CreateWikiPageAsync( wiki );
                     return settings;
                 }
                 else if ( ( ex.Response as HttpWebResponse ).StatusCode == HttpStatusCode.Unauthorized ) {
@@ -36,7 +37,7 @@ namespace DirtBag.DAL {
                 }
             }
             if ( string.IsNullOrEmpty( settingsPage.MarkdownContent ) ) {
-                var settings = CreateWikiPage( wiki );
+                var settings = await CreateWikiPageAsync( wiki );
                 return settings;
             }
 
@@ -73,7 +74,7 @@ namespace DirtBag.DAL {
             }
             /***End Module Defaults ***/
             if ( addedDefaults ) {
-                wiki.EditPage( WikiPageName, JsonConvert.SerializeObject( this, Formatting.Indented, new StringEnumConverter() ).Replace( "\r\n  ", "\r\n\r\n    " ), reason: "Add module default" );
+                await wiki.EditPageAsync( WikiPageName, JsonConvert.SerializeObject( this, Formatting.Indented, new StringEnumConverter() ).Replace( "\r\n  ", "\r\n\r\n    " ), reason: "Add module default" );
                 
                 sets.LastModified = DateTime.UtcNow.AddMinutes( 1 );
             }
@@ -81,7 +82,7 @@ namespace DirtBag.DAL {
             return sets;
         }
 
-        private Models.SubredditSettings CreateWikiPage( Wiki wiki ) {
+        private async Task<Models.SubredditSettings> CreateWikiPageAsync( Wiki wiki ) {
             Models.SubredditSettings settings = new Models.SubredditSettings();
             settings.Version = Program.VersionNumber;
             settings.RunEveryXMinutes = 10;
@@ -94,8 +95,8 @@ namespace DirtBag.DAL {
             settings.UserStalker = new UserStalkerSettings();
             settings.SelfPromotionCombustor = new SelfPromotionCombustorSettings();
             /*** End Module Settings ***/
-            wiki.EditPage( WikiPageName, JsonConvert.SerializeObject( settings, Formatting.Indented, new StringEnumConverter() ).Replace( "\r\n  ", "\r\n\r\n    " ) );
-            wiki.SetPageSettings( WikiPageName, new WikiPageSettings { Listed = false, PermLevel = 2 } );
+            await wiki.EditPageAsync( WikiPageName, JsonConvert.SerializeObject( settings, Formatting.Indented, new StringEnumConverter() ).Replace( "\r\n  ", "\r\n\r\n    " ) );
+            await wiki.SetPageSettingsAsync( WikiPageName, new WikiPageSettings { Listed = false, PermLevel = 2 } );
 
             return settings;
         }

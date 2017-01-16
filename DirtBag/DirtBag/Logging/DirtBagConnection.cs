@@ -121,7 +121,7 @@ INSERT (ActionName) VALUES (nv.Action); ";
         }
 
         public static DbConnection GetSentinelConn() {
-            string postgresSqlConn = ConfigurationManager.AppSettings["SQLConnString"];
+            string postgresSqlConn = ConfigurationManager.AppSettings["SentinelDBConnString"];
             if ( string.IsNullOrEmpty( postgresSqlConn ) ) {
                 throw new Exception( "No postgresSqlConn specified!" );
             }

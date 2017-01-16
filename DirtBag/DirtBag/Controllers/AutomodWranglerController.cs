@@ -11,7 +11,7 @@ namespace DirtBag.Controllers {
 
         private BotFunctions.AutoModWrangler wrangler;
         public AutomodWranglerController() {
-            wrangler = new BotFunctions.AutoModWrangler( Program.Client.GetSubreddit( Program.Subreddit ) );
+            wrangler = new BotFunctions.AutoModWrangler( Task.Run(async () => await Program.Client.GetSubredditAsync( Program.Subreddit )).Result );
         }
         [HttpGet][Route( "{subname?}" )]
         public Task<IEnumerable<Models.BannedEntity>> Get( string subname = "" ) {

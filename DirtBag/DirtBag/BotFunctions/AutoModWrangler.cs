@@ -116,7 +116,7 @@ namespace DirtBag.BotFunctions {
 
             RedditSharp.WikiPage automodWiki;
             try {
-                automodWiki = Subreddit.Wiki.GetPage( AUTOMOD_WIKI_PAGE );
+                automodWiki = await Subreddit.Wiki.GetPageAsync( AUTOMOD_WIKI_PAGE );
                 wikiContent = WebUtility.HtmlDecode( automodWiki.MarkdownContent );
             }
             catch ( WebException ex ) {
@@ -154,7 +154,7 @@ namespace DirtBag.BotFunctions {
             updatedWiki = updatedWiki.Remove( startBotSection, botSectionLength );
             updatedWiki = updatedWiki.Insert( startBotSection, String.Format( GetDefaultBotConfigSection(), entsString ) );
 
-            Subreddit.Wiki.EditPage( AUTOMOD_WIKI_PAGE, updatedWiki, reason: editReason );
+            await Subreddit.Wiki.EditPageAsync( AUTOMOD_WIKI_PAGE, updatedWiki, reason: editReason );
             return true;
 
 

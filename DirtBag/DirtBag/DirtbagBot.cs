@@ -16,6 +16,7 @@ namespace DirtBag {
         private Reddit client;
         private DAL.ISubredditSettingsDAL subSettingsDAL;
         private DAL.IProcessedItemDAL processedDAL;
+        private DAL.UserPostingHistoryDAL userHistoryDAL;
         public Models.SubredditSettings Settings { get; set; }
 
         private Timer TheKeeper;
@@ -27,21 +28,23 @@ namespace DirtBag {
 
         public const double VersionNumber = 2.0;
 
-        public DirtbagBot( string subreddit, BotWebAgent botAgent, Reddit redditClient, DAL.ISubredditSettingsDAL settingsDAL, DAL.IProcessedItemDAL processedItemDAL ) {
+        public DirtbagBot( string subreddit, BotWebAgent botAgent, Reddit redditClient, DAL.ISubredditSettingsDAL settingsDAL, DAL.IProcessedItemDAL processedItemDAL, DAL.UserPostingHistoryDAL postingHistoryDAL ) {
             Subreddit = subreddit;
             agent = botAgent;
             client = redditClient;
             subSettingsDAL = settingsDAL;
             processedDAL = processedItemDAL;
+            userHistoryDAL = postingHistoryDAL;
             ActiveModules = new List<IModule>();
         }
 
         public async Task StartBot() {
             Settings = await subSettingsDAL.GetSubredditSettingsAsync( Subreddit );
             LoadModules();
+            await TimerTask();
         }
 
-        private async Task TimerTask( object s ) {
+        private async Task TimerTask() {
             while ( true ) {
                 await ProcessPosts();
                 await Task.Delay( Settings.RunEveryXMinutes * 60 * 1000 );
@@ -49,7 +52,7 @@ namespace DirtBag {
         }
 
         private async Task ProcessPosts() {
-            var sub = client.GetSubreddit( Subreddit );
+            var sub = await client.GetSubredditAsync( Subreddit );
             var newPosts = new List<Post>();
             var hotPosts = new List<Post>();
             var risingPosts = new List<Post>();
@@ -82,6 +85,21 @@ namespace DirtBag {
 
             var postTasks = new List<Task<Dictionary<string, AnalysisDetails>>>();
 
+            var allReqs = await Task.WhenAll( allPosts.Select( async p => {
+                var auth = await client.GetUserAsync( p.AuthorName );
+                return new AnalysisRequest() {
+                    Author = new AuthorInfo() {
+                        Name = auth.Name,
+                        CommentKarma = auth.CommentKarma,
+                        Created = auth.Created,
+                        LinkKarma = auth.LinkKarma
+                    },
+                    EntryTime = p.CreatedUTC,
+                    ThingID = p.Id,
+                    VideoID = Helpers.YouTubeHelpers.ExtractVideoId( p.Url.ToString() )
+                };
+            }
+                ) );
 
             foreach ( var module in ActiveModules ) {
                 //hashset to prevent duplicates being passed.
@@ -108,22 +126,8 @@ namespace DirtBag {
                 else {
                     postsList = posts.ToList();
                 }
-                DateTime authorCreated = DateTime.UtcNow;
-                bool shadowbanned = false;
-                try {
-                    authorCreated = thingID.Author.Created;
-                }
-                catch ( WebException ex ) {
-                    if ( ( ex.Response as HttpWebResponse ).StatusCode == HttpStatusCode.NotFound ) {
-                        authorCreated = DateTime.UtcNow;
-                        shadowbanned = true;
-                    }
-                    else {
-                        throw;
-                    }
-                }
-
-                if ( postsList.Count > 0 ) postTasks.Add( Task.Run( () => module.Analyze( postsList ) ) );
+                var reqs = allReqs.Where( r => postsList.Any(p=>p.Id == r.ThingID ) );
+                if ( postsList.Count > 0 ) postTasks.Add( Task.Run( () => module.Analyze( reqs.ToList() ) ) );
             }
 
             var results = new Dictionary<string, AnalysisDetails>();
@@ -161,10 +165,10 @@ namespace DirtBag {
                     ProcessedItem removed = removedPreviously.SingleOrDefault( p => p.ThingID == combinedAnalysis.ThingID );
                     if ( removed == null || removed.AnalysisDetails.TotalScore < combinedAnalysis.TotalScore ) {
                         //only remove the post if it wasn't previously removed by the bot, OR if the score has increased
-                       var post = ( client.GetThingByFullname( combinedAnalysis.ThingID ) as Post );
-                        post.Remove();
+                        var post = ( await client.GetThingByFullnameAsync( combinedAnalysis.ThingID ) as Post );
+                        await post.RemoveAsync();
                         if ( combinedAnalysis.HasFlair ) {
-                            post.SetFlair( combinedAnalysis.FlairText, combinedAnalysis.FlairClass );
+                            await post.SetFlairAsync( combinedAnalysis.FlairText, combinedAnalysis.FlairClass );
                         }
                         removedCounter++;
                     }
@@ -176,7 +180,7 @@ namespace DirtBag {
                 else if ( combinedAnalysis.TotalScore >= Settings.ReportScoreThreshold && Settings.ReportScoreThreshold > 0 ) {
                     if ( reportedPreviously.Count( p => p.ThingID == combinedAnalysis.ThingID ) == 0 ) {
                         //can't change report text or report an item again. Thanks Obama... err... Reddit...
-                        ( client.GetThingByFullname( combinedAnalysis.ThingID ) as Post ).Report( VotableThing.ReportType.Other, combinedAnalysis.ReportReason );
+                        await ( await client.GetThingByFullnameAsync( combinedAnalysis.ThingID ) as Post ).ReportAsync( VotableThing.ReportType.Other, combinedAnalysis.ReportReason );
                         reportedCounter++;
                     }
                     action = "Report";
@@ -215,9 +219,9 @@ namespace DirtBag {
             Console.WriteLine( $"Successfully processed {results.Keys.Count} posts.\r\nIgnored posts: {ignoredCounter}\r\nReported Posts: {reportedCounter}\r\nRemoved Posts: {removedCounter}" );
 
         }
-        internal async Task<AnalysisDetails> AnalyzePost( Post post ) {
-            var postTasks = ActiveModules.Select( module => module.Analyze( new List<Post> { post } ) ).ToList();
-            var results = new AnalysisDetails( post, Modules.Modules.None );
+        internal async Task<AnalysisDetails> AnalyzePost( AnalysisRequest req ) {
+            var postTasks = ActiveModules.Select( module => module.Analyze( new List<AnalysisRequest> { req } ) ).ToList();
+            var results = new AnalysisDetails( req.ThingID, Modules.Modules.None );
 
             while ( postTasks.Count > 0 ) {
                 var finishedTask = await Task.WhenAny( postTasks );
@@ -237,8 +241,8 @@ namespace DirtBag {
             if ( Settings.LicensingSmasher.Enabled ) ActiveModules.Add( new LicensingSmasher( Settings.LicensingSmasher, client, Subreddit ) );
             if ( Settings.YouTubeSpamDetector.Enabled ) ActiveModules.Add( new YouTubeSpamDetector( Settings.YouTubeSpamDetector, client, Subreddit ) );
             //if ( Settings.UserStalker.Enabled ) ActiveModules.Add( new UserStalker( Settings.UserStalker, client, Subreddit ) );
-            if ( Settings.SelfPromotionCombustor.Enabled ) ActiveModules.Add( new SelfPromotionCombustor( Settings.SelfPromotionCombustor, client ) );
-            if ( Settings.HighTechBanHammer.Enabled ) ActiveModules.Add( new HighTechBanHammer( Settings.HighTechBanHammer, client.GetSubreddit( Subreddit ) ) );
+            if ( Settings.SelfPromotionCombustor.Enabled ) ActiveModules.Add( new SelfPromotionCombustor( Settings.SelfPromotionCombustor, client, userHistoryDAL ) );
+            if ( Settings.HighTechBanHammer.Enabled ) ActiveModules.Add( new HighTechBanHammer( Settings.HighTechBanHammer, Task.Run(async()=> await client.GetSubredditAsync( Subreddit ) ).Result) );
             /*** End Load Modules ***/
         }
     }

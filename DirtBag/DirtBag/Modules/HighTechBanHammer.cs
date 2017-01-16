@@ -35,7 +35,7 @@ namespace DirtBag.Modules {
         public async Task<Dictionary<string, AnalysisDetails>> Analyze( List<AnalysisRequest> requests ) {
             var toReturn = new Dictionary<string, AnalysisDetails>();
             var youTubePosts = new Dictionary<string, List<string>>();
-            var amWrangler = new BotFunctions.AutoModWrangler( Program.Client.GetSubreddit( Program.Subreddit ) );
+            var amWrangler = new BotFunctions.AutoModWrangler( await Program.Client.GetSubredditAsync( Program.Subreddit ) );
             var bannedChannels = amWrangler.GetBannedList( Models.BannedEntity.EntityType.Channel );
             foreach ( var request in requests ) { //TODO error handling
                 if ( toReturn.ContainsKey( request.ThingID ) ) {

@@ -27,35 +27,35 @@ namespace DirtBag {
 
             
             foreach ( var message in messages.Where( unread => unread.Kind == "t4" ).Cast<PrivateMessage>() ) {
-                message.SetAsRead();
+                await message.SetAsReadAsync();
                 string subject = message.Subject.ToLower();
                 List<string> args = subject.Split( '-' ).Select( p => p.Trim() ).ToList();
 
                 bool force = args.Count > 1 && args.Contains( "force" );
                 if ( !subject.Contains( "validate" ) && !subject.Contains( "check" ) &&
                     !subject.Contains( "analyze" ) && !subject.Contains( "test" ) && !subject.Contains( "verify" ) ) {
-                    message.Reply( "Whatchu talkin bout Willis" );
+                    await message.ReplyAsync( "Whatchu talkin bout Willis" );
                     continue;
                 }
                 Post post;
                 try {
-                    post = client.GetPost( new Uri( message.Body ) );
+                    post = await client.GetPostAsync( new Uri( message.Body ) );
                 }
                 catch {
-                    message.Reply( "That URL made me throw up in my mouth a little. Try again!" );
+                    await message.ReplyAsync( "That URL made me throw up in my mouth a little. Try again!" );
                     continue;
                 }
                 string sub = post.SubredditName.ToLower();
                 var bot = DirtbagBots.SingleOrDefault( b => b.Subreddit.ToLower() == sub );
-                if ( bot != null ) { 
-                    message.Reply( $"I don't have any minions in {post.SubredditName}." );
+                if ( bot != null ) {
+                    await message.ReplyAsync( $"I don't have any minions in {post.SubredditName}." );
                     return;
                 }
                 var mods = new List<string>();
-                mods.AddRange( client.GetSubreddit( sub ).Moderators.Select( m => m.Name.ToLower() ).ToList() );
+                mods.AddRange( (await (await client.GetSubredditAsync( sub )).GetModeratorsAsync()).Select( m => m.Name.ToLower() ).ToList() );
 
                 if ( !mods.Contains( message.Author.ToLower() ) ) {
-                    message.Reply( $"You aren't a mod of {post.SubredditName}! What are you doing here? Go on! GIT!" );
+                    await message.ReplyAsync( $"You aren't a mod of {post.SubredditName}! What are you doing here? Go on! GIT!" );
                 }
                 else {
                     //omg finally analyze the damn thing
@@ -65,11 +65,24 @@ namespace DirtBag {
                         result = original.AnalysisDetails;
                     }
                     else if ( post.AuthorName == "[deleted]" ) {
-                        message.Reply( "The OP deleted the post, and I don't have it cached so I can't check it. Sorry (read in Canadian accent)!" );
+                        await message.ReplyAsync( "The OP deleted the post, and I don't have it cached so I can't check it. Sorry (read in Canadian accent)!" );
                         continue;
                     }
                     else {
-                        result = await bot.AnalyzePost( post );
+                        var auth = await client.GetUserAsync( post.AuthorName );
+                        var req = new AnalysisRequest() {
+                            
+                            Author = new AuthorInfo() {
+                                Name = auth.Name,
+                                CommentKarma = auth.CommentKarma,
+                                Created = auth.Created,
+                                LinkKarma = auth.LinkKarma
+                            },
+                            EntryTime = post.CreatedUTC,
+                            ThingID = post.Id,
+                            VideoID = Helpers.YouTubeHelpers.ExtractVideoId( post.Url.ToString() )
+                        };
+                        result = await bot.AnalyzePost( req );
                     }
                     var reply = new StringBuilder();
                     reply.AppendLine(
@@ -90,7 +103,7 @@ namespace DirtBag {
                     foreach ( var score in result.Scores ) {
                         reply.AppendLine( $"{score.Module.ToString()}|{score.Score}|{score.Reason}" );
                     }
-                    message.Reply( reply.ToString() );
+                    await message.ReplyAsync( reply.ToString() );
                 }
             }
         }
