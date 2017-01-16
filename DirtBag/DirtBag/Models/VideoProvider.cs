@@ -6,12 +6,13 @@ using System.Threading.Tasks;
 
 namespace DirtBag.Models {
     public enum VideoProvider {
-        YouTube = 0,
-        Vimeo = 1,
-        VidMe = 2, //*
-        DailyMotion = 3,
-        Instagram = 4,
-        SoundCloud = 5,
-        Streamable = 6 //*
+        Unknown = 0,
+        YouTube = 1,
+        Vimeo = 2,
+        VidMe = 3, //*
+        DailyMotion = 4,
+        Instagram = 5,
+        SoundCloud = 6,
+        Streamable = 7 //*
     }
 }
