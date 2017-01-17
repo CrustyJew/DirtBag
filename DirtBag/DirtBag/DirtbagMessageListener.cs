@@ -24,7 +24,6 @@ namespace DirtBag {
 
         private async Task ProcessMessages() {
             var messages = client.User.UnreadMessages.GetListingStream();
-
             
             foreach ( var message in messages.Where( unread => unread.Kind == "t4" ).Cast<PrivateMessage>() ) {
                 await message.SetAsReadAsync();

@@ -23,7 +23,6 @@ namespace DirtBag.Modules {
         public bool MultiScan { get { return false; } }
 
         public IModuleSettings Settings { get; set; }
-        public Reddit RedditClient { get; set; }
         public string Subreddit { get; set; }
         public string YouTubeAPIKey { get; set; }
 
@@ -38,11 +37,15 @@ namespace DirtBag.Modules {
             processedCache = new Dictionary<string, int>();
         }
 
-        public YouTubeSpamDetector( YouTubeSpamDetectorSettings settings, Reddit reddit, string sub ) : this() {
+        public YouTubeSpamDetector( YouTubeSpamDetectorSettings settings, string sub ) : this() {
             Settings = settings;
-            RedditClient = reddit;
             Subreddit = sub;
             Settings = settings;
+        }
+        public async Task<AnalysisDetails> Analyze(AnalysisRequest request)
+        {
+            var results = await Analyze(new List<AnalysisRequest>() { request });
+            return results.Values.FirstOrDefault();
         }
         public async Task<Dictionary<string, AnalysisDetails>> Analyze( List<AnalysisRequest> requests ) {
 

@@ -22,7 +22,6 @@ namespace DirtBag.Modules {
         public bool MultiScan { get { return false; } }
 
         public IModuleSettings Settings { get; set; }
-        public RedditSharp.Reddit RedditClient { get; set; }
         public string YouTubeAPIKey { get; set; }
         public Flair RemovalFlair { get; set; }
         public int PercentageThreshold { get; set; }
@@ -41,8 +40,8 @@ namespace DirtBag.Modules {
             _userPostHistDAL = postHistoryDAL;
         }
 
-        public SelfPromotionCombustor( SelfPromotionCombustorSettings settings, RedditSharp.Reddit client, DAL.UserPostingHistoryDAL postHistoryDAL ) : this(postHistoryDAL) {
-            RedditClient = client;
+        public SelfPromotionCombustor( SelfPromotionCombustorSettings settings, DAL.UserPostingHistoryDAL postHistoryDAL ) : this(postHistoryDAL) {
+
             Settings = settings;
             PercentageThreshold = settings.PercentageThreshold;
             IncludePostInPercentage = settings.IncludePostInPercentage;
@@ -50,6 +49,11 @@ namespace DirtBag.Modules {
             GracePeriod = settings.GracePeriod;
         }
 
+        public async Task<AnalysisDetails> Analyze(AnalysisRequest request)
+        {
+            var results = await Analyze(new List<AnalysisRequest>() { request });
+            return results.Values.FirstOrDefault();
+        }
         public async Task<Dictionary<string, AnalysisDetails>> Analyze( List<AnalysisRequest> requests ) {
             var toReturn = new Dictionary<string, AnalysisDetails>();
             foreach ( var request in requests ) { //TODO error handling
@@ -58,19 +62,20 @@ namespace DirtBag.Modules {
                 toReturn.Add( request.ThingID, new AnalysisDetails( request.ThingID, ModuleEnum ) );
                 
                 Task<Dictionary<string,string>> hist;
+                IEnumerable<Models.UserPostInfo> postHistory;
                 if ( !string.IsNullOrEmpty( request.VideoID ) ) {
                     //It's a YouTube vid so we can kick off the analysis and get cookin
-                    hist = _userPostHistDAL.GetUserPostingHistoryAsync( request.Author.Name );
-                    if ( !youTubePosts.ContainsKey( request.VideoID ) ) youTubePosts.Add( request.VideoID, new List<string>() );
-                    youTubePosts[request.VideoID].Add( request.ThingID );
+                    postHistory = await _userPostHistDAL.GetUserPostingHistoryAsync( request.Author.Name );
+                    
                 }
                 else {
                     //not a YouTube post, so bail out
                     continue;
                 }
+                hist = new Task<Dictionary<string, string>>(()=>new Dictionary<string,string>());
                 bool success = false;
                 int nonYTPosts = 0;
-                int tries = 0;
+                /*int tries = 0;
                 while ( !success && tries < 3 ) {
                     success = true;
                     try {
@@ -100,8 +105,8 @@ namespace DirtBag.Modules {
                 }
                 if ( tries > 3 ) {
                     continue;
-                }
-                var yt = new YouTubeService( new BaseClientService.Initializer { ApiKey = YouTubeAPIKey } );
+                }*/
+                /*var yt = new YouTubeService( new BaseClientService.Initializer { ApiKey = YouTubeAPIKey } );
                 var userPosts = await hist;
                 Dictionary<string, List<string>> postHistory = new Dictionary<string, List<string>>();
                 foreach(var post in userPosts ) {
@@ -129,27 +134,32 @@ namespace DirtBag.Modules {
                             }
                         }
                     }
-                }
+                }*/
 
-                if ( string.IsNullOrEmpty( postChannelID ) ) {
+
+                var yt = new YouTubeService(new BaseClientService.Initializer { ApiKey = YouTubeAPIKey });
+                var req = yt.Videos.List("snippet");
+                req.Id = request.VideoID;
+                var ytResponse = (await req.ExecuteAsync()).Items.FirstOrDefault();
+
+                if ( string.IsNullOrEmpty(ytResponse.Snippet.ChannelTitle) ) {
                     //shouldn't ever happen, but might if the video is deleted or the channel deleted or something
                     Console.WriteLine( $"Channel for thing {request.ThingID} by {request.Author.Name} couldn't be found" );
                     continue;
                 }
 
-                int totalPosts = postHistory.Sum( ph => ph.Value.Count ) + nonYTPosts;
-                int channelPosts = postHistory[postChannelID].Count;
+                int totalPosts = postHistory.Count();
+                int channelPosts = postHistory.Count(ph => ph.MediaChannelID == ytResponse.Snippet.ChannelTitle);
                 if ( !IncludePostInPercentage ) {
                     totalPosts--;
                     channelPosts--;
-                    postHistory[postChannelID].Remove( request.ThingID );
                 }
                 double percent = ( (double) channelPosts / totalPosts ) * 100;
                 if ( percent > PercentageThreshold && channelPosts > GracePeriod ) {
                     var score = new AnalysisScore();
                     score.Module = ModuleEnum;
                     score.ReportReason = $"SelfPromo: {Math.Round( percent, 2 )}%";
-                    score.Reason = $"Self Promotion for channel '{postChannelName}' with a posting percentage of {Math.Round( percent, 2 )}. Found PostIDs: {string.Join( ", ", postHistory[postChannelID] )}";
+                    score.Reason = $"Self Promotion for channel '{ytResponse.Snippet.ChannelTitle}' with a posting percentage of {Math.Round( percent, 2 )}. Found PostIDs: {string.Join( ", ", postHistory.Select(ph=>ph.ThingID) )}";
                     score.Score = OVER_PERCENT_SCORE * Settings.ScoreMultiplier;
                     score.RemovalFlair = RemovalFlair;
 

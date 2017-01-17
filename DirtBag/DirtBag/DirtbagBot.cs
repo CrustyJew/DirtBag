@@ -146,7 +146,7 @@ namespace DirtBag {
                 }
             }
             int ignoredCounter = 0, reportedCounter = 0, removedCounter = 0;
-
+            //TODO fix getthingbyfullname
             foreach ( var result in results ) {
                 var combinedAnalysis = result.Value;
                 string action = "None"; //change to Enum at some point
@@ -238,10 +238,10 @@ namespace DirtBag {
         private void LoadModules() {
             ActiveModules.Clear();
             /*** Load Modules ***/
-            if ( Settings.LicensingSmasher.Enabled ) ActiveModules.Add( new LicensingSmasher( Settings.LicensingSmasher, client, Subreddit ) );
-            if ( Settings.YouTubeSpamDetector.Enabled ) ActiveModules.Add( new YouTubeSpamDetector( Settings.YouTubeSpamDetector, client, Subreddit ) );
+            if ( Settings.LicensingSmasher.Enabled ) ActiveModules.Add( new LicensingSmasher( Settings.LicensingSmasher, Subreddit ) );
+            if ( Settings.YouTubeSpamDetector.Enabled ) ActiveModules.Add( new YouTubeSpamDetector( Settings.YouTubeSpamDetector, Subreddit ) );
             //if ( Settings.UserStalker.Enabled ) ActiveModules.Add( new UserStalker( Settings.UserStalker, client, Subreddit ) );
-            if ( Settings.SelfPromotionCombustor.Enabled ) ActiveModules.Add( new SelfPromotionCombustor( Settings.SelfPromotionCombustor, client, userHistoryDAL ) );
+            if ( Settings.SelfPromotionCombustor.Enabled ) ActiveModules.Add( new SelfPromotionCombustor( Settings.SelfPromotionCombustor, userHistoryDAL ) );
             if ( Settings.HighTechBanHammer.Enabled ) ActiveModules.Add( new HighTechBanHammer( Settings.HighTechBanHammer, Task.Run(async()=> await client.GetSubredditAsync( Subreddit ) ).Result) );
             /*** End Load Modules ***/
         }

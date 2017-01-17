@@ -291,6 +291,7 @@
     <Compile Include="Models\ProcessedPost.cs" />
     <Compile Include="Models\SelfPromotionCombustorSettings.cs" />
     <Compile Include="Models\SubredditSettings.cs" />
+    <Compile Include="Models\UserPostInfo.cs" />
     <Compile Include="Models\UserStalkerSettings.cs" />
     <Compile Include="Models\VideoProvider.cs" />
     <Compile Include="Models\YouTubeSpamDetectorSettings.cs" />

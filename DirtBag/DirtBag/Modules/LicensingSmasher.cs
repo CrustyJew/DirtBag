@@ -22,7 +22,6 @@ namespace DirtBag.Modules {
         public bool MultiScan { get { return true; } }
         public IModuleSettings Settings { get; set; }
         public bool IsRunning { get; set; }
-        public Reddit RedditClient { get; set; }
         public string Subreddit { get; set; }
         public string YouTubeAPIKey { get; set; }
         public List<string> TermsToMatch { get; set; }
@@ -34,8 +33,7 @@ namespace DirtBag.Modules {
             if ( string.IsNullOrEmpty( key ) ) throw new Exception( "Provide setting 'YouTubeAPIKey' in AppConfig" );
             YouTubeAPIKey = key;
         }
-        public LicensingSmasher( LicensingSmasherSettings settings, Reddit reddit, string sub ) : this() {
-            RedditClient = reddit;
+        public LicensingSmasher( LicensingSmasherSettings settings, string sub ) : this() {
             Subreddit = sub;
             TermsToMatch = settings.MatchTerms.ToList();
             KnownLicensers = settings.KnownLicensers;
@@ -52,6 +50,12 @@ namespace DirtBag.Modules {
 
         private Regex TermMatching;
         private Regex LicenserMatching;
+
+        public async Task<AnalysisDetails> Analyze(AnalysisRequest request) {
+            var results = await Analyze(new List<AnalysisRequest>() { request });
+            return results.Values.FirstOrDefault();
+        }
+
         public async Task<Dictionary<string, AnalysisDetails>> Analyze( List<AnalysisRequest> requests ) {
 
             var toReturn = new Dictionary<string, AnalysisDetails>();

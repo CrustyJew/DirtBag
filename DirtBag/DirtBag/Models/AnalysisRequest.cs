@@ -10,7 +10,6 @@ namespace DirtBag.Models {
         public AuthorInfo Author { get; set; }
         public DateTime EntryTime { get; set; }
         public string VideoID { get; set; }
-        public int MyProperty { get; set; }
 
        
     }

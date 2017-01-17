@@ -57,7 +57,7 @@ namespace DirtBag {
                 var start = _container.Resolve<Startup>();
                 _app = WebApp.Start( opts,start.Configuration );
             }
-
+            
             WaitHandle.WaitOne(); //Go the fuck to sleep
 
 
