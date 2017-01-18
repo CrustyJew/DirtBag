@@ -40,11 +40,11 @@ namespace DirtBag.Helpers {
             var agent = new BotWebAgent( uname, pass, clientId, clientSecret, redirectUri );
             var client = new Reddit( agent, false );
             var sentinelConn = new NpgsqlConnection( sentinelDBString );
-            container.RegisterInstance<IDbConnection>( "sentinelConn", sentinelConn );
-            container.RegisterType<IDbConnection, SqlConnection>( new InjectionConstructor( sqlConnString ) );
+            container.RegisterType<IDbConnection, NpgsqlConnection>( "sentinelConn", new InjectionConstructor( sentinelDBString ));
+            //container.RegisterType<IDbConnection, SqlConnection>( new InjectionConstructor( sqlConnString ) );
             container.RegisterType<DAL.IProcessedItemDAL, DAL.ProcessedItemSQLDAL>();
             container.RegisterType<DAL.ISubredditSettingsDAL, DAL.SubredditSettingsWikiDAL>( new InjectionConstructor( client ) );
-
+            container.RegisterInstance( typeof(DAL.UserPostingHistoryDAL), new DAL.UserPostingHistoryDAL( sentinelConn ) );
         }
     }
 }

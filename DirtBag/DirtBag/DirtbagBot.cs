@@ -57,15 +57,16 @@ namespace DirtBag {
             var hotPosts = new List<Post>();
             var risingPosts = new List<Post>();
 
+            //TODO CHANGE THIS SHIT BACK
             //avoid getting unnecessary posts to keep requests lower
             if ( ActiveModules.Any( m => m.Settings.PostTypes.HasFlag( PostType.New ) ) ) {
-                newPosts = sub.New.Take( 100 ).ToList();
+                newPosts = sub.New.Take( 10 ).ToList();
             }
             if ( ActiveModules.Any( m => m.Settings.PostTypes.HasFlag( PostType.Hot ) ) ) {
-                hotPosts = sub.Hot.Take( 50 ).ToList();
+                hotPosts = sub.Hot.Take( 5 ).ToList();
             }
             if ( ActiveModules.Any( m => m.Settings.PostTypes.HasFlag( PostType.Rising ) ) ) {
-                risingPosts = sub.Rising.Take( 50 ).ToList();
+                risingPosts = sub.Rising.Take( 5 ).ToList();
             }
             var postComparer = new PostIdEqualityComparer();
             var allPosts = new HashSet<Post>( postComparer );
@@ -95,7 +96,7 @@ namespace DirtBag {
                         LinkKarma = auth.LinkKarma
                     },
                     EntryTime = p.CreatedUTC,
-                    ThingID = p.Id,
+                    ThingID = p.FullName,
                     VideoID = Helpers.YouTubeHelpers.ExtractVideoId( p.Url.ToString() )
                 };
             }
@@ -126,8 +127,8 @@ namespace DirtBag {
                 else {
                     postsList = posts.ToList();
                 }
-                var reqs = allReqs.Where( r => postsList.Any(p=>p.Id == r.ThingID ) );
-                if ( postsList.Count > 0 ) postTasks.Add( Task.Run( () => module.Analyze( reqs.ToList() ) ) );
+                var reqs = allReqs.Where( r => postsList.Any( p => p.FullName == r.ThingID ) );
+                if ( reqs.Count() > 0 ) postTasks.Add( Task.Run( () => module.Analyze( reqs.ToList() ) ) );
             }
 
             var results = new Dictionary<string, AnalysisDetails>();
@@ -187,13 +188,8 @@ namespace DirtBag {
                 }
                 if ( combinedAnalysis.TotalScore != original.AnalysisDetails.TotalScore || action != original.Action || original.SeenByModules != combinedAnalysis.AnalyzingModule ) {
                     var updatedItem = original;
-                    if ( combinedAnalysis.TotalScore > 0 ) {
-                        updatedItem.AnalysisDetails = combinedAnalysis;
-                    }
-                    else {
-                        updatedItem.AnalysisDetails = null;
-                    }
 
+                    updatedItem.AnalysisDetails = combinedAnalysis;
                     updatedItem.SeenByModules = updatedItem.SeenByModules | combinedAnalysis.AnalyzingModule;
                     updatedItem.Action = action;
                     //processed post needs updated in
@@ -202,7 +198,7 @@ namespace DirtBag {
                             await processedDAL.LogProcessedItemAsync( updatedItem ); //TODO
                         }
                         catch ( Exception ex ) {
-                            Console.WriteLine( "Error adding new post as processed. Messaage : {0}", "\r\n Inner Exception : " + ex.InnerException?.Message );
+                            Console.WriteLine( $"Error adding new post as processed. Messaage : {ex.Message} \r\n Inner Exception : " + ex.InnerException?.Message );
                         }
                     }
                     else {
@@ -242,7 +238,7 @@ namespace DirtBag {
             if ( Settings.YouTubeSpamDetector.Enabled ) ActiveModules.Add( new YouTubeSpamDetector( Settings.YouTubeSpamDetector, Subreddit ) );
             //if ( Settings.UserStalker.Enabled ) ActiveModules.Add( new UserStalker( Settings.UserStalker, client, Subreddit ) );
             if ( Settings.SelfPromotionCombustor.Enabled ) ActiveModules.Add( new SelfPromotionCombustor( Settings.SelfPromotionCombustor, userHistoryDAL ) );
-            if ( Settings.HighTechBanHammer.Enabled ) ActiveModules.Add( new HighTechBanHammer( Settings.HighTechBanHammer, Task.Run(async()=> await client.GetSubredditAsync( Subreddit ) ).Result) );
+            if ( Settings.HighTechBanHammer.Enabled ) ActiveModules.Add( new HighTechBanHammer( Settings.HighTechBanHammer, Task.Run( async () => await client.GetSubredditAsync( Subreddit ) ).Result ) );
             /*** End Load Modules ***/
         }
     }

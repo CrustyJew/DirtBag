@@ -9,7 +9,7 @@ Project("{CC5FD16D-436D-48AD-A40C-5A424C6E3E79}") = "DirtbagWorker", "DirtbagWor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirtBagTests", "DirtBagTests\DirtBagTests.csproj", "{B5D83EE5-2850-44C9-BD6E-F97DDFCF8AF0}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RedditSharp", "..\..\..\..\Source\Repos\RedditSharp\RedditSharp\RedditSharp.xproj", "{EEA13827-0899-47D3-B74C-F7937CF9B992}"
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RedditSharp", "..\..\RedditSharp\RedditSharp\RedditSharp.xproj", "{EEA13827-0899-47D3-B74C-F7937CF9B992}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

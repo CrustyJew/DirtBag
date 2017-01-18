@@ -13,6 +13,10 @@ namespace DirtBag.Models {
         public AnalysisDetails AnalysisDetails { get; set; }
         
 
+        public AnalysisResults() {
+            AnalysisDetails = new Models.AnalysisDetails();
+        }
+
         public enum Action {
             Remove, Report, Nothing
         }
