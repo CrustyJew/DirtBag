@@ -11,6 +11,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirtBagTests", "DirtBagTest
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RedditSharp", "..\..\RedditSharp\RedditSharp\RedditSharp.xproj", "{EEA13827-0899-47D3-B74C-F7937CF9B992}"
 EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "DirtbagWebservice", "DirtbagWebservice\DirtbagWebservice.xproj", "{E5737B3F-F93C-494B-AD43-FDDF3919B0A6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{2D7CFB3F-4C09-4EAA-9367-108D2C48786D}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +40,10 @@ Global
 		{EEA13827-0899-47D3-B74C-F7937CF9B992}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EEA13827-0899-47D3-B74C-F7937CF9B992}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EEA13827-0899-47D3-B74C-F7937CF9B992}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E5737B3F-F93C-494B-AD43-FDDF3919B0A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E5737B3F-F93C-494B-AD43-FDDF3919B0A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E5737B3F-F93C-494B-AD43-FDDF3919B0A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E5737B3F-F93C-494B-AD43-FDDF3919B0A6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
