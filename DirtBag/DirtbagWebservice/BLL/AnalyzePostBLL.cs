@@ -48,11 +48,11 @@ namespace DirtBagWebservice.BLL
                 results.AnalysisDetails.Scores.AddRange(result.Scores);
                 results.AnalysisDetails.AnalyzingModule = result.AnalyzingModule | results.AnalysisDetails.AnalyzingModule;
             }
-            if(results.AnalysisDetails.TotalScore >= settings.RemoveScoreThreshold)
+            if(results.AnalysisDetails.TotalScore >= settings.RemoveScoreThreshold && settings.RemoveScoreThreshold > 0)
             {
                 results.RequiredAction = Models.AnalysisResults.Action.Remove;
             }
-            else if (results.AnalysisDetails.TotalScore >= settings.ReportScoreThreshold)
+            else if (results.AnalysisDetails.TotalScore >= settings.ReportScoreThreshold && settings.ReportScoreThreshold > 0)
             {
                 results.RequiredAction = Models.AnalysisResults.Action.Report;
             }

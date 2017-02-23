@@ -26,5 +26,16 @@ namespace DirtBagWebservice.Models {
         public YouTubeSpamDetectorSettings YouTubeSpamDetector { get; set; }
         [JsonProperty]
         public SelfPromotionCombustorSettings SelfPromotionCombustor { get; set; }
+
+
+        public static SubredditSettings GetDefaultSettings() {
+            SubredditSettings toReturn = new Models.SubredditSettings();
+            toReturn.RemoveScoreThreshold = -1;
+            toReturn.ReportScoreThreshold = -1;
+            toReturn.LicensingSmasher = new LicensingSmasherSettings();
+            toReturn.SelfPromotionCombustor = new SelfPromotionCombustorSettings();
+            toReturn.YouTubeSpamDetector = new YouTubeSpamDetectorSettings();
+            return toReturn;
+        }
     }
 }

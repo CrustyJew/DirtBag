@@ -76,7 +76,6 @@ namespace DirtBagWebservice.DAL {
 
         private async Task<Models.SubredditSettings> CreateWikiPageAsync( Wiki wiki ) {
             Models.SubredditSettings settings = new Models.SubredditSettings();
-            settings.Version = Program.VersionNumber;
             settings.LastModified = DateTime.UtcNow;
             settings.ReportScoreThreshold = -1;
             settings.RemoveScoreThreshold = -1;

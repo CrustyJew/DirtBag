@@ -202,7 +202,8 @@ LEFT JOIN dirtbag.spam_detector_modules sd_m on sd_m.subreddit_id = s.id
 WHERE s.subreddit_name like @subreddit
 ";
             Models.SubredditSettings toReturn = new Models.SubredditSettings();
-            toReturn = await conn.QuerySingleAsync<SubredditSettings>(subredditQuery, new { subreddit });
+            toReturn = await conn.QuerySingleOrDefaultAsync<SubredditSettings>(subredditQuery, new { subreddit });
+            if (toReturn == null ) { return null; }
 
             toReturn.LicensingSmasher =
                 (

@@ -20,6 +20,10 @@ namespace DirtBagWebservice.Models {
         [JsonProperty]
         public int GracePeriod { get; set; }
 
+        public DateTime LastModified { get; set; }
+
+        public string ModifiedBy { get; set; }
+
         public SelfPromotionCombustorSettings() {
             SetDefaultSettings();
         }

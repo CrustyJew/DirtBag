@@ -27,11 +27,25 @@ namespace DirtBagWebservice.BLL {
 
         private async Task<SubredditSettings> GetOrUpdateSettingsAsync( string subreddit ) {
             object cacheVal;
-            if ( !cache.TryGetValue( CACHE_PREFIX + subreddit, out cacheVal ) ) {
+            if ( !cache.TryGetValue( CACHE_PREFIX + subreddit, out cacheVal ) && cacheVal != null ) {
                 return (SubredditSettings) cacheVal;
             }
             else {
                 var settings = await dal.GetSubredditSettingsAsync( subreddit );
+                if ( settings == null ) {
+                    settings = SubredditSettings.GetDefaultSettings() ;
+                    settings.Subreddit = subreddit;
+                }
+                if ( settings.LicensingSmasher == null ) {
+                    settings.LicensingSmasher = new LicensingSmasherSettings();
+                }
+                if ( settings.SelfPromotionCombustor == null ) {
+                    settings.SelfPromotionCombustor = new Models.SelfPromotionCombustorSettings();
+                }
+                if ( settings.YouTubeSpamDetector == null ) {
+                    settings.YouTubeSpamDetector = new YouTubeSpamDetectorSettings();
+                }
+
                 cache.Set( CACHE_PREFIX + subreddit, settings, DateTimeOffset.Now.AddMinutes( 30 ) );
                 return settings;
             }

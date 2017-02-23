@@ -39,7 +39,7 @@ namespace DirtBagWebservice
             services.AddSingleton<IConfigurationRoot>( Configuration );
             services.AddTransient<DAL.IUserPostingHistoryDAL>( (x)=> { return new DAL.UserPostingHistoryDAL( new NpgsqlConnection( SentinelConnectionString ) ); } );
             services.AddTransient<DAL.IProcessedItemDAL>( ( x ) => { return new DAL.ProcessedItemSQLDAL( new SqlConnection( DirtbagConnectionString ) ); } );
-            new DAL.SubredditSettingsWikiDAL()
+            //new DAL.SubredditSettingsWikiDAL()
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
