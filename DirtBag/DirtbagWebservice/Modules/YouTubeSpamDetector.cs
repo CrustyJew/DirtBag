@@ -76,6 +76,7 @@ namespace DirtBagWebservice.Modules {
             availWeight += settings.LicensedChannel.Enabled ? settings.LicensedChannel.Weight : 0;
             availWeight += settings.CommentCountThreshold.Enabled ? settings.CommentCountThreshold.Weight : 0;
             availWeight += settings.VoteCountThreshold.Enabled ? settings.VoteCountThreshold.Weight : 0;
+            availWeight += settings.ChannelSubscribersThreshold.Enabled ? settings.ChannelSubscribersThreshold.Weight : 0;
 
             var chanAgeScore = ( settings.ChannelAgeThreshold.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
             var viewCountScore = ( settings.ViewCountThreshold.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
@@ -84,7 +85,7 @@ namespace DirtBagWebservice.Modules {
             var licensedScore = ( settings.LicensedChannel.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
             var commentCountScore = ( settings.CommentCountThreshold.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
             var totalVotesScore = ( settings.VoteCountThreshold.Weight / availWeight ) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
-
+            var subscribersScore = (settings.ChannelSubscribersThreshold.Weight / availWeight) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
            
             for ( var i = 0; i < youTubePosts.Keys.Count; i += 50 ) {
                 var channels = new Dictionary<string, List<AnalysisRequest>>();
@@ -121,20 +122,24 @@ namespace DirtBagWebservice.Modules {
                         
                     }
                 }
-                if ( settings.ChannelAgeThreshold.Enabled ) {
+                if ( settings.ChannelAgeThreshold.Enabled || settings.ChannelSubscribersThreshold.Enabled ) {
 
-                    var chanReq = yt.Channels.List( "snippet" );
+                    var chanReq = yt.Channels.List( "snippet,statistics" );
                     chanReq.Id = string.Join( ",", channels.Keys );
                     var chanResponse = chanReq.Execute();
                     //get the channel info
                     foreach ( var channel in chanResponse.Items ) {
                         //if the channel was created less than the settings.ChannelAgeThreshold days ago
                         DateTime channelCreationDate = channel.Snippet.PublishedAt.HasValue ? channel.Snippet.PublishedAt.Value : DateTime.UtcNow;
+                        long channelSubscribers = channel.Statistics.SubscriberCount.HasValue ? (long) channel.Statistics.SubscriberCount.Value : 0 ;
                         foreach ( var analysisReq in channels[channel.Id] ) {
-                            if ( channelCreationDate.AddDays( settings.ChannelAgeThreshold.Value ) >= analysisReq.EntryTime) {
+                            if ( settings.ChannelAgeThreshold.Enabled && channelCreationDate.AddDays( settings.ChannelAgeThreshold.Value ) >= analysisReq.EntryTime) {
 
                                 //Add the score to the posts
                                 toReturn[analysisReq.ThingID].Scores.Add( new AnalysisScore( chanAgeScore, "Channel Age Below Threshold", "Channel Age", ModuleEnum ) );
+                            }
+                            if (settings.ChannelSubscribersThreshold.Enabled && channelSubscribers <= settings.ChannelSubscribersThreshold.Value) {
+                                toReturn[analysisReq.ThingID].Scores.Add(new AnalysisScore(subscribersScore, "Subscriber Count Below Threshold", "Num Subscribers", ModuleEnum));
                             }
                         }
                     }

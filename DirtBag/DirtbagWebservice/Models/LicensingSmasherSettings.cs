@@ -16,8 +16,13 @@ namespace DirtBagWebservice.Models {
         public string[] MatchTerms { get; set; }
         [JsonProperty]
         public Dictionary<string, string> KnownLicensers { get; set; }
-
+        [JsonProperty]
         public double ScoreMultiplier { get; set; }
+        [JsonProperty]
+        public DateTime LastModified { get; set; }
+        [JsonProperty]
+        public string ModifiedBy { get; set; }
+
 
         public LicensingSmasherSettings() {
             SetDefaultSettings();
