@@ -25,7 +25,6 @@ namespace DirtBagWebservice.Models {
         public string ModifiedBy { get; set; }
 
         public SelfPromotionCombustorSettings() {
-            SetDefaultSettings();
         }
 
         public void SetDefaultSettings() {

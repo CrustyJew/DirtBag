@@ -63,7 +63,6 @@ namespace DirtBagWebservice.Models {
 
 
         public YouTubeSpamDetectorSettings() {
-            SetDefaultSettings();
         }
 
         public void SetDefaultSettings() {

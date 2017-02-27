@@ -33,8 +33,11 @@ namespace DirtBagWebservice.Models {
             toReturn.RemoveScoreThreshold = -1;
             toReturn.ReportScoreThreshold = -1;
             toReturn.LicensingSmasher = new LicensingSmasherSettings();
+            toReturn.LicensingSmasher.SetDefaultSettings();
             toReturn.SelfPromotionCombustor = new SelfPromotionCombustorSettings();
+            toReturn.SelfPromotionCombustor.SetDefaultSettings();
             toReturn.YouTubeSpamDetector = new YouTubeSpamDetectorSettings();
+            toReturn.YouTubeSpamDetector.SetDefaultSettings();
             return toReturn;
         }
     }

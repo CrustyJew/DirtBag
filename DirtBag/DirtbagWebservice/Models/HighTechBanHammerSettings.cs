@@ -10,7 +10,6 @@ namespace DirtBagWebservice.Models {
         public double ScoreMultiplier { get; set; }
 
         public HighTechBanHammerSettings() {
-            SetDefaultSettings();
         }
 
         public void SetDefaultSettings() {
