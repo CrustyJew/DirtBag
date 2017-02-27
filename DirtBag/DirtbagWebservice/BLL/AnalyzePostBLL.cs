@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace DirtBagWebservice.BLL
 {
-    public class AnalyzePostBLL
+    public class AnalyzePostBLL : IAnalyzePostBLL
     {
         private BLL.SubredditSettingsBLL subSetsBLL;
         private DAL.IUserPostingHistoryDAL postHistoryDAL;

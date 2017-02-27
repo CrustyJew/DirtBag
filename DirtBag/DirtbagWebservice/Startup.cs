@@ -9,22 +9,32 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using System.Data.SqlClient;
+using EasyNetQ;
 
-namespace DirtBagWebservice
-{
-    public class Startup
-    {
-        public Startup(IHostingEnvironment env)
-        {
+namespace DirtBagWebservice {
+    public class Startup {
+        public static IBus rabbit;
+        private static RabbitListener rabbitListener;
+        public Startup( IHostingEnvironment env ) {
             var builder = new ConfigurationBuilder()
-                .SetBasePath(env.ContentRootPath)
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
+                .SetBasePath( env.ContentRootPath )
+                .AddJsonFile( "appsettings.json", optional: true, reloadOnChange: true )
+                .AddJsonFile( $"appsettings.{env.EnvironmentName}.json", optional: true )
                 .AddEnvironmentVariables();
+           
+
+            if ( env.IsDevelopment() ) {
+                // For more details on using the user secret store see http://go.microsoft.com/fwlink/?LinkID=532709
+                builder.AddUserSecrets();
+            }
             Configuration = builder.Build();
+
 
             SentinelConnectionString = Configuration.GetConnectionString( "Sentinel" );
             DirtbagConnectionString = Configuration.GetConnectionString( "Dirtbag" );
+
+            
+            
         }
 
         public IConfigurationRoot Configuration { get; }
@@ -32,23 +42,38 @@ namespace DirtBagWebservice
         public string DirtbagConnectionString { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
-        public void ConfigureServices(IServiceCollection services)
-        {
+        public void ConfigureServices( IServiceCollection services ) {
             // Add framework services.
-            services.AddMvc();
+            
             services.AddSingleton<IConfigurationRoot>( Configuration );
-            services.AddTransient<DAL.IUserPostingHistoryDAL>( (x)=> { return new DAL.UserPostingHistoryDAL( new NpgsqlConnection( SentinelConnectionString ) ); } );
+            services.AddTransient<DAL.IUserPostingHistoryDAL>( ( x ) => { return new DAL.UserPostingHistoryDAL( new NpgsqlConnection( SentinelConnectionString ) ); } );
             services.AddTransient<DAL.IProcessedItemDAL>( ( x ) => { return new DAL.ProcessedItemSQLDAL( new SqlConnection( DirtbagConnectionString ) ); } );
-            //new DAL.SubredditSettingsWikiDAL()
+            services.AddTransient<DAL.ISubredditSettingsDAL>( ( x ) => { return new DAL.SubredditSettingsPostgresDAL( new NpgsqlConnection( SentinelConnectionString ) ); } );
+            services.AddTransient<BLL.ISubredditSettingsBLL, BLL.SubredditSettingsBLL>();
+            services.AddTransient<BLL.IAnalyzePostBLL, BLL.AnalyzePostBLL>();
+
+            rabbit = RabbitHutch.CreateBus( Configuration.GetConnectionString( "Rabbit" ) );
+            rabbitListener = new DirtBagWebservice.RabbitListener( services.BuildServiceProvider(), rabbit );
+            rabbit.SubscribeAsync<Models.RabbitAnalysisRequestMessage>( Configuration["RabbitQueue"], rabbitListener.Subscribe );
+             services.AddMvc();
+            services.AddSwaggerGen( c => {
+                c.SingleApiVersion( new Swashbuckle.Swagger.Model.Info() { Title = "Dirtbag", Version = "v1" } );
+                c.AddSecurityDefinition( "basic", new Swashbuckle.Swagger.Model.BasicAuthScheme() );
+            }
+            );
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
-        {
-            loggerFactory.AddConsole(Configuration.GetSection("Logging"));
+        public void Configure( IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory ) {
+            loggerFactory.AddConsole( Configuration.GetSection( "Logging" ) );
             loggerFactory.AddDebug();
 
             app.UseMvc();
+
+            app.UseSwagger();
+
+            app.UseSwaggerUi();
+
         }
     }
 }

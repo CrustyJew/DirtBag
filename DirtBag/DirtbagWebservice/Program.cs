@@ -19,7 +19,7 @@ namespace DirtBagWebservice
             var host = new WebHostBuilder()
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
-                .UseUrls("http://localhost:6666/")
+                .UseUrls("http://localhost:16666/")
                 .UseIISIntegration()
                 .UseStartup<Startup>()
                 .Build();

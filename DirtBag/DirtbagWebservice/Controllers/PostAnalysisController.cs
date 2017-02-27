@@ -1,14 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
 
 namespace DirtBagWebservice.Controllers {
     [Route("api/Analysis")]
+    [Authorize]
     public class PostAnalysisController : Controller
     {
-        private BLL.AnalyzePostBLL analyzeBLL;
+        private BLL.IAnalyzePostBLL analyzeBLL;
 
-        public PostAnalysisController(BLL.AnalyzePostBLL analyzePostBLL)
+        public PostAnalysisController(BLL.IAnalyzePostBLL analyzePostBLL)
         {
             analyzeBLL = analyzePostBLL;
         }
