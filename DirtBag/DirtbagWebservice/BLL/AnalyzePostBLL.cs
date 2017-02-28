@@ -9,10 +9,10 @@ namespace DirtBagWebservice.BLL
 {
     public class AnalyzePostBLL : IAnalyzePostBLL
     {
-        private BLL.SubredditSettingsBLL subSetsBLL;
+        private BLL.ISubredditSettingsBLL subSetsBLL;
         private DAL.IUserPostingHistoryDAL postHistoryDAL;
         private IConfigurationRoot config;
-        public AnalyzePostBLL(IConfigurationRoot config, BLL.SubredditSettingsBLL settingsBLL, DAL.IUserPostingHistoryDAL userPostHistoryDAL)
+        public AnalyzePostBLL(IConfigurationRoot config, BLL.ISubredditSettingsBLL settingsBLL, DAL.IUserPostingHistoryDAL userPostHistoryDAL)
         {
             subSetsBLL = settingsBLL;
             postHistoryDAL = userPostHistoryDAL;
@@ -21,7 +21,7 @@ namespace DirtBagWebservice.BLL
 
         public async Task<Models.AnalysisResults> AnalyzePost(string subreddit, Models.AnalysisRequest request)
         {
-            var settings = await subSetsBLL.GetSubredditSettingsAsync(subreddit);
+            var settings = await subSetsBLL.GetSubredditSettingsAsync(subreddit, true);
             List<Task<Models.AnalysisDetails>> analysisTasks = new List<Task<Models.AnalysisDetails>>();
             if (settings.LicensingSmasher.Enabled)
             {

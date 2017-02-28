@@ -13,7 +13,7 @@ using EasyNetQ;
 
 namespace DirtBagWebservice {
     public class Startup {
-        public static IBus rabbit;
+        public static IAdvancedBus rabbit;
         private static RabbitListener rabbitListener;
         public Startup( IHostingEnvironment env ) {
             var builder = new ConfigurationBuilder()
@@ -21,7 +21,7 @@ namespace DirtBagWebservice {
                 .AddJsonFile( "appsettings.json", optional: true, reloadOnChange: true )
                 .AddJsonFile( $"appsettings.{env.EnvironmentName}.json", optional: true )
                 .AddEnvironmentVariables();
-           
+
 
             if ( env.IsDevelopment() ) {
                 // For more details on using the user secret store see http://go.microsoft.com/fwlink/?LinkID=532709
@@ -33,8 +33,8 @@ namespace DirtBagWebservice {
             SentinelConnectionString = Configuration.GetConnectionString( "Sentinel" );
             DirtbagConnectionString = Configuration.GetConnectionString( "Dirtbag" );
 
-            
-            
+
+
         }
 
         public IConfigurationRoot Configuration { get; }
@@ -44,7 +44,7 @@ namespace DirtBagWebservice {
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices( IServiceCollection services ) {
             // Add framework services.
-            
+
             services.AddSingleton<IConfigurationRoot>( Configuration );
             services.AddTransient<DAL.IUserPostingHistoryDAL>( ( x ) => { return new DAL.UserPostingHistoryDAL( new NpgsqlConnection( SentinelConnectionString ) ); } );
             services.AddTransient<DAL.IProcessedItemDAL>( ( x ) => { return new DAL.ProcessedItemSQLDAL( new SqlConnection( DirtbagConnectionString ) ); } );
@@ -52,10 +52,17 @@ namespace DirtBagWebservice {
             services.AddTransient<BLL.ISubredditSettingsBLL, BLL.SubredditSettingsBLL>();
             services.AddTransient<BLL.IAnalyzePostBLL, BLL.AnalyzePostBLL>();
 
-            rabbit = RabbitHutch.CreateBus( Configuration.GetConnectionString( "Rabbit" ) );
-            rabbitListener = new DirtBagWebservice.RabbitListener( services.BuildServiceProvider(), rabbit );
-            rabbit.SubscribeAsync<Models.RabbitAnalysisRequestMessage>( Configuration["RabbitQueue"], rabbitListener.Subscribe );
-             services.AddMvc();
+            services.AddMvc();
+
+            var logger = new EasyNetQ.Loggers.ConsoleLogger(); 
+            rabbit = RabbitHutch.CreateBus( Configuration.GetConnectionString( "Rabbit" ), x => x.Register< ISerializer, DirtbagRabbitSerializer>().Register<ITypeNameSerializer>(_ => new DirtbagTypeNameSerializer()).Register<IEasyNetQLogger>( _ => logger ) ).Advanced;
+
+            var exchange = rabbit.ExchangeDeclare( Configuration["RabbitExchange"], EasyNetQ.Topology.ExchangeType.Direct);
+            var queue = rabbit.QueueDeclare( Configuration["RabbitQueue"] );
+            rabbitListener = new DirtBagWebservice.RabbitListener( services.BuildServiceProvider(), rabbit, exchange, Configuration["RabbitResultRoutingKey"], Boolean.Parse( Configuration["RabbitReturnItemsWithActionsOnly"] ) );
+            rabbit.Bind( exchange, queue, Configuration["RabbitRoutingKey"] );
+            rabbit.Consume<Models.RabbitAnalysisRequestMessage>( queue, rabbitListener.Subscribe );
+            
             services.AddSwaggerGen( c => {
                 c.SingleApiVersion( new Swashbuckle.Swagger.Model.Info() { Title = "Dirtbag", Version = "v1" } );
                 c.AddSecurityDefinition( "basic", new Swashbuckle.Swagger.Model.BasicAuthScheme() );
