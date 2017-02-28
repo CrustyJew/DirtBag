@@ -10,6 +10,9 @@ using Microsoft.Extensions.Logging;
 using Npgsql;
 using System.Data.SqlClient;
 using EasyNetQ;
+using Swashbuckle.AspNetCore.Swagger;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using IdentityModel.Client;
 
 namespace DirtBagWebservice {
     public class Startup {
@@ -21,7 +24,6 @@ namespace DirtBagWebservice {
                 .AddJsonFile( "appsettings.json", optional: true, reloadOnChange: true )
                 .AddJsonFile( $"appsettings.{env.EnvironmentName}.json", optional: true )
                 .AddEnvironmentVariables();
-
 
             if ( env.IsDevelopment() ) {
                 // For more details on using the user secret store see http://go.microsoft.com/fwlink/?LinkID=532709
@@ -64,8 +66,14 @@ namespace DirtBagWebservice {
             rabbit.Consume<Models.RabbitAnalysisRequestMessage>( queue, rabbitListener.Subscribe );
             
             services.AddSwaggerGen( c => {
-                c.SingleApiVersion( new Swashbuckle.Swagger.Model.Info() { Title = "Dirtbag", Version = "v1" } );
-                c.AddSecurityDefinition( "basic", new Swashbuckle.Swagger.Model.BasicAuthScheme() );
+                c.SwaggerDoc("v1", new Info { Title = "Dirtbag", Version = "v1" } );
+                c.AddSecurityDefinition( "oauth2", new OAuth2Scheme() {
+                     Type = "oauth2", 
+                     Flow= "implicit",
+                     AuthorizationUrl = Configuration["OIDC_Authority"] + "/connect/authorize", 
+                     Scopes = new Dictionary<string, string> { { "dirtbag","Dirtbag API"} }, 
+                } );
+                c.OperationFilter<SecurityRequirementsOperationFilter>();
             }
             );
         }
@@ -74,12 +82,23 @@ namespace DirtBagWebservice {
         public void Configure( IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory ) {
             loggerFactory.AddConsole( Configuration.GetSection( "Logging" ) );
             loggerFactory.AddDebug();
+            app.UseIdentityServerAuthentication( new IdentityServerAuthenticationOptions {
+                Authority = Configuration["OIDC_Authority"],
+                RequireHttpsMetadata = !env.IsDevelopment(),
+                ApiName = "dirtbag"
+            } );
 
             app.UseMvc();
 
-            app.UseSwagger();
+            app.UseSwagger( c =>
+            {
+                c.RouteTemplate = "api-docs/{documentName}/swagger.json";
+            } );
 
-            app.UseSwaggerUi();
+            app.UseSwaggerUI(c=> {
+                c.SwaggerEndpoint( "/api-docs/v1/swagger.json", "Dirtbag API v1" );
+                c.ConfigureOAuth2( "js","", "swagger", "dirtbag" );
+            } );
 
         }
     }

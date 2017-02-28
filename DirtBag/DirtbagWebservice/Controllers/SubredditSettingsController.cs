@@ -1,12 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 
 namespace DirtBagWebservice.Controllers {
+    [Authorize]
     [Route( "api/Settings" )]
-    public class SubredditSettingsController : Controller {
-        BLL.SubredditSettingsBLL bll;
 
-        public SubredditSettingsController(BLL.SubredditSettingsBLL ssBLL ) {
+    public class SubredditSettingsController : Controller {
+        BLL.ISubredditSettingsBLL bll;
+
+        public SubredditSettingsController(BLL.ISubredditSettingsBLL ssBLL ) {
             bll = ssBLL;
         }
 
