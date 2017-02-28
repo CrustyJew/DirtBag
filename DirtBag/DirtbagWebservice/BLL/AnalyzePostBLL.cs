@@ -38,7 +38,8 @@ namespace DirtBagWebservice.BLL
 
 
             var results = new Models.AnalysisResults();
-
+            results.AnalysisDetails.ThingID = request.ThingID;
+            
             while (analysisTasks.Count > 0)
             {
                 var finishedTask = await Task.WhenAny(analysisTasks);
