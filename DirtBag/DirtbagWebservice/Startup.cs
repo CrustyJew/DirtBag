@@ -84,7 +84,7 @@ namespace DirtBagWebservice {
             loggerFactory.AddDebug();
             app.UseIdentityServerAuthentication( new IdentityServerAuthenticationOptions {
                 Authority = Configuration["OIDC_Authority"],
-                RequireHttpsMetadata = !env.IsDevelopment(),
+                RequireHttpsMetadata = false,
                 ApiName = "dirtbag"
             } );
 
@@ -96,7 +96,7 @@ namespace DirtBagWebservice {
             } );
 
             app.UseSwaggerUI(c=> {
-                c.SwaggerEndpoint( "/api-docs/v1/swagger.json", "Dirtbag API v1" );
+                c.SwaggerEndpoint( "../api-docs/v1/swagger.json", "Dirtbag API v1" );
                 c.ConfigureOAuth2( "js","", "swagger", "dirtbag" );
             } );
 
