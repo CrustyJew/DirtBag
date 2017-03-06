@@ -70,7 +70,7 @@ namespace DirtBagWebservice.Modules {
                     if ( !youTubePosts.ContainsKey( request.MediaID ) ) youTubePosts.Add( request.MediaID, new List<string>() );
                     youTubePosts[request.MediaID].Add( request.ThingID );
                 }
-                else {
+                else if (request.MediaPlatform != VideoProvider.YouTube) {
                     toReturn[request.ThingID].Scores.Add( new AnalysisScore( 0, $"{request.MediaPlatform} is unsupported", "", Modules.LicensingSmasher ) );
                 }
 

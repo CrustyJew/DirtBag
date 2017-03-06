@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 namespace DirtBagWebservice.Models {
     public class AuthorInfo {
         public string Name { get; set; }
-        public DateTime Created { get; set; }
-        public int CommentKarma { get; set; }
-        public int LinkKarma { get; set; }
+        public DateTime? Created { get; set; }
+        public int? CommentKarma { get; set; }
+        public int? LinkKarma { get; set; }
 
     }
 }

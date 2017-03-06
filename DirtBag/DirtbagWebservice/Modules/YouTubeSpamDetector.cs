@@ -50,12 +50,21 @@ namespace DirtBagWebservice.Modules {
 
             var toReturn = new Dictionary<string, AnalysisDetails>();
             var youTubePosts = new Dictionary<string, List<AnalysisRequest>>();
+            var channels = new Dictionary<string, List<AnalysisRequest>>();
             foreach ( var request in requests ) {
                 toReturn.Add( request.ThingID, new AnalysisDetails( request.ThingID, ModuleEnum ) );
-
-                if ( !string.IsNullOrEmpty( request.MediaID ) && request.MediaPlatform == VideoProvider.YouTube) {
-                    if ( !youTubePosts.ContainsKey( request.MediaID ) ) youTubePosts.Add( request.MediaID, new List<AnalysisRequest>() );
-                    youTubePosts[request.MediaID].Add( request );
+                if ( request.MediaPlatform == VideoProvider.YouTube ) {
+                    if ( !string.IsNullOrEmpty( request.MediaID ) ) {
+                        if ( !youTubePosts.ContainsKey( request.MediaID ) ) youTubePosts.Add( request.MediaID, new List<AnalysisRequest>() );
+                        youTubePosts[request.MediaID].Add( request );
+                    }
+                    if ( !string.IsNullOrWhiteSpace( request.MediaChannelID ) ) {
+                        if ( !channels.ContainsKey( request.MediaChannelID ) ) channels[request.MediaChannelID] = new List<AnalysisRequest>();
+                        channels[request.MediaChannelID].Add( request );
+                    }
+                    if(string.IsNullOrWhiteSpace(request.MediaChannelID) && string.IsNullOrWhiteSpace( request.MediaID ) ) {
+                        toReturn[request.ThingID].Scores.Add( new AnalysisScore( 0, $"Channel and media id are blank", "", Modules.YouTubeSpamDetector ) );
+                    }
                 }
                 else {
                     toReturn[request.ThingID].Scores.Add( new AnalysisScore( 0, $"{request.MediaPlatform} is unsupported", "", Modules.YouTubeSpamDetector ) );
@@ -88,17 +97,13 @@ namespace DirtBagWebservice.Modules {
             var subscribersScore = (settings.ChannelSubscribersThreshold.Weight / availWeight) * MAX_MODULE_SCORE * Settings.ScoreMultiplier;
            
             for ( var i = 0; i < youTubePosts.Keys.Count; i += 50 ) {
-                var channels = new Dictionary<string, List<AnalysisRequest>>();
+                
                 req.Id = string.Join( ",", youTubePosts.Keys.Skip( i ).Take( 50 ) );
                 var response = await req.ExecuteAsync();
 
                 foreach ( var vid in response.Items ) {
                     foreach ( var analysisReq in youTubePosts[vid.Id] ) {
                         var scores = toReturn[analysisReq.ThingID].Scores;
-                        if ( !channels.ContainsKey( vid.Snippet.ChannelId ) ) {
-                            channels[vid.Snippet.ChannelId] = new List<AnalysisRequest>();
-                        }
-                        channels[vid.Snippet.ChannelId].Add( analysisReq );
 
                         if ( settings.ViewCountThreshold.Enabled && vid.Statistics.ViewCount.Value <= (ulong) Math.Abs( settings.ViewCountThreshold.Value ) ) { //TODO Fix this math.abs nonsense with some validation
                             scores.Add( new AnalysisScore( viewCountScore, "View Count is below threshold", "Low Views", ModuleEnum ) );
@@ -116,37 +121,39 @@ namespace DirtBagWebservice.Modules {
                             scores.Add( new AnalysisScore( totalVotesScore, "Total vote count is below threshold", "Low Total Votes", ModuleEnum ) );
                         }
                         
-                        if ( settings.RedditAccountAgeThreshold.Enabled && analysisReq.Author.Created.AddDays( settings.RedditAccountAgeThreshold.Value ) >= DateTime.UtcNow ) {
+                        if ( settings.RedditAccountAgeThreshold.Enabled && analysisReq.Author.Created.HasValue && analysisReq.Author.Created.Value.AddDays( settings.RedditAccountAgeThreshold.Value ) >= DateTime.UtcNow ) {
                             scores.Add( new AnalysisScore( redditAccountAgeScore, "Reddit Account age is below threshold", "New Reddit Acct", ModuleEnum ) );
                         }
                         
                     }
                 }
-                if ( settings.ChannelAgeThreshold.Enabled || settings.ChannelSubscribersThreshold.Enabled ) {
+                
 
+            }
+            if ( settings.ChannelAgeThreshold.Enabled || settings.ChannelSubscribersThreshold.Enabled ) {
+                for ( var i = 0; i < youTubePosts.Keys.Count; i += 50 ) {
                     var chanReq = yt.Channels.List( "snippet,statistics" );
-                    chanReq.Id = string.Join( ",", channels.Keys );
+                    chanReq.Id = string.Join( ",", channels.Keys.Skip(i).Take(50) );
                     var chanResponse = chanReq.Execute();
                     //get the channel info
                     foreach ( var channel in chanResponse.Items ) {
                         //if the channel was created less than the settings.ChannelAgeThreshold days ago
                         DateTime channelCreationDate = channel.Snippet.PublishedAt.HasValue ? channel.Snippet.PublishedAt.Value : DateTime.UtcNow;
-                        long channelSubscribers = channel.Statistics.SubscriberCount.HasValue ? (long) channel.Statistics.SubscriberCount.Value : 0 ;
+                        long channelSubscribers = channel.Statistics.SubscriberCount.HasValue ? (long) channel.Statistics.SubscriberCount.Value : 0;
                         foreach ( var analysisReq in channels[channel.Id] ) {
-                            if ( settings.ChannelAgeThreshold.Enabled && channelCreationDate.AddDays( settings.ChannelAgeThreshold.Value ) >= analysisReq.EntryTime) {
+                            if ( settings.ChannelAgeThreshold.Enabled && channelCreationDate.AddDays( settings.ChannelAgeThreshold.Value ) >= analysisReq.EntryTime ) {
 
                                 //Add the score to the posts
                                 toReturn[analysisReq.ThingID].Scores.Add( new AnalysisScore( chanAgeScore, "Channel Age Below Threshold", "Channel Age", ModuleEnum ) );
                             }
-                            if (settings.ChannelSubscribersThreshold.Enabled && channelSubscribers <= settings.ChannelSubscribersThreshold.Value) {
-                                toReturn[analysisReq.ThingID].Scores.Add(new AnalysisScore(subscribersScore, "Subscriber Count Below Threshold", "Num Subscribers", ModuleEnum));
+                            if ( settings.ChannelSubscribersThreshold.Enabled && channelSubscribers <= settings.ChannelSubscribersThreshold.Value ) {
+                                toReturn[analysisReq.ThingID].Scores.Add( new AnalysisScore( subscribersScore, "Subscriber Count Below Threshold", "Num Subscribers", ModuleEnum ) );
                             }
                         }
                     }
                 }
-
             }
-           
+
             return toReturn;
 
         }

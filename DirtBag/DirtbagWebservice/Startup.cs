@@ -18,6 +18,7 @@ namespace DirtBagWebservice {
     public class Startup {
         public static IAdvancedBus rabbit;
         private static RabbitListener rabbitListener;
+        private static IEasyNetQLogger logger;
         public Startup( IHostingEnvironment env ) {
             var builder = new ConfigurationBuilder()
                 .SetBasePath( env.ContentRootPath )
@@ -28,6 +29,7 @@ namespace DirtBagWebservice {
             if ( env.IsDevelopment() ) {
                 // For more details on using the user secret store see http://go.microsoft.com/fwlink/?LinkID=532709
                 builder.AddUserSecrets();
+                logger = new EasyNetQ.Loggers.ConsoleLogger();
             }
             Configuration = builder.Build();
 
@@ -56,22 +58,25 @@ namespace DirtBagWebservice {
 
             services.AddMvc();
 
-            var logger = new EasyNetQ.Loggers.ConsoleLogger(); 
-            rabbit = RabbitHutch.CreateBus( Configuration.GetConnectionString( "Rabbit" ), x => x.Register< ISerializer, DirtbagRabbitSerializer>().Register<ITypeNameSerializer>(_ => new DirtbagTypeNameSerializer()).Register<IEasyNetQLogger>( _ => logger ) ).Advanced;
-
-            var exchange = rabbit.ExchangeDeclare( Configuration["RabbitExchange"], EasyNetQ.Topology.ExchangeType.Direct);
+            rabbit = RabbitHutch.CreateBus( Configuration.GetConnectionString( "Rabbit" ),
+                x => {
+                    x.Register<ISerializer, DirtbagRabbitSerializer>()
+                     .Register<ITypeNameSerializer>( _ => new DirtbagTypeNameSerializer() );
+                    if ( logger != null ) x.Register<IEasyNetQLogger>( _ => logger );
+                } ).Advanced;
+            var exchange = rabbit.ExchangeDeclare( Configuration["RabbitExchange"], EasyNetQ.Topology.ExchangeType.Direct );
             var queue = rabbit.QueueDeclare( Configuration["RabbitQueue"] );
             rabbitListener = new DirtBagWebservice.RabbitListener( services.BuildServiceProvider(), rabbit, exchange, Configuration["RabbitResultRoutingKey"], Boolean.Parse( Configuration["RabbitReturnItemsWithActionsOnly"] ) );
-            rabbit.Bind( exchange, queue, Configuration["RabbitRoutingKey"] );
+            var binding = rabbit.Bind( exchange, queue, Configuration["RabbitRoutingKey"] );
+
             rabbit.Consume<Models.RabbitAnalysisRequestMessage>( queue, rabbitListener.Subscribe );
-            
             services.AddSwaggerGen( c => {
-                c.SwaggerDoc("v1", new Info { Title = "Dirtbag", Version = "v1" } );
+                c.SwaggerDoc( "v1", new Info { Title = "Dirtbag", Version = "v1" } );
                 c.AddSecurityDefinition( "oauth2", new OAuth2Scheme() {
-                     Type = "oauth2", 
-                     Flow= "implicit",
-                     AuthorizationUrl = Configuration["OIDC_Authority"] + "/connect/authorize", 
-                     Scopes = new Dictionary<string, string> { { "dirtbag","Dirtbag API"} }, 
+                    Type = "oauth2",
+                    Flow = "implicit",
+                    AuthorizationUrl = Configuration["OIDC_Authority"] + "/connect/authorize",
+                    Scopes = new Dictionary<string, string> { { "dirtbag", "Dirtbag API" } },
                 } );
                 c.OperationFilter<SecurityRequirementsOperationFilter>();
             }
@@ -90,14 +95,13 @@ namespace DirtBagWebservice {
 
             app.UseMvc();
 
-            app.UseSwagger( c =>
-            {
+            app.UseSwagger( c => {
                 c.RouteTemplate = "api-docs/{documentName}/swagger.json";
             } );
 
-            app.UseSwaggerUI(c=> {
+            app.UseSwaggerUI( c => {
                 c.SwaggerEndpoint( "../api-docs/v1/swagger.json", "Dirtbag API v1" );
-                c.ConfigureOAuth2( "js","", "swagger", "dirtbag" );
+                c.ConfigureOAuth2( "js", "", "swagger", "dirtbag" );
             } );
 
         }
