@@ -29,7 +29,7 @@ namespace DirtBagWebservice
             try {
                 var results = await analysisBLL.AnalyzePost( request.Body.Subreddit, request.Body );
                 if ( results.RequiredAction != Models.AnalysisResults.Action.Nothing || !returnActionsOnly ) {
-                    await rabbitBus.PublishAsync( resultsExchange, resultRoutingKey, false, new Message<Models.AnalysisResults>( results ) );
+                    await rabbitBus.PublishAsync( resultsExchange, resultRoutingKey, true, new Message<Models.AnalysisResults>( results ) );
                 }
             }
             catch(Exception ex) {
