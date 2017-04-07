@@ -31,15 +31,21 @@ namespace DirtBagWebservice.BLL {
                 settings.LastModified = now;
                 await dal.SetSubredditSettingsAsync( settings );
             }
-            if(!CompareSettings(currentSettings.LicensingSmasher, settings.LicensingSmasher ) ) {
+            if(!CompareSettings(currentSettings?.LicensingSmasher, settings.LicensingSmasher ) ) {
                 settings.LicensingSmasher.ModifiedBy = modifiedBy;
                 settings.LicensingSmasher.LastModified = now;
 
                 await dal.SetLicensingSmasherSettingsAsync( settings.LicensingSmasher, settings.Subreddit );
 
-                var termsToAdd = settings.LicensingSmasher.MatchTerms.Where( t => !currentSettings.LicensingSmasher.MatchTerms.Contains( t ) ).Select(t=>new Models.DAL.LicensingSmasherTerm() {Term = t, Subreddit = settings.Subreddit });
-                var termsToRemove = currentSettings.LicensingSmasher.MatchTerms.Where( t => !settings.LicensingSmasher.MatchTerms.Contains( t ) ).Select( t => new Models.DAL.LicensingSmasherTerm() { Term = t, Subreddit = settings.Subreddit } );
-
+                IEnumerable<Models.DAL.LicensingSmasherTerm> termsToAdd = new List<Models.DAL.LicensingSmasherTerm>();
+                IEnumerable<Models.DAL.LicensingSmasherTerm> termsToRemove = new List<Models.DAL.LicensingSmasherTerm>();
+                if ( currentSettings != null && currentSettings.LicensingSmasher != null && currentSettings.LicensingSmasher.MatchTerms != null ) {
+                    termsToAdd = settings.LicensingSmasher.MatchTerms.Where( t => !currentSettings.LicensingSmasher.MatchTerms.Contains( t ) ).Select( t => new Models.DAL.LicensingSmasherTerm() { Term = t, Subreddit = settings.Subreddit } );
+                    termsToRemove = currentSettings.LicensingSmasher.MatchTerms.Where( t => !settings.LicensingSmasher.MatchTerms.Contains( t ) ).Select( t => new Models.DAL.LicensingSmasherTerm() { Term = t, Subreddit = settings.Subreddit } );
+                }
+                else {
+                    termsToAdd = settings.LicensingSmasher.MatchTerms?.Select( t => new Models.DAL.LicensingSmasherTerm() { Term = t, Subreddit = settings.Subreddit } );
+                }
                 if(termsToAdd.Count() > 0 ) {
                     await dal.AddLicensingSmasherTermsAsync( termsToAdd );
                 }
@@ -47,9 +53,15 @@ namespace DirtBagWebservice.BLL {
                     await dal.DeleteLicensingSmasherTermsAsync( termsToRemove );
                 }
 
-                var licensorsToAdd = settings.LicensingSmasher.KnownLicensers.Where( l => !currentSettings.LicensingSmasher.KnownLicensers.Contains( l ) );
-                var licensorsToRemove = currentSettings.LicensingSmasher.KnownLicensers.Where( l => !settings.LicensingSmasher.KnownLicensers.Contains( l ) );
-
+                IEnumerable<KeyValuePair<string, string>> licensorsToAdd = new List<KeyValuePair<string, string>>();
+                IEnumerable<KeyValuePair<string, string>> licensorsToRemove = new List<KeyValuePair<string, string>>();
+                if ( currentSettings != null && currentSettings.LicensingSmasher != null && currentSettings.LicensingSmasher.KnownLicensers != null ) {
+                    licensorsToAdd = settings.LicensingSmasher.KnownLicensers.Where( l => !currentSettings.LicensingSmasher.KnownLicensers.Contains( l ) );
+                    licensorsToRemove = currentSettings.LicensingSmasher.KnownLicensers.Where( l => !settings.LicensingSmasher.KnownLicensers.Contains( l ) );
+                }
+                else {
+                    licensorsToAdd = settings.LicensingSmasher.KnownLicensers;
+                }
                 if(licensorsToAdd.Count() > 0 ) {
                     await dal.UpsertLicensingSmasherLicensorsAsync( 
                         licensorsToAdd.Select(l=>
@@ -71,13 +83,13 @@ namespace DirtBagWebservice.BLL {
                         );
                 }
             }
-            if(!CompareSettings(currentSettings.SelfPromotionCombustor, settings.SelfPromotionCombustor ) ) {
+            if(!CompareSettings(currentSettings?.SelfPromotionCombustor, settings.SelfPromotionCombustor ) ) {
                 settings.SelfPromotionCombustor.ModifiedBy = modifiedBy;
                 settings.SelfPromotionCombustor.LastModified = now;
 
                 await dal.SetSelfPromoSettingsAsync( settings.SelfPromotionCombustor, settings.Subreddit );
             }
-            if(!CompareSettings(currentSettings.YouTubeSpamDetector, settings.YouTubeSpamDetector ) ) {
+            if(!CompareSettings(currentSettings?.YouTubeSpamDetector, settings.YouTubeSpamDetector ) ) {
                 settings.YouTubeSpamDetector.ModifiedBy = modifiedBy;
                 settings.YouTubeSpamDetector.LastModified = now;
 

@@ -38,16 +38,6 @@
     <ServiceConfiguration Include="ServiceConfiguration.Cloud.cscfg" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\DirtBag\DirtBag.csproj">
-      <Name>DirtBag</Name>
-      <Project>{8ab7cc4e-72dc-4fdd-9346-cd86ea69aa50}</Project>
-      <Private>True</Private>
-      <RoleType>Worker</RoleType>
-      <RoleName>DirtBag</RoleName>
-      <UpdateDiagnosticsConnectionStringOnPublish>True</UpdateDiagnosticsConnectionStringOnPublish>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <Folder Include="DirtBagContent\" />
     <Folder Include="Profiles" />
   </ItemGroup>
