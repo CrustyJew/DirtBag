@@ -96,19 +96,19 @@ namespace DirtBag.Modules {
                         }
                         channels[vid.Snippet.ChannelId].Add( post );
 
-                        if ( settings.ViewCountThreshold.Enabled && vid.Statistics.ViewCount.Value <= (ulong) Math.Abs( settings.ViewCountThreshold.Value ) ) { //TODO Fix this math.abs nonsense with some validation
+                        if ( settings.ViewCountThreshold.Enabled && vid.Statistics?.ViewCount.Value <= (ulong) Math.Abs( settings.ViewCountThreshold.Value ) ) { //TODO Fix this math.abs nonsense with some validation
                             scores.Add( new AnalysisScore( viewCountScore, "View Count is below threshold", "Low Views", ModuleName ) );
                         }
                         if ( settings.LicensedChannel.Enabled && vid.ContentDetails.LicensedContent.Value ) {
                             scores.Add( new AnalysisScore( licensedScore, "Channel is likely monetized", "Possibly Monetized", ModuleName ) );
                         }
-                        if ( settings.CommentCountThreshold.Enabled && vid.Statistics.CommentCount <= (ulong) Math.Abs( settings.CommentCountThreshold.Value ) ) { //TODO Fix this math.abs nonsense with some validation
+                        if ( settings.CommentCountThreshold.Enabled && vid.Statistics?.CommentCount <= (ulong) Math.Abs( settings.CommentCountThreshold.Value ) ) { //TODO Fix this math.abs nonsense with some validation
                             scores.Add( new AnalysisScore( commentCountScore, "Number of comments is below threshold", "Low comments", ModuleName ) );
                         }
-                        if ( settings.NegativeVoteRatio.Enabled && vid.Statistics.DislikeCount > vid.Statistics.LikeCount ) {
+                        if ( settings.NegativeVoteRatio.Enabled && vid.Statistics?.DislikeCount > vid.Statistics?.LikeCount ) {
                             scores.Add( new AnalysisScore( negativeVoteScore, "More dislikes than likes on video", ">50% dislikes", ModuleName ) );
                         }
-                        if ( settings.VoteCountThreshold.Enabled && vid.Statistics.DislikeCount + vid.Statistics.LikeCount <= (ulong) Math.Abs( settings.VoteCountThreshold.Value ) ) { //TODO Fix this math.abs nonsense with some validation
+                        if ( settings.VoteCountThreshold.Enabled && vid.Statistics?.DislikeCount + vid.Statistics?.LikeCount <= (ulong) Math.Abs( settings.VoteCountThreshold.Value ) ) { //TODO Fix this math.abs nonsense with some validation
                             scores.Add( new AnalysisScore( totalVotesScore, "Total vote count is below threshold", "Low Total Votes", ModuleName ) );
                         }
                         DateTime authorCreated= DateTime.UtcNow;
