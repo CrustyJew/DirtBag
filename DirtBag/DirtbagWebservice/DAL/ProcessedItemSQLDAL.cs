@@ -13,15 +13,15 @@ namespace DirtbagWebservice.DAL {
 
         public async Task LogProcessedItemAsync( Models.ProcessedItem processed ) {
             string processedPostInsert = @"
-INSERT INTO ProcessedItems(SubredditID,ThingID,ThingType,ActionID,SeenByModules)
-select sub.ID, @ThingID, @ThingType, act.ID, @SeenByModules
+INSERT INTO ProcessedItems(SubredditID,ThingID,ThingType,MediaID,MediaPlatform,ActionID,SeenByModules)
+select sub.ID, @ThingID, @ThingType,@MediaID, @MediaPlatform, act.ID, @SeenByModules
 from Subreddits sub
 inner join Actions act on act.ActionName = @Action
 where sub.SubName like @SubName
 ;";
             string analysisResultsInsert = @"
-INSERT INTO AnalysisScores([SubredditID], [ModuleID], [ThingID], [Score], [Reason], [ReportReason], [FlairText], [FlairClass], [FlairPriority])
-select sub.ID, @ModuleID, @ThingID, @Score, @Reason, @ReportReason, @FlairText, @FlairClass, @FlairPriority
+INSERT INTO AnalysisScores([SubredditID], [ModuleID], [ThingID], [MediaID], [MediaPlatform], [Score], [Reason], [ReportReason], [FlairText], [FlairClass], [FlairPriority])
+select sub.ID, @ModuleID, @ThingID, @MediaID, @MediaPlatform, @Score, @Reason, @ReportReason, @FlairText, @FlairClass, @FlairPriority
 from Subreddits sub
 where sub.SubName like @SubName
 ;";
@@ -29,6 +29,8 @@ where sub.SubName like @SubName
             foreach ( var score in processed.AnalysisDetails.Scores ) {
                 arParams.Add( new Dictionary<string, object>() {
                     {"ThingID", processed.ThingID },
+                    {"MediaID",processed.MediaID },
+                    {"MediaPlatform", processed.MediaPlatform },
                     {"SubName",processed.SubName },
                     {"ModuleID",(int) score.Module },
                     {"Score", score.Score },
@@ -48,27 +50,32 @@ where sub.SubName like @SubName
 
         }
 
-        public async Task UpdatedAnalysisScoresAsync( string thingID, string subName, IEnumerable<Models.AnalysisScore> scores ) {
+        public async Task UpdatedAnalysisScoresAsync(string subName, string thingID, string mediaID, Models.VideoProvider mediaPlatform, IEnumerable<Models.AnalysisScore> scores, string updateRequestor ) {
             List<Dictionary<string, object>> asParams = new List<Dictionary<string, object>>();
             foreach ( var score in scores ) {
                 asParams.Add( new Dictionary<string, object>() {
                     {"ThingID", thingID },
                     {"SubName",subName },
+                    {"MediaID",mediaID },
+                    {"MediaPlatform", mediaPlatform },
                     {"ModuleID", (int) score.Module },
                     {"Score", score.Score },
                     {"Reason",score.Reason },
                     {"ReportReason",score.ReportReason },
                     {"FlairText",score.RemovalFlair?.Text },
                     {"FlairClass",score.RemovalFlair?.Class },
-                    {"FlairPriority",score.RemovalFlair?.Priority }
+                    {"FlairPriority",score.RemovalFlair?.Priority },
+                    {"UpdateRequestor", updateRequestor }
                 } );
             }
             string scoresDeleteOld = @"
-DELETE FROM AnalysisScores WHERE ThingID = @ThingID AND ModuleID = @ModuleID;
+DELETE a
+OUTPUT DELETED.ID, GETUTCDATE() as 'HistDate', @UpdateRequestor as 'RequestedBy', DELETED.SubredditID, DELETED.ModuleID, DELETED.ThingID, DELETED.MediaID, DELETED.MediaPlatform, DELETED.Score, DELETED.Reason, DELETED.ReportReason, DELETED.FlairText, DELETED.FlairClass, DELETED.Priority into AnalysisScoresHistory
+FROM AnalysisScores a WHERE ThingID = @ThingID AND MediaID = @MediaID AND MediaPlatform = @MediaPlatform AND ModuleID = @ModuleID;
 ";
             string scoresUpdate = @"
-INSERT INTO AnalysisScores([SubredditID], [ModuleID], [ThingID], [Score], [Reason], [ReportReason], [FlairText], [FlairClass], [FlairPriority])
-select sub.ID, @ModuleID, @ThingID, @Score, @Reason, @ReportReason, @FlairText, @FlairClass, @FlairPriority
+INSERT INTO AnalysisScores([SubredditID], [ModuleID], [ThingID], [MediaID], [MediaPlatform], [Score], [Reason], [ReportReason], [FlairText], [FlairClass], [FlairPriority])
+select sub.ID, @ModuleID, @ThingID, @MediaID, @MediaPlatform, @Score, @Reason, @ReportReason, @FlairText, @FlairClass, @FlairPriority
 from Subreddits sub
 where sub.SubName like @SubName
 ;";
@@ -86,7 +93,7 @@ where sub.SubName like @SubName
 
         public async Task<IEnumerable<Models.ProcessedItem>> ReadProcessedItemsAsync( IEnumerable<string> thingIDs, string subName ) {
             string query = @"
-SELECT subs.SubName, pp.ThingID, pp.ThingType, act.ActionName as 'Action', pp.SeenByModules, 
+SELECT subs.SubName, pp.ThingID, pp.MediaID, pp.MediaPlatform, pp.ThingType, act.ActionName as 'Action', pp.SeenByModules, 
     scores.Score, scores.Reason, scores.ReportReason, scores.ModuleID, 
     scores.FlairText as 'Text', scores.FlairClass as 'Class', scores.FlairPriority as 'Priority'
 FROM ProcessedItems pp

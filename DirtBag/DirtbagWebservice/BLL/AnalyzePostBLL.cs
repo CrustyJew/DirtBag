@@ -12,11 +12,13 @@ namespace DirtbagWebservice.BLL
         private BLL.ISubredditSettingsBLL subSetsBLL;
         private DAL.IUserPostingHistoryDAL postHistoryDAL;
         private IConfigurationRoot config;
-        public AnalyzePostBLL(IConfigurationRoot config, BLL.ISubredditSettingsBLL settingsBLL, DAL.IUserPostingHistoryDAL userPostHistoryDAL)
+        private DAL.IProcessedItemDAL processedDAL;
+        public AnalyzePostBLL(IConfigurationRoot config, BLL.ISubredditSettingsBLL settingsBLL, DAL.IUserPostingHistoryDAL userPostHistoryDAL, DAL.IProcessedItemDAL processedItemDAL)
         {
             subSetsBLL = settingsBLL;
             postHistoryDAL = userPostHistoryDAL;
             this.config = config;
+            processedDAL = processedItemDAL;
         }
 
         public async Task<Models.AnalysisResults> UpdateAnalysis(string subreddit, Models.AnalysisRequest request, string updateBy)
@@ -81,7 +83,16 @@ namespace DirtbagWebservice.BLL
 
             var results =  await CombineResults(analysisTasks, settings, request.ThingID);
 
-            Models.ProcessedItem item = new Models.ProcessedItem(subreddit,request.ThingID, results.RequiredAction.ToString(), request.)
+            Models.ProcessedItem item = new Models.ProcessedItem(subreddit, request.ThingID, results.RequiredAction.ToString(), request.PermaLink, request.MediaID, request.MediaPlatform);
+
+            try
+            {
+                await processedDAL.LogProcessedItemAsync(item);
+            }
+            catch
+            {
+                //ignore logging errors and respond anyway.
+            }
 
             return results;
         }

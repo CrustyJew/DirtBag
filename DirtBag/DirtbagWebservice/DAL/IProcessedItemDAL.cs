@@ -7,6 +7,6 @@ namespace DirtbagWebservice.DAL {
         Task LogProcessedItemAsync( ProcessedItem processed );
         Task<ProcessedItem> ReadProcessedItemAsync( string thingID, string subName );
         Task<IEnumerable<ProcessedItem>> ReadProcessedItemsAsync( IEnumerable<string> thingIDs, string subName );
-        Task UpdatedAnalysisScoresAsync( string thingID, string subName, IEnumerable<AnalysisScore> scores );
+        Task UpdatedAnalysisScoresAsync(string subName, string thingID, string mediaID, Models.VideoProvider mediaPlatform, IEnumerable<Models.AnalysisScore> scores, string updateRequestor);
     }
 }

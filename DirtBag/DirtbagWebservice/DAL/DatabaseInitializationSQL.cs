@@ -37,7 +37,9 @@ CREATE TABLE
     [SubredditID] INTEGER NOT NULL, 
     [ThingID] varchar(20) NOT NULL, 
     [ThingType] tinyint NOT NULL,
-    [ActionID] INTEGER, 
+    [MediaID] varchar(255) NOT NULL,
+    [MediaPlatform] smallint NOT NULL,
+    [ActionID] tinyint, 
     [SeenByModules] INTEGER
 ); 
 
@@ -48,6 +50,8 @@ CREATE TABLE
     [SubredditID] INTEGER NOT NULL,
     [ModuleID] INTEGER NOT NULL,
     [ThingID] varchar(20) NOT NULL,
+    [MediaID] varchar(255) NOT NULL,
+    [MediaPlatform] smallint NOT NULL,
     [Score] float,
     [Reason] varchar(1000),
     [ReportReason] varchar(255),
@@ -66,6 +70,8 @@ CREATE TABLE
     [SubredditID] INTEGER NOT NULL,
     [ModuleID] INTEGER NOT NULL,
     [ThingID] varchar(20) NOT NULL,
+    [MediaID] varchar(255) NOT NULL,
+    [MediaPlatform] smallint NOT NULL,
     [Score] float,
     [Reason] varchar(1000),
     [ReportReason] varchar(255),

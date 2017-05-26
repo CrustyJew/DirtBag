@@ -13,6 +13,7 @@ namespace DirtbagWebservice.Models {
         public string MediaChannelID { get; set; }
         public string MediaChannelName { get; set; }
         public VideoProvider MediaPlatform { get; set; }
+        public string PermaLink { get; set; }
 
     }
 }

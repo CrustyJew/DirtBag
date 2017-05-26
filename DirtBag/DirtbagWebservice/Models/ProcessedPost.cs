@@ -7,28 +7,35 @@ using System.Threading.Tasks;
 
 namespace DirtbagWebservice.Models {
     public class ProcessedItem {
-        [JsonProperty]
         public string SubName { get; set; }
-        [JsonProperty]
         public string ThingID { get; set; }
-
         public AnalyzableTypes ThingType { get; set; }
-        [JsonProperty]
+        public string PermaLink { get; set; }
+        public string MediaID { get; set; }
+        public VideoProvider MediaPlatform { get; set; }
         public string Action { get; set; }
-        [JsonProperty]
         public Modules.Modules SeenByModules { get; set; }
-        [JsonProperty]
         public AnalysisDetails AnalysisDetails { get; set; }
 
         public ProcessedItem() {
             AnalysisDetails = new AnalysisDetails();
         }
 
-        public ProcessedItem( string subName, string thingID, string action, AnalyzableTypes type ) {
+        public ProcessedItem( string subName, string thingID, string action, string link, string mediaid, VideoProvider mediaProvider) {
             SubName = subName;
             ThingID = thingID;
             Action = action;
-            ThingType = type;
+            if (thingID.StartsWith("t1_"))
+            {
+                ThingType = AnalyzableTypes.Comment;
+            }
+            else if (thingID.StartsWith("t3_"))
+            {
+                ThingType = AnalyzableTypes.Post;
+            }
+            MediaID = mediaid;
+            MediaPlatform = mediaProvider;
+            PermaLink = link;
             AnalysisDetails = new AnalysisDetails();
         }
     }
