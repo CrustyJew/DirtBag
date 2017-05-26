@@ -58,7 +58,8 @@ namespace DirtbagWebservice {
             services.AddTransient<DAL.ISubredditSettingsDAL>( ( x ) => { return new DAL.SubredditSettingsPostgresDAL( new NpgsqlConnection( SentinelConnectionString ) ); } );
             services.AddTransient<BLL.ISubredditSettingsBLL, BLL.SubredditSettingsBLL>();
             services.AddTransient<BLL.IAnalyzePostBLL, BLL.AnalyzePostBLL>();
-            //TODO fix this shitpile\
+            services.AddTransient<BLL.IProcessedItemBLL, BLL.ProcessedItemBLL>();
+
             new DAL.DatabaseInitializationSQL(new SqlConnection(DirtbagConnectionString)).InitializeTablesAndData().Wait();
 
 

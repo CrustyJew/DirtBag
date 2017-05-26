@@ -59,6 +59,10 @@ namespace DirtbagWebserviceTests.IntegrationTests
             postHistory.Setup( p => p.GetUserPostingHistoryAsync( It.IsAny<string>() ) )
                 .Returns( Task.FromResult<IEnumerable<DirtbagWebservice.Models.UserPostInfo>>( userPostHistory ) );
 
+            var processedDAL = new Mock<DirtbagWebservice.DAL.IProcessedItemDAL>();
+            processedDAL.Setup(p => p.LogProcessedItemAsync(It.IsAny<DirtbagWebservice.Models.ProcessedItem>()))
+                .Returns(Task.FromResult(0));
+
             var request = new DirtbagWebservice.Models.AnalysisRequest() {
                 Author = new DirtbagWebservice.Models.AuthorInfo { Name = "testuser", CommentKarma = 5, LinkKarma = 5, Created = DateTime.UtcNow },
                 EntryTime = DateTime.UtcNow,
@@ -69,7 +73,7 @@ namespace DirtbagWebserviceTests.IntegrationTests
                 ThingID = "t3_666"
             };
 
-            var bll = new  DirtbagWebservice.BLL.AnalyzePostBLL(config,subSettings.Object, postHistory.Object);
+            var bll = new  DirtbagWebservice.BLL.AnalyzePostBLL(config,subSettings.Object, postHistory.Object, processedDAL.Object);
 
             var results = await bll.AnalyzePost( "testsubbie", request );
 

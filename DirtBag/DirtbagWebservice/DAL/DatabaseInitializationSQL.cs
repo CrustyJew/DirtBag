@@ -36,8 +36,11 @@ CREATE TABLE
     [ID] INTEGER NOT NULL PRIMARY KEY IDENTITY, 
     [SubredditID] INTEGER NOT NULL, 
     [ThingID] varchar(20) NOT NULL, 
+    [Author] varchar(255) NOT NULL,
+    [PermaLink] varchar(1000) NOT NULL,
     [ThingType] tinyint NOT NULL,
     [MediaID] varchar(255) NOT NULL,
+    [MediaChannelID] varchar(255) NOT NULL,
     [MediaPlatform] smallint NOT NULL,
     [ActionID] tinyint, 
     [SeenByModules] INTEGER

@@ -261,7 +261,6 @@ ls_t.match_term ""MatchTerms""
 FROM dirtbag.licensing_smasher ls
 INNER JOIN public.subreddit s on s.id = ls.subreddit_id
 LEFT JOIN dirtbag.licensing_smasher_terms ls_t on ls_t.subreddit_id = s.id
-LEFT JOIN dirtbag.licensing_smasher_licensors ls_l on ls_l.subreddit_id = s.id
 
 WHERE s.subreddit_name like @subreddit
 ";

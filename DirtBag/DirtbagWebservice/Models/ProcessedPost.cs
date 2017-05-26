@@ -9,9 +9,11 @@ namespace DirtbagWebservice.Models {
     public class ProcessedItem {
         public string SubName { get; set; }
         public string ThingID { get; set; }
+        public string Author { get; set; }
         public AnalyzableTypes ThingType { get; set; }
         public string PermaLink { get; set; }
         public string MediaID { get; set; }
+        public string MediaChannelID { get; set; }
         public VideoProvider MediaPlatform { get; set; }
         public string Action { get; set; }
         public Modules.Modules SeenByModules { get; set; }

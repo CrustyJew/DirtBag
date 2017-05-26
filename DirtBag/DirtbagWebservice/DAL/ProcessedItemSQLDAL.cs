@@ -13,25 +13,27 @@ namespace DirtbagWebservice.DAL {
 
         public async Task LogProcessedItemAsync( Models.ProcessedItem processed ) {
             string processedPostInsert = @"
-INSERT INTO ProcessedItems(SubredditID,ThingID,ThingType,MediaID,MediaPlatform,ActionID,SeenByModules)
-select sub.ID, @ThingID, @ThingType,@MediaID, @MediaPlatform, act.ID, @SeenByModules
+INSERT INTO ProcessedItems(SubredditID,ThingID,Author,PermaLink,ThingType,MediaID,MediaChannelID,MediaPlatform,ActionID,SeenByModules)
+select sub.ID, @ThingID, @Author, @PermaLink, @ThingType, @MediaID, @MediaChannelID, @MediaPlatform, act.ID, @SeenByModules
 from Subreddits sub
 inner join Actions act on act.ActionName = @Action
 where sub.SubName like @SubName
 ;";
             string analysisResultsInsert = @"
-INSERT INTO AnalysisScores([SubredditID], [ModuleID], [ThingID], [MediaID], [MediaPlatform], [Score], [Reason], [ReportReason], [FlairText], [FlairClass], [FlairPriority])
-select sub.ID, @ModuleID, @ThingID, @MediaID, @MediaPlatform, @Score, @Reason, @ReportReason, @FlairText, @FlairClass, @FlairPriority
+INSERT INTO AnalysisScores([SubredditID], [ModuleID], [ThingID], [MediaID], [MediaChannelID], [MediaPlatform], [Score], [Reason], [ReportReason], [FlairText], [FlairClass], [FlairPriority])
+select sub.ID, @ModuleID, @ThingID, @MediaID, @MediaChannelID, @MediaPlatform, @Score, @Reason, @ReportReason, @FlairText, @FlairClass, @FlairPriority
 from Subreddits sub
 where sub.SubName like @SubName
 ;";
             List<Dictionary<string, object>> arParams = new List<Dictionary<string, object>>();
-            foreach ( var score in processed.AnalysisDetails.Scores ) {
-                arParams.Add( new Dictionary<string, object>() {
+            foreach(var score in processed.AnalysisDetails.Scores) {
+                arParams.Add(new Dictionary<string, object>() {
                     {"ThingID", processed.ThingID },
                     {"MediaID",processed.MediaID },
+                    {"MediaChannelID",processed.MediaChannelID },
                     {"MediaPlatform", processed.MediaPlatform },
                     {"SubName",processed.SubName },
+                    {"Author", processed.Author },
                     {"ModuleID",(int) score.Module },
                     {"Score", score.Score },
                     {"Reason",score.Reason },
@@ -39,21 +41,21 @@ where sub.SubName like @SubName
                     {"FlairText",score.RemovalFlair?.Text },
                     {"FlairClass",score.RemovalFlair?.Class },
                     {"FlairPriority",score.RemovalFlair?.Priority }
-                } );
+                });
             }
-            using ( var transactionScope = conn.BeginTransaction() ) {
-                await conn.ExecuteAsync( processedPostInsert, processed );
-                await conn.ExecuteAsync( analysisResultsInsert, arParams );
+            using(var transactionScope = conn.BeginTransaction()) {
+                await conn.ExecuteAsync(processedPostInsert, processed);
+                await conn.ExecuteAsync(analysisResultsInsert, arParams);
 
                 transactionScope.Commit();
             }
 
         }
 
-        public async Task UpdatedAnalysisScoresAsync(string subName, string thingID, string mediaID, Models.VideoProvider mediaPlatform, IEnumerable<Models.AnalysisScore> scores, string updateRequestor ) {
+        public async Task UpdatedAnalysisScoresAsync( string subName, string thingID, string mediaID, Models.VideoProvider mediaPlatform, IEnumerable<Models.AnalysisScore> scores, string updateRequestor ) {
             List<Dictionary<string, object>> asParams = new List<Dictionary<string, object>>();
-            foreach ( var score in scores ) {
-                asParams.Add( new Dictionary<string, object>() {
+            foreach(var score in scores) {
+                asParams.Add(new Dictionary<string, object>() {
                     {"ThingID", thingID },
                     {"SubName",subName },
                     {"MediaID",mediaID },
@@ -66,7 +68,7 @@ where sub.SubName like @SubName
                     {"FlairClass",score.RemovalFlair?.Class },
                     {"FlairPriority",score.RemovalFlair?.Priority },
                     {"UpdateRequestor", updateRequestor }
-                } );
+                });
             }
             string scoresDeleteOld = @"
 DELETE a
@@ -79,21 +81,34 @@ select sub.ID, @ModuleID, @ThingID, @MediaID, @MediaPlatform, @Score, @Reason, @
 from Subreddits sub
 where sub.SubName like @SubName
 ;";
-            using ( var transactionScope = conn.BeginTransaction() ) {
-                await conn.ExecuteAsync( scoresDeleteOld, asParams );
-                await conn.ExecuteAsync( scoresUpdate, asParams );
+            using(var transactionScope = conn.BeginTransaction()) {
+                await conn.ExecuteAsync(scoresDeleteOld, asParams);
+                await conn.ExecuteAsync(scoresUpdate, asParams);
                 transactionScope.Commit();
             }
         }
 
-        public async Task<Models.ProcessedItem> ReadProcessedItemAsync(string thingID, string subName ) {
-            var items = await ReadProcessedItemsAsync( new string[] { thingID }, subName );
-            return items.FirstOrDefault();
+        public Task<Models.ProcessedItem> ReadProcessedItemAsync( string thingID, string subName, string mediaID, Models.VideoProvider mediaPlatform ) {
+            string query = @"
+SELECT subs.SubName, pp.ThingID, pp.Author, pp.MediaID, pp.MediaChannelID, pp.MediaPlatform, pp.ThingType, act.ActionName as 'Action', pp.SeenByModules, 
+    scores.Score, scores.Reason, scores.ReportReason, scores.ModuleID, 
+    scores.FlairText as 'Text', scores.FlairClass as 'Class', scores.FlairPriority as 'Priority'
+FROM ProcessedItems pp
+LEFT JOIN AnalysisScores scores on scores.subredditID = pp.subredditID AND pp.thingID = scores.thingID
+LEFT JOIN Actions act on act.ID = pp.ActionID
+LEFT JOIN Subreddits subs on subs.ID = pp.SubredditID
+WHERE
+pp.ThingID = @thingID
+AND subs.SubName = @subName
+AND pp.MediaID = @mediaID
+AND pp.MediaPlatform = @mediaPlatform
+";
+            return conn.QueryFirstOrDefaultAsync<Models.ProcessedItem>(query, new { thingID, subName, mediaID, mediaPlatform });
         }
 
         public async Task<IEnumerable<Models.ProcessedItem>> ReadProcessedItemsAsync( IEnumerable<string> thingIDs, string subName ) {
             string query = @"
-SELECT subs.SubName, pp.ThingID, pp.MediaID, pp.MediaPlatform, pp.ThingType, act.ActionName as 'Action', pp.SeenByModules, 
+SELECT subs.SubName, pp.ThingID, pp.Author, pp.MediaID, pp.MediaChannelID, pp.MediaPlatform, pp.ThingType, act.ActionName as 'Action', pp.SeenByModules, 
     scores.Score, scores.Reason, scores.ReportReason, scores.ModuleID, 
     scores.FlairText as 'Text', scores.FlairClass as 'Class', scores.FlairPriority as 'Priority'
 FROM ProcessedItems pp
@@ -110,19 +125,19 @@ AND subs.SubName = @subName
                 query,
                 ( pi, score, flair ) => {
                     Models.ProcessedItem item;
-                    if ( !toReturn.TryGetValue(pi.ThingID, out item) ) {
+                    if(!toReturn.TryGetValue(pi.ThingID, out item)) {
                         item = pi;
-                        toReturn.Add( item.ThingID, item );
+                        toReturn.Add(item.ThingID, item);
                     }
                     score.RemovalFlair = flair;
-                    item.AnalysisDetails.Scores.Add( score );
+                    item.AnalysisDetails.Scores.Add(score);
 
                     return pi;
                 },
                 splitOn: "Score,Text",
-                param: new { thingIDs, subName } );
+                param: new { thingIDs, subName });
 
-            return toReturn.Values.AsEnumerable();
+            return toReturn.Values?.AsEnumerable();
         }
     }
 }

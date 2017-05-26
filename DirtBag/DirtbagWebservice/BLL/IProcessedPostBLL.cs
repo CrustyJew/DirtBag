@@ -3,8 +3,8 @@ using DirtbagWebservice.Models;
 
 namespace DirtbagWebservice.BLL
 {
-    public interface IProcessedPostBLL
+    public interface IProcessedItemBLL
     {
-        Task<ProcessedItem> ReadProcessedPost(string thingID, string subreddit);
+        Task<ProcessedItem> ReadProcessedPost( string thingID, string subreddit, string mediaID, Models.VideoProvider mediaPlatform );
     }
 }
