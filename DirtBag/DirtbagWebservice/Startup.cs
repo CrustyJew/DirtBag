@@ -59,6 +59,8 @@ namespace DirtbagWebservice {
             services.AddTransient<BLL.ISubredditSettingsBLL, BLL.SubredditSettingsBLL>();
             services.AddTransient<BLL.IAnalyzePostBLL, BLL.AnalyzePostBLL>();
             services.AddTransient<BLL.IProcessedItemBLL, BLL.ProcessedItemBLL>();
+            
+            services.AddSingleton(new RedditSharp.WebAgentPool<string, RedditSharp.BotWebAgent>());
 
             new DAL.DatabaseInitializationSQL(new SqlConnection(DirtbagConnectionString)).InitializeTablesAndData().Wait();
 

@@ -73,7 +73,7 @@ namespace DirtbagWebserviceTests.IntegrationTests
                 ThingID = "t3_666"
             };
 
-            var bll = new  DirtbagWebservice.BLL.AnalyzePostBLL(config,subSettings.Object, postHistory.Object, processedDAL.Object);
+            var bll = new  DirtbagWebservice.BLL.AnalyzePostBLL(config,subSettings.Object, postHistory.Object, processedDAL.Object, null);
 
             var results = await bll.AnalyzePost( "testsubbie", request );
 

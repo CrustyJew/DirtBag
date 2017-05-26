@@ -11,11 +11,13 @@ namespace DirtbagWebservice.BLL {
         private DAL.IUserPostingHistoryDAL postHistoryDAL;
         private IConfigurationRoot config;
         private DAL.IProcessedItemDAL processedDAL;
-        public AnalyzePostBLL( IConfigurationRoot config, BLL.ISubredditSettingsBLL settingsBLL, DAL.IUserPostingHistoryDAL userPostHistoryDAL, DAL.IProcessedItemDAL processedItemDAL ) {
+        private RedditSharp.WebAgentPool<string, RedditSharp.BotWebAgent> botAgentPool;
+        public AnalyzePostBLL( IConfigurationRoot config, BLL.ISubredditSettingsBLL settingsBLL, DAL.IUserPostingHistoryDAL userPostHistoryDAL, DAL.IProcessedItemDAL processedItemDAL, RedditSharp.WebAgentPool<string, RedditSharp.BotWebAgent> botAgentPool ) {
             subSetsBLL = settingsBLL;
             postHistoryDAL = userPostHistoryDAL;
             this.config = config;
             processedDAL = processedItemDAL;
+            this.botAgentPool = botAgentPool;
         }
 
         public async Task<Models.ProcessedItem> UpdateAnalysisAsync( string subreddit, string thingID, string mediaID, Models.VideoProvider mediaPlatform, string updateBy ) {
@@ -90,6 +92,24 @@ namespace DirtbagWebservice.BLL {
             }
             catch {
                 //ignore logging errors and respond anyway.
+            }
+
+            if(botAgentPool != null && results.RequiredAction != Models.AnalysisResults.Action.Nothing) {
+                var agent = await botAgentPool.GetOrCreateAgentAsync(settings.BotName, () => {
+                    var toReturn = new RedditSharp.BotWebAgent(settings.BotName, settings.BotPass, settings.BotAppID, settings.BotAppSecret, null);
+                    toReturn.RateLimiter = new RedditSharp.RateLimitManager(RedditSharp.RateLimitMode.SmallBurst);
+                    return Task.FromResult(toReturn);
+                });
+                
+                if(results.RequiredAction == Models.AnalysisResults.Action.Remove) {
+                    await RedditSharp.Things.VotableThing.RemoveAsync(agent, results.AnalysisDetails.ThingID);
+                    if(results.AnalysisDetails.ThingType == Models.AnalyzableTypes.Post && results.AnalysisDetails.HasFlair) {
+                        await RedditSharp.Things.Post.SetFlairAsync(agent, subreddit, results.AnalysisDetails.ThingID, results.AnalysisDetails.FlairText, results.AnalysisDetails.FlairClass);
+                    }
+                }
+                else if(results.RequiredAction == Models.AnalysisResults.Action.Report) {
+                    await RedditSharp.Things.VotableThing.ReportAsync(agent, results.AnalysisDetails.ThingID, RedditSharp.Things.VotableThing.ReportType.Other, results.AnalysisDetails.ReportReason);
+                }
             }
 
             return results;

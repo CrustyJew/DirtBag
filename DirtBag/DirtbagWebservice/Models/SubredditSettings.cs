@@ -8,23 +8,19 @@ using System.Threading.Tasks;
 
 namespace DirtbagWebservice.Models {
     public class SubredditSettings {
-        [JsonProperty]
         public string Subreddit { get; set; }
-        [JsonProperty]
+        public string BotName { get; set; }
+        public string BotPass { internal get; set; }
+        public string BotAppID { internal get; set; }
+        public string BotAppSecret { internal get; set; }
         public double ReportScoreThreshold { get; set; }
-        [JsonProperty]
         public double RemoveScoreThreshold { get; set; }
-        [JsonProperty]
         public DateTime LastModified { get; set; }
-        [JsonProperty]
         public string ModifiedBy { get; set; }
 
         /*** MODULE SETTINGS ***/
-        [JsonProperty]
         public LicensingSmasherSettings LicensingSmasher { get; set; }
-        [JsonProperty]
         public YouTubeSpamDetectorSettings YouTubeSpamDetector { get; set; }
-        [JsonProperty]
         public SelfPromotionCombustorSettings SelfPromotionCombustor { get; set; }
 
 

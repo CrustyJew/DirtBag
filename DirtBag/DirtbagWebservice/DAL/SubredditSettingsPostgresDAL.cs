@@ -244,11 +244,13 @@ AND spamd.module_name = EXCLUDED.module_name
         public async Task<Models.SubredditSettings> GetSubredditSettingsAsync( string subreddit ) {
             string subredditQuery = @"
 SELECT 
-s.subreddit_name ""Subreddit"", dbag.report_score_threshold ""ReportScoreThreshold"", dbag.removal_score_threshold ""RemoveScoreThreshold"",
+s.subreddit_name ""Subreddit"", s.redditbot_name ""BotName"", oauth.password ""BotPass"", oauth.app_id ""BotAppID"", oauth.app_secret ""BotAppSecret"", 
+    dbag.report_score_threshold ""ReportScoreThreshold"", dbag.removal_score_threshold ""RemoveScoreThreshold"",
     dbag.edited_utc ""LastModified"", dbag.edited_by ""ModifiedBy""
 
 FROM dirtbag.dirtbag_settings dbag
 INNER JOIN public.subreddit s on s.id = dbag.subreddit_id
+left join public.traveler_oauth_data oauth on oauth.username ilike s.redditbot_name
 where s.subreddit_name like @subreddit
 ";
 
