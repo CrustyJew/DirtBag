@@ -13,8 +13,11 @@ using EasyNetQ;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using IdentityModel.Client;
+using Microsoft.AspNetCore.Authorization;
+using NLog.Extensions.Logging;
+using NLog.Web;
 
-namespace DirtBagWebservice {
+namespace DirtbagWebservice {
     public class Startup {
         public static IAdvancedBus rabbit;
         private static RabbitListener rabbitListener;
@@ -28,7 +31,7 @@ namespace DirtBagWebservice {
 
             if ( env.IsDevelopment() ) {
                 // For more details on using the user secret store see http://go.microsoft.com/fwlink/?LinkID=532709
-                builder.AddUserSecrets();
+                builder.AddUserSecrets<Startup>();
                 logger = new EasyNetQ.Loggers.ConsoleLogger();
             }
             Configuration = builder.Build();
@@ -55,9 +58,12 @@ namespace DirtBagWebservice {
             services.AddTransient<DAL.ISubredditSettingsDAL>( ( x ) => { return new DAL.SubredditSettingsPostgresDAL( new NpgsqlConnection( SentinelConnectionString ) ); } );
             services.AddTransient<BLL.ISubredditSettingsBLL, BLL.SubredditSettingsBLL>();
             services.AddTransient<BLL.IAnalyzePostBLL, BLL.AnalyzePostBLL>();
+            //TODO fix this shitpile\
+            new DAL.DatabaseInitializationSQL(new SqlConnection(DirtbagConnectionString)).InitializeTablesAndData().Wait();
+
 
             services.AddMvc();
-
+            /*
             rabbit = RabbitHutch.CreateBus( Configuration.GetConnectionString( "Rabbit" ),
                 x => {
                     x.Register<ISerializer, DirtbagRabbitSerializer>()
@@ -66,17 +72,25 @@ namespace DirtBagWebservice {
                 } ).Advanced;
             var exchange = rabbit.ExchangeDeclare( Configuration["RabbitExchange"], EasyNetQ.Topology.ExchangeType.Direct );
             var queue = rabbit.QueueDeclare( Configuration["RabbitQueue"] );
-            rabbitListener = new DirtBagWebservice.RabbitListener( services.BuildServiceProvider(), rabbit, exchange, Configuration["RabbitResultRoutingKey"], Boolean.Parse( Configuration["RabbitReturnItemsWithActionsOnly"] ) );
+            rabbitListener = new DirtbagWebservice.RabbitListener( services.BuildServiceProvider(), rabbit, exchange, Configuration["RabbitResultRoutingKey"], Boolean.Parse( Configuration["RabbitReturnItemsWithActionsOnly"] ) );
             var binding = rabbit.Bind( exchange, queue, Configuration["RabbitRoutingKey"] );
 
             rabbit.Consume<Models.RabbitAnalysisRequestMessage>( queue, rabbitListener.Subscribe );
+            */
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy("DirtbagAdmin", policy => policy.Requirements.Add(new AdminAuthRequirement()));
+            });
+
+            services.AddSingleton<IAuthorizationHandler, AdminAuthHandler>();
+
             services.AddSwaggerGen( c => {
                 c.SwaggerDoc( "v1", new Info { Title = "Dirtbag", Version = "v1" } );
                 c.AddSecurityDefinition( "oauth2", new OAuth2Scheme() {
-                    Type = "oauth2",
-                    Flow = "implicit",
-                    AuthorizationUrl = Configuration["OIDC_Authority"] + "/connect/authorize",
-                    Scopes = new Dictionary<string, string> { { "dirtbag", "Dirtbag API" } },
+                    Type = "oauth2", 
+                    Flow = "application",
+                    TokenUrl = Configuration["OIDC_Authority"] + "/connect/token",
+                    Scopes = new Dictionary<string, string> { { "dirtbag", "Dirtbag API" } }
                 } );
                 c.OperationFilter<SecurityRequirementsOperationFilter>();
             }
@@ -86,7 +100,15 @@ namespace DirtBagWebservice {
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure( IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory ) {
             loggerFactory.AddConsole( Configuration.GetSection( "Logging" ) );
-            loggerFactory.AddDebug();
+            if (env.IsDevelopment())
+            {
+                loggerFactory.AddDebug();
+            }
+            else
+            {
+                loggerFactory.AddNLog();
+                app.AddNLogWeb();
+            }
             app.UseIdentityServerAuthentication( new IdentityServerAuthenticationOptions {
                 Authority = Configuration["OIDC_Authority"],
                 RequireHttpsMetadata = false,
@@ -101,7 +123,9 @@ namespace DirtBagWebservice {
 
             app.UseSwaggerUI( c => {
                 c.SwaggerEndpoint( "../api-docs/v1/swagger.json", "Dirtbag API v1" );
-                c.ConfigureOAuth2( "js", "", "swagger", "dirtbag" );
+                //c.ConfigureOAuth2( "js", "", "swagger", "dirtbag" );
+                //c.ConfigureOAuth2()
+               
             } );
 
         }

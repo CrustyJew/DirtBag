@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-[assembly: UserSecretsId( "aspnet-RabbitRequeue-20170306082242" )]
 namespace RabbitRequeue
 {
     public class Program
@@ -19,7 +18,7 @@ namespace RabbitRequeue
 
             if ( environmentName == "Development" ) {
                 // For more details on using the user secret store see http://go.microsoft.com/fwlink/?LinkID=532709
-                builder.AddUserSecrets();
+                builder.AddUserSecrets<Program>();
             }
             var Configuration = builder.Build();
             
@@ -30,7 +29,7 @@ namespace RabbitRequeue
 
             rabbit.Consume<EasyNetQ.SystemMessages.Error>( queue, async ( m, i ) => {
                 string msg = m.Body.Message.Replace( "\"{", "{" ).Replace("}\"","}").Replace(@"\","");
-                await rabbit.PublishAsync( rabbit.ExchangeDeclare( m.Body.Exchange, EasyNetQ.Topology.ExchangeType.Direct ), m.Body.RoutingKey, true, new Message<DirtBagWebservice.Models.AnalysisRequest>(Newtonsoft.Json.JsonConvert.DeserializeObject<DirtBagWebservice.Models.AnalysisRequest>( msg ) ) );
+                await rabbit.PublishAsync( rabbit.ExchangeDeclare( m.Body.Exchange, EasyNetQ.Topology.ExchangeType.Direct ), m.Body.RoutingKey, true, new Message<DirtbagWebservice.Models.AnalysisRequest>(Newtonsoft.Json.JsonConvert.DeserializeObject<DirtbagWebservice.Models.AnalysisRequest>( msg ) ) );
             } );
         }
     }
@@ -40,7 +39,7 @@ namespace RabbitRequeue
         }
 
         public string Serialize( Type type ) {
-            return "DirtBagWebservice.Models.RabbitAnalysisRequestMessage";
+            return "DirtbagWebservice.Models.RabbitAnalysisRequestMessage";
         }
     }
 }

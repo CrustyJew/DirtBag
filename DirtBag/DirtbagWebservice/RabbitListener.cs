@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Text;
 using Newtonsoft.Json;
 
-namespace DirtBagWebservice
+namespace DirtbagWebservice
 {
     public class RabbitListener
     {
@@ -44,7 +44,7 @@ namespace DirtBagWebservice
         }
 
         public string Serialize( Type type ) {
-            return "DirtBagWebservice.Models.RabbitAnalysisRequestMessage";
+            return "DirtbagWebservice.Models.RabbitAnalysisRequestMessage";
         }
     }
 

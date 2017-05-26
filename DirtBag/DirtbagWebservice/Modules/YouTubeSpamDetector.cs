@@ -8,10 +8,10 @@ using Newtonsoft.Json;
 using RedditSharp;
 using RedditSharp.Things;
 using System.Net;
-using DirtBagWebservice.Models;
+using DirtbagWebservice.Models;
 using Microsoft.Extensions.Configuration;
 
-namespace DirtBagWebservice.Modules {
+namespace DirtbagWebservice.Modules {
     class YouTubeSpamDetector : IModule {
         public string ModuleName {
             get {

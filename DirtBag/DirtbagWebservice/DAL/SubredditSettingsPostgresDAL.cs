@@ -5,10 +5,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Dapper;
-using DirtBagWebservice.Models;
+using DirtbagWebservice.Models;
 using Newtonsoft.Json;
 
-namespace DirtBagWebservice.DAL {
+namespace DirtbagWebservice.DAL {
     public class SubredditSettingsPostgresDAL : ISubredditSettingsDAL {
         private IDbConnection conn;
         public SubredditSettingsPostgresDAL( IDbConnection conn ) {
@@ -100,7 +100,7 @@ WHERE s.subreddit_name like @Subreddit
              * 
              *  return conn.ExecuteAsync( licensingTermsQuery,
                     settings.LicensingSmasher.MatchTerms.Select( t =>
-                     new DirtBagWebservice.Models.DAL.LicensingSmasherTerm {
+                     new DirtbagWebservice.Models.DAL.LicensingSmasherTerm {
                          Subreddit = settings.Subreddit,
                          Term = t
                      } )

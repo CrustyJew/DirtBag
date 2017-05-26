@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace DirtBagWebservice.Models.DAL
+namespace DirtbagWebservice.Models.DAL
 {
     public class SpamDetectorModule
     {

@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using DirtBagWebservice.Models;
+using DirtbagWebservice.Models;
 
-namespace DirtBagWebservice.DAL {
+namespace DirtbagWebservice.DAL {
     public interface ISubredditSettingsDAL {
         Task AddLicensingSmasherTermsAsync( IEnumerable<Models.DAL.LicensingSmasherTerm> terms );
         Task DeleteLicensingSmasherLicensorsAsync( IEnumerable<Models.DAL.LicensingSmasherLicensor> licensors );

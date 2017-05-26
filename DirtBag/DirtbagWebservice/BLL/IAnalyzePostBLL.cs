@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
-using DirtBagWebservice.Models;
+using DirtbagWebservice.Models;
 
-namespace DirtBagWebservice.BLL {
+namespace DirtbagWebservice.BLL {
     public interface IAnalyzePostBLL {
         Task<AnalysisResults> AnalyzePost( string subreddit, AnalysisRequest request );
     }

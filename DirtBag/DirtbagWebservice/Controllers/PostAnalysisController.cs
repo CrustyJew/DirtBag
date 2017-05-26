@@ -3,20 +3,22 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
 
-namespace DirtBagWebservice.Controllers {
+namespace DirtbagWebservice.Controllers {
     [Route("api/Analysis")]
     [Authorize]
     public class PostAnalysisController : Controller
     {
         private BLL.IAnalyzePostBLL analyzeBLL;
+        private BLL.IProcessedPostBLL processedBLL;
 
-        public PostAnalysisController(BLL.IAnalyzePostBLL analyzePostBLL)
+        public PostAnalysisController(BLL.IAnalyzePostBLL analyzePostBLL, BLL.IProcessedPostBLL processedPostBLL)
         {
             analyzeBLL = analyzePostBLL;
+            processedBLL = processedPostBLL;
         }
 
         [HttpPost]
-        [Route("{sub}")]
+        [Route("test/{sub}")]
         public async Task<Models.AnalysisResults> AnalyzeDemo(string sub, Models.AnalysisRequest req)
         {
             var analysis = new Models.AnalysisResults();
@@ -55,9 +57,13 @@ namespace DirtBagWebservice.Controllers {
             return req;
         }
         
-        [Route("test/{sub}"), HttpPost]
-        public Task<Models.AnalysisResults> Analyze(string sub, Models.AnalysisRequest req)
+        [Route("{sub}"), HttpPost]
+        public Task<Models.AnalysisResults> Analyze(string sub, Models.AnalysisRequest req, bool force = false)
         {
+            if (!force)
+            {
+                processedBLL.ReadProcessedPost(req.ThingID, sub);
+            }
             return analyzeBLL.AnalyzePost(sub,req);
         }
     }

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DirtBagWebservice.Models {
+namespace DirtbagWebservice.Models {
     public class AuthorInfo {
         public string Name { get; set; }
         public DateTime? Created { get; set; }

@@ -11,10 +11,10 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using RedditSharp;
 using RedditSharp.Things;
-using DirtBagWebservice.Models;
+using DirtbagWebservice.Models;
 using Microsoft.Extensions.Configuration;
 
-namespace DirtBagWebservice.Modules {
+namespace DirtbagWebservice.Modules {
     class LicensingSmasher : IModule {
         public string ModuleName { get { return "LicensingSmasher"; } }
         public Modules ModuleEnum { get { return Modules.LicensingSmasher; } }

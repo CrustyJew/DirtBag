@@ -10,8 +10,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration.UserSecrets;
 
-[assembly: UserSecretsId( "aspnet-DirtBagWebserviceTests-20170223045757" )]
-namespace DirtBagWebserviceTests.IntegrationTests {
+namespace DirtbagWebserviceTests.IntegrationTests {
 
     public class SubredditSettingsTest {
         private IConfigurationRoot config;
@@ -28,13 +27,13 @@ namespace DirtBagWebserviceTests.IntegrationTests {
         [Fact]
         public async Task GetDefaultSubredditSettingsTest() {
             var conn = new NpgsqlConnection( config.GetConnectionString( "Sentinel" ) );
-            var dal = new DirtBagWebservice.DAL.SubredditSettingsPostgresDAL( conn );
+            var dal = new DirtbagWebservice.DAL.SubredditSettingsPostgresDAL( conn );
             var cache = serviceProvider.GetRequiredService<IMemoryCache>();
-            var bll = new DirtBagWebservice.BLL.SubredditSettingsBLL( dal, cache );
+            var bll = new DirtbagWebservice.BLL.SubredditSettingsBLL( dal, cache );
 
             var settings = await bll.GetSubredditSettingsAsync( "thissubdoesntexist", true );
 
-            var expected = DirtBagWebservice.Models.SubredditSettings.GetDefaultSettings();
+            var expected = DirtbagWebservice.Models.SubredditSettings.GetDefaultSettings();
             expected.Subreddit = "thissubdoesntexist";
 
             Assert.NotNull( settings );
@@ -46,11 +45,11 @@ namespace DirtBagWebserviceTests.IntegrationTests {
         [Fact]
         public async Task SetSubredditSettingsTest() {
             var conn = new NpgsqlConnection( config.GetConnectionString( "Sentinel" ) );
-            var dal = new DirtBagWebservice.DAL.SubredditSettingsPostgresDAL( conn );
+            var dal = new DirtbagWebservice.DAL.SubredditSettingsPostgresDAL( conn );
             var cache = serviceProvider.GetRequiredService<IMemoryCache>();
-            var bll = new DirtBagWebservice.BLL.SubredditSettingsBLL( dal, cache );
+            var bll = new DirtbagWebservice.BLL.SubredditSettingsBLL( dal, cache );
 
-            var settings = DirtBagWebservice.Models.SubredditSettings.GetDefaultSettings();
+            var settings = DirtbagWebservice.Models.SubredditSettings.GetDefaultSettings();
             settings.Subreddit = "thesentinel_dev";
 
             settings.RemoveScoreThreshold = 5;
@@ -73,7 +72,7 @@ namespace DirtBagWebserviceTests.IntegrationTests {
 
             settings.SelfPromotionCombustor.GracePeriod = 1000;
             settings.SelfPromotionCombustor.RemovalFlair = null;
-            settings.YouTubeSpamDetector.RemovalFlair = new DirtBagWebservice.Models.Flair( "testflair", "testclass", 1 );
+            settings.YouTubeSpamDetector.RemovalFlair = new DirtbagWebservice.Models.Flair( "testflair", "testclass", 1 );
             settings.YouTubeSpamDetector.LicensedChannel.Enabled = false;
             settings.YouTubeSpamDetector.LicensedChannel.Weight = 99;
 
@@ -93,19 +92,19 @@ namespace DirtBagWebserviceTests.IntegrationTests {
         [Fact]
         public async Task SetVideos() {
             var conn = new NpgsqlConnection( config.GetConnectionString( "Sentinel" ) );
-            var dal = new DirtBagWebservice.DAL.SubredditSettingsPostgresDAL( conn );
+            var dal = new DirtbagWebservice.DAL.SubredditSettingsPostgresDAL( conn );
             var cache = serviceProvider.GetRequiredService<IMemoryCache>();
-            var bll = new DirtBagWebservice.BLL.SubredditSettingsBLL( dal, cache );
+            var bll = new DirtbagWebservice.BLL.SubredditSettingsBLL( dal, cache );
 
-            var settings = DirtBagWebservice.Models.SubredditSettings.GetDefaultSettings();
+            var settings = DirtbagWebservice.Models.SubredditSettings.GetDefaultSettings();
 
             settings.Subreddit = "TheSentinel_dev2";
             settings.ReportScoreThreshold = 7.5;
             settings.RemoveScoreThreshold = 10.0;
 
-            settings.LicensingSmasher = new DirtBagWebservice.Models.LicensingSmasherSettings() {
+            settings.LicensingSmasher = new DirtbagWebservice.Models.LicensingSmasherSettings() {
                 Enabled = true,
-                RemovalFlair = new DirtBagWebservice.Models.Flair {
+                RemovalFlair = new DirtbagWebservice.Models.Flair {
                     Text = "R10",
                     Class = "red",
                     Priority = 1
@@ -132,14 +131,14 @@ namespace DirtBagWebserviceTests.IntegrationTests {
                 }
             };
 
-            settings.YouTubeSpamDetector = new DirtBagWebservice.Models.YouTubeSpamDetectorSettings();
+            settings.YouTubeSpamDetector = new DirtbagWebservice.Models.YouTubeSpamDetectorSettings();
             settings.YouTubeSpamDetector.SetDefaultSettings();
             settings.YouTubeSpamDetector.Enabled = true;
             settings.YouTubeSpamDetector.ScoreMultiplier = 1;
 
-            settings.SelfPromotionCombustor = new DirtBagWebservice.Models.SelfPromotionCombustorSettings() {
+            settings.SelfPromotionCombustor = new DirtbagWebservice.Models.SelfPromotionCombustorSettings() {
                 Enabled = true,
-                RemovalFlair = new DirtBagWebservice.Models.Flair( "10%", "red", 1 ),
+                RemovalFlair = new DirtbagWebservice.Models.Flair( "10%", "red", 1 ),
                 GracePeriod = 3,
                 IncludePostInPercentage = false,
                 PercentageThreshold = 10,

@@ -7,10 +7,10 @@ using RedditSharp.Things;
 using Google.Apis.YouTube.v3;
 using Google.Apis.Services;
 using Newtonsoft.Json;
-using DirtBagWebservice.Models;
+using DirtbagWebservice.Models;
 using Microsoft.Extensions.Configuration;
 
-namespace DirtBagWebservice.Modules {
+namespace DirtbagWebservice.Modules {
     class SelfPromotionCombustor : IModule {
         public string ModuleName {
             get {

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 
-namespace DirtBagWebservice.DAL {
+namespace DirtbagWebservice.DAL {
     public class ProcessedItemSQLDAL : IProcessedItemDAL {
         private IDbConnection conn;
         public ProcessedItemSQLDAL( IDbConnection dbConn ) {

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DirtBagWebservice.Models {
+namespace DirtbagWebservice.Models {
     public class AnalysisRequest {
         public string ThingID { get; set; }
         public AuthorInfo Author { get; set; }

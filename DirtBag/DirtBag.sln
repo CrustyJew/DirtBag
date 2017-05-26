@@ -1,20 +1,20 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.6
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RedditSharp", "..\..\RedditSharp\RedditSharp\RedditSharp.xproj", "{EEA13827-0899-47D3-B74C-F7937CF9B992}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "DirtbagWebservice", "DirtbagWebservice\DirtbagWebservice.xproj", "{E5737B3F-F93C-494B-AD43-FDDF3919B0A6}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{2D7CFB3F-4C09-4EAA-9367-108D2C48786D}"
 	ProjectSection(SolutionItems) = preProject
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "DirtBagWebserviceTests", "DirtBagWebserviceTests\DirtBagWebserviceTests.xproj", "{F30CDF93-E6B0-43F5-90BF-A7B6079F4512}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DirtBagWebserviceTests", "DirtBagWebserviceTests\DirtBagWebserviceTests.csproj", "{F30CDF93-E6B0-43F5-90BF-A7B6079F4512}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "RabbitRequeue", "RabbitRequeue\RabbitRequeue.xproj", "{777580AA-8954-4BD6-9369-9F458A1E0AC1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RabbitRequeue", "RabbitRequeue\RabbitRequeue.csproj", "{777580AA-8954-4BD6-9369-9F458A1E0AC1}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DirtbagWebservice", "DirtbagWebservice\DirtbagWebservice.csproj", "{C2E52ADC-9953-418E-B349-F4E73F55B3E4}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RedditSharp", "..\..\RedditSharp\RedditSharp\RedditSharp.csproj", "{58D28BF2-3F61-44D9-9EF5-4017B00BBA31}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -22,14 +22,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{EEA13827-0899-47D3-B74C-F7937CF9B992}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{EEA13827-0899-47D3-B74C-F7937CF9B992}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{EEA13827-0899-47D3-B74C-F7937CF9B992}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{EEA13827-0899-47D3-B74C-F7937CF9B992}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E5737B3F-F93C-494B-AD43-FDDF3919B0A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E5737B3F-F93C-494B-AD43-FDDF3919B0A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E5737B3F-F93C-494B-AD43-FDDF3919B0A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E5737B3F-F93C-494B-AD43-FDDF3919B0A6}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F30CDF93-E6B0-43F5-90BF-A7B6079F4512}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F30CDF93-E6B0-43F5-90BF-A7B6079F4512}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F30CDF93-E6B0-43F5-90BF-A7B6079F4512}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -38,6 +30,14 @@ Global
 		{777580AA-8954-4BD6-9369-9F458A1E0AC1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{777580AA-8954-4BD6-9369-9F458A1E0AC1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{777580AA-8954-4BD6-9369-9F458A1E0AC1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C2E52ADC-9953-418E-B349-F4E73F55B3E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2E52ADC-9953-418E-B349-F4E73F55B3E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2E52ADC-9953-418E-B349-F4E73F55B3E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2E52ADC-9953-418E-B349-F4E73F55B3E4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{58D28BF2-3F61-44D9-9EF5-4017B00BBA31}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{58D28BF2-3F61-44D9-9EF5-4017B00BBA31}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{58D28BF2-3F61-44D9-9EF5-4017B00BBA31}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{58D28BF2-3F61-44D9-9EF5-4017B00BBA31}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

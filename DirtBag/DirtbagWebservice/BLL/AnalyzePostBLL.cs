@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DirtBagWebservice.BLL
+namespace DirtbagWebservice.BLL
 {
     public class AnalyzePostBLL : IAnalyzePostBLL
     {
@@ -17,6 +17,48 @@ namespace DirtBagWebservice.BLL
             subSetsBLL = settingsBLL;
             postHistoryDAL = userPostHistoryDAL;
             this.config = config;
+        }
+
+        public async Task<Models.AnalysisResults> UpdateAnalysis(string subreddit, Models.AnalysisRequest request, string updateBy)
+        {
+            //Only rerun things that don't need to run at the time a post was made
+            var settings = await subSetsBLL.GetSubredditSettingsAsync(subreddit, true);
+            List<Task<Models.AnalysisDetails>> analysisTasks = new List<Task<Models.AnalysisDetails>>();
+            if (settings.LicensingSmasher.Enabled)
+            {
+                analysisTasks.Add(new Modules.LicensingSmasher(config, settings.LicensingSmasher, subreddit).Analyze(request));
+            }
+
+            return await CombineResults(analysisTasks, settings, request.ThingID);
+        }
+
+        private async Task<Models.AnalysisResults> CombineResults(List<Task<Models.AnalysisDetails>> analysisTasks, Models.SubredditSettings settings, string thingid)
+        {
+            var results = new Models.AnalysisResults();
+            results.AnalysisDetails.ThingID = thingid;
+
+            while (analysisTasks.Count > 0)
+            {
+                var finishedTask = await Task.WhenAny(analysisTasks);
+                analysisTasks.Remove(finishedTask);
+                var result = await finishedTask;
+
+                results.AnalysisDetails.Scores.AddRange(result.Scores);
+                results.AnalysisDetails.AnalyzingModule = result.AnalyzingModule | results.AnalysisDetails.AnalyzingModule;
+            }
+            if (results.AnalysisDetails.TotalScore >= settings.RemoveScoreThreshold && settings.RemoveScoreThreshold > 0)
+            {
+                results.RequiredAction = Models.AnalysisResults.Action.Remove;
+            }
+            else if (results.AnalysisDetails.TotalScore >= settings.ReportScoreThreshold && settings.ReportScoreThreshold > 0)
+            {
+                results.RequiredAction = Models.AnalysisResults.Action.Report;
+            }
+            else
+            {
+                results.RequiredAction = Models.AnalysisResults.Action.Nothing;
+            }
+            return results;
         }
 
         public async Task<Models.AnalysisResults> AnalyzePost(string subreddit, Models.AnalysisRequest request)
@@ -37,30 +79,10 @@ namespace DirtBagWebservice.BLL
             }
 
 
-            var results = new Models.AnalysisResults();
-            results.AnalysisDetails.ThingID = request.ThingID;
-            
-            while (analysisTasks.Count > 0)
-            {
-                var finishedTask = await Task.WhenAny(analysisTasks);
-                analysisTasks.Remove(finishedTask);
-                var result = await finishedTask;
+            var results =  await CombineResults(analysisTasks, settings, request.ThingID);
 
-                results.AnalysisDetails.Scores.AddRange(result.Scores);
-                results.AnalysisDetails.AnalyzingModule = result.AnalyzingModule | results.AnalysisDetails.AnalyzingModule;
-            }
-            if(results.AnalysisDetails.TotalScore >= settings.RemoveScoreThreshold && settings.RemoveScoreThreshold > 0)
-            {
-                results.RequiredAction = Models.AnalysisResults.Action.Remove;
-            }
-            else if (results.AnalysisDetails.TotalScore >= settings.ReportScoreThreshold && settings.ReportScoreThreshold > 0)
-            {
-                results.RequiredAction = Models.AnalysisResults.Action.Report;
-            }
-            else
-            {
-                results.RequiredAction = Models.AnalysisResults.Action.Nothing;
-            }
+            Models.ProcessedItem item = new Models.ProcessedItem(subreddit,request.ThingID, results.RequiredAction.ToString(), request.)
+
             return results;
         }
     }

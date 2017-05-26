@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using RedditSharp.Things;
 
-namespace DirtBagWebservice.Modules {
+namespace DirtbagWebservice.Modules {
     public interface IModule {
         string ModuleName { get; }
         Modules ModuleEnum { get; }

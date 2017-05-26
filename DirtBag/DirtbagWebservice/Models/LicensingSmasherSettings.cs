@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DirtBagWebservice.Models {
+namespace DirtbagWebservice.Models {
     public class LicensingSmasherSettings : IModuleSettings {
         [JsonProperty]
         public bool Enabled { get; set; }

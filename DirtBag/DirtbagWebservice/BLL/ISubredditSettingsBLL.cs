@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
-using DirtBagWebservice.Models;
+using DirtbagWebservice.Models;
 
-namespace DirtBagWebservice.BLL {
+namespace DirtbagWebservice.BLL {
     public interface ISubredditSettingsBLL {
         Task<SubredditSettings> GetSubredditSettingsAsync( string subreddit, bool defaults = false );
         void PurgeSubSettingsFromCache( string subreddit );

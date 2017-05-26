@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DirtBagWebservice.Models {
+namespace DirtbagWebservice.Models {
     public class YouTubeSpamDetectorSettings : IModuleSettings {
         [JsonProperty]
         public bool Enabled { get; set; }

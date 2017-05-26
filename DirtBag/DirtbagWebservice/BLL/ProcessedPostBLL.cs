@@ -1,7 +1,8 @@
 ﻿using System.Threading.Tasks;
 
-namespace DirtBagWebservice.BLL {
-    public class ProcessedPostBLL {
+namespace DirtbagWebservice.BLL {
+    public class ProcessedPostBLL : IProcessedPostBLL
+    {
         private DAL.ProcessedItemSQLDAL dal;
         public ProcessedPostBLL(DAL.ProcessedItemSQLDAL ppDAL ) {
             dal = ppDAL;

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DirtBagWebservice.Models {
+namespace DirtbagWebservice.Models {
     public enum VideoProvider {
         Unknown = 0,
         YouTube = 1,

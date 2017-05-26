@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace DirtBagWebservice.Modules {
+namespace DirtbagWebservice.Modules {
     [Flags]
     public enum Modules {
         None = 0x00,

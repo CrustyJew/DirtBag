@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Builder;
 
-namespace DirtBagWebservice
+namespace DirtbagWebservice
 {
     public class Program
     {

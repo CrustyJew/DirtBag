@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace DirtBagWebservice {
+namespace DirtbagWebservice {
     //http://stackoverflow.com/a/3928856/2452505
     public static partial class Utilities
     {

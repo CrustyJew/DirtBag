@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using DirtBagWebservice.Models;
+using DirtbagWebservice.Models;
 
-namespace DirtBagWebservice.DAL {
+namespace DirtbagWebservice.DAL {
     public interface IProcessedItemDAL {
         Task LogProcessedItemAsync( ProcessedItem processed );
         Task<ProcessedItem> ReadProcessedItemAsync( string thingID, string subName );

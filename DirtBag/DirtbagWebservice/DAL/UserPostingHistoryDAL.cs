@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Dapper;
 using System.Data;
 
-namespace DirtBagWebservice.DAL {
+namespace DirtbagWebservice.DAL {
     public class UserPostingHistoryDAL : IUserPostingHistoryDAL {
         private IDbConnection _conn;
         public UserPostingHistoryDAL(IDbConnection sentinelConn ) {

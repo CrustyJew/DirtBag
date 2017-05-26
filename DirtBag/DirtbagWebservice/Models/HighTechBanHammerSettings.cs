@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DirtBagWebservice.Models {
+namespace DirtbagWebservice.Models {
     public class HighTechBanHammerSettings {
         public bool Enabled { get; set; }
         public double ScoreMultiplier { get; set; }

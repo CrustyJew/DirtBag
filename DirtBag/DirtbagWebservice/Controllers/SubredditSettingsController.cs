@@ -2,8 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 
-namespace DirtBagWebservice.Controllers {
-    [Authorize]
+namespace DirtbagWebservice.Controllers {
+    [Authorize("DirtbagAdmin")]
     [Route( "api/Settings" )]
 
     public class SubredditSettingsController : Controller {

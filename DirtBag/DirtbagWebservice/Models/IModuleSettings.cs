@@ -2,7 +2,7 @@
 using Newtonsoft.Json.Converters;
 using System;
 
-namespace DirtBagWebservice.Models {
+namespace DirtbagWebservice.Models {
     public interface IModuleSettings {
 		[JsonProperty]
         bool Enabled { get; set; }

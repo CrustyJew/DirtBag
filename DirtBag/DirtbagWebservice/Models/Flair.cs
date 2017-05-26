@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace DirtBagWebservice.Models {
+namespace DirtbagWebservice.Models {
     public class Flair {
         [JsonProperty]
         public string Text { get; set; }

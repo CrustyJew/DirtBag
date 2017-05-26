@@ -1,11 +1,11 @@
-﻿using DirtBagWebservice.Models;
+﻿using DirtbagWebservice.Models;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory;
 using System.Collections.Generic;
 
-namespace DirtBagWebservice.BLL {
+namespace DirtbagWebservice.BLL {
     public class SubredditSettingsBLL : ISubredditSettingsBLL {
         private static IMemoryCache cache;
         private const string CACHE_PREFIX = "SubredditSettings:";
