@@ -5,7 +5,7 @@
     <AssemblyName>RabbitRequeue</AssemblyName>
     <OutputType>Exe</OutputType>
     <PackageId>RabbitRequeue</PackageId>
-    <UserSecretsId>aspnet-RabbitRequeue-20170306082242</UserSecretsId>
+    <UserSecretsId>aspnet-DirtbagWebservice-20170223092822</UserSecretsId>
     <RuntimeFrameworkVersion>1.1.1</RuntimeFrameworkVersion>
     <PackageTargetFallback>$(PackageTargetFallback);dotnet5.6;portable-net45+win8</PackageTargetFallback>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>

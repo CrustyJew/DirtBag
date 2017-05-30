@@ -25,6 +25,7 @@ namespace DirtbagWebservice.Models {
         public string ModifiedBy { get; set; }
 
         public SelfPromotionCombustorSettings() {
+            RemovalFlair = new Flair();
         }
 
         public void SetDefaultSettings() {

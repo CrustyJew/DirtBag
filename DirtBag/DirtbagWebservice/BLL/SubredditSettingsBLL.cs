@@ -277,7 +277,8 @@ namespace DirtbagWebservice.BLL {
             }
             if ( current.Class == newSettings.Class &&
                 current.Priority == newSettings.Priority &&
-                current.Text == newSettings.Text ) {
+                current.Text == newSettings.Text && 
+                current.Enabled == newSettings.Enabled ) {
 
                 return true;
             }

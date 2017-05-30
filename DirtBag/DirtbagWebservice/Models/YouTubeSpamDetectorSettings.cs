@@ -63,6 +63,7 @@ namespace DirtbagWebservice.Models {
 
 
         public YouTubeSpamDetectorSettings() {
+            RemovalFlair = new Flair();
         }
 
         public void SetDefaultSettings() {
@@ -76,6 +77,7 @@ namespace DirtbagWebservice.Models {
             LicensedChannel = new YouTubeSpamDetectorModule { Name = "LicensedChannel", Enabled = true, Weight = 1 };
             ChannelSubscribersThreshold = new YouTubeSpamDetectorModule { Name = "ChannelSubscribersThreshold", Value = 25, Enabled = true, Weight = 1 };
             CommentCountThreshold = new YouTubeSpamDetectorModule { Name = "CommentCountThreshold", Value = 10, Enabled = false, Weight = 1 };
+            RemovalFlair = new Flair();
         }
     }
     public class YouTubeSpamDetectorModule {

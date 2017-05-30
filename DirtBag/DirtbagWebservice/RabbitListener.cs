@@ -16,21 +16,18 @@ namespace DirtbagWebservice
         private IExchange resultsExchange;
         private string resultRoutingKey;
         private bool returnActionsOnly;
-        public RabbitListener(System.IServiceProvider provider, IAdvancedBus rabbitBus, IExchange resultsExchange, string resultRoutingKey, bool returnActionsOnly ) {
+        public RabbitListener(System.IServiceProvider provider, IAdvancedBus rabbitBus ) {
             this.provider = provider;
             this.rabbitBus = rabbitBus;
-            this.resultsExchange = resultsExchange;
-            this.resultRoutingKey = resultRoutingKey;
-            this.returnActionsOnly = returnActionsOnly;
         }
 
         public async Task Subscribe(IMessage<Models.RabbitAnalysisRequestMessage> request, MessageReceivedInfo info ) {
             var analysisBLL = (BLL.IAnalyzePostBLL) provider.GetService( typeof( BLL.IAnalyzePostBLL ) );
             try {
-                var results = await analysisBLL.AnalyzePost( request.Body.Subreddit, request.Body );
-                if ( results.RequiredAction != Models.AnalysisResults.Action.Nothing || !returnActionsOnly ) {
-                    await rabbitBus.PublishAsync( resultsExchange, resultRoutingKey, true, new Message<Models.AnalysisResults>( results ) );
-                }
+                var results = await analysisBLL.AnalyzePost(request.Body.Subreddit, request.Body);
+                //if ( results.RequiredAction != Models.AnalysisResults.Action.Nothing || !returnActionsOnly ) {
+                //    await rabbitBus.PublishAsync( resultsExchange, resultRoutingKey, true, new Message<Models.AnalysisResults>( results ) );
+                //}
             }
             catch(Exception ex) {
                 throw new EasyNetQ.EasyNetQException( "Failed to analyze..", ex );

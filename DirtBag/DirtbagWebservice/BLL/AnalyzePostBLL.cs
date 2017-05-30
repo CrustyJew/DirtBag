@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,12 +13,16 @@ namespace DirtbagWebservice.BLL {
         private IConfigurationRoot config;
         private DAL.IProcessedItemDAL processedDAL;
         private RedditSharp.WebAgentPool<string, RedditSharp.BotWebAgent> botAgentPool;
-        public AnalyzePostBLL( IConfigurationRoot config, BLL.ISubredditSettingsBLL settingsBLL, DAL.IUserPostingHistoryDAL userPostHistoryDAL, DAL.IProcessedItemDAL processedItemDAL, RedditSharp.WebAgentPool<string, RedditSharp.BotWebAgent> botAgentPool ) {
+
+        private ILogger<AnalyzePostBLL> logger;
+        public AnalyzePostBLL(IConfigurationRoot config, BLL.ISubredditSettingsBLL settingsBLL, DAL.IUserPostingHistoryDAL userPostHistoryDAL, DAL.IProcessedItemDAL processedItemDAL, RedditSharp.WebAgentPool<string, RedditSharp.BotWebAgent> botAgentPool, ILogger<AnalyzePostBLL> logger )
+        {
             subSetsBLL = settingsBLL;
             postHistoryDAL = userPostHistoryDAL;
             this.config = config;
             processedDAL = processedItemDAL;
             this.botAgentPool = botAgentPool;
+            this.logger = logger;
         }
 
         public async Task<Models.ProcessedItem> UpdateAnalysisAsync( string subreddit, string thingID, string mediaID, Models.VideoProvider mediaPlatform, string updateBy ) {
@@ -30,7 +35,7 @@ namespace DirtbagWebservice.BLL {
                 PermaLink = previousResults.PermaLink
             };
             //Only rerun things that don't need to run at the time a post was made
-            var settings = await subSetsBLL.GetSubredditSettingsAsync(subreddit, true);
+            var settings = await subSetsBLL.GetSubredditSettingsAsync(subreddit);
             List<Task<Models.AnalysisDetails>> analysisTasks = new List<Task<Models.AnalysisDetails>>();
             if(settings.LicensingSmasher.Enabled) {
                 analysisTasks.Add(new Modules.LicensingSmasher(config, settings.LicensingSmasher, subreddit).Analyze(request));
@@ -68,9 +73,13 @@ namespace DirtbagWebservice.BLL {
             }
             return results;
         }
-
-        public async Task<Models.AnalysisResults> AnalyzePost( string subreddit, Models.AnalysisRequest request ) {
-            var settings = await subSetsBLL.GetSubredditSettingsAsync(subreddit, true);
+        public async Task<Models.AnalysisResults> AnalyzePost(string subreddit, Models.AnalysisRequest request)
+        {
+            var settings = await subSetsBLL.GetSubredditSettingsAsync(subreddit);
+            if(settings == null) {
+                logger.LogInformation($"{subreddit} does not have settings or dirtbag enabled");
+                return null;
+            }
             List<Task<Models.AnalysisDetails>> analysisTasks = new List<Task<Models.AnalysisDetails>>();
             if(settings.LicensingSmasher.Enabled) {
                 analysisTasks.Add(new Modules.LicensingSmasher(config, settings.LicensingSmasher, subreddit).Analyze(request));
@@ -95,10 +104,10 @@ namespace DirtbagWebservice.BLL {
             }
 
             if(botAgentPool != null && results.RequiredAction != Models.AnalysisResults.Action.Nothing) {
-                var agent = await botAgentPool.GetOrCreateAgentAsync(settings.BotName, () => {
+                var agent = botAgentPool.GetOrCreateAgent(settings.BotName, () => {
                     var toReturn = new RedditSharp.BotWebAgent(settings.BotName, settings.BotPass, settings.BotAppID, settings.BotAppSecret, null);
                     toReturn.RateLimiter = new RedditSharp.RateLimitManager(RedditSharp.RateLimitMode.SmallBurst);
-                    return Task.FromResult(toReturn);
+                    return toReturn;
                 });
                 
                 if(results.RequiredAction == Models.AnalysisResults.Action.Remove) {

@@ -39,18 +39,6 @@ dbsets.subreddit_id = EXCLUDED.subreddit_id
             using ( var transact = conn.BeginTransaction() ) {
 
                 await conn.ExecuteAsync( subredditQuery, settings );
-
-                /*
-                
-
-
-                
-                
-
-
-                               
-
-                */
                 transact.Commit();
             }
 
@@ -250,8 +238,9 @@ s.subreddit_name ""Subreddit"", s.redditbot_name ""BotName"", oauth.password ""B
 
 FROM dirtbag.dirtbag_settings dbag
 INNER JOIN public.subreddit s on s.id = dbag.subreddit_id
-left join public.traveler_oauth_data oauth on oauth.username ilike s.redditbot_name
+left join dirtbag.traveler_oauth_data oauth on oauth.username ilike s.redditbot_name
 where s.subreddit_name like @subreddit
+AND s.dirtbag_enabled = true
 ";
 
             string licensingSmasherQuery = @"
@@ -305,7 +294,7 @@ WHERE s.subreddit_name like @subreddit
             await conn.QueryAsync<LicensingSmasherSettings, Flair, string, LicensingSmasherSettings>( licensingSmasherQuery,
             ( ls, f, term) => {
                 if ( toReturn.LicensingSmasher == null ) {
-                    ls.RemovalFlair = f;
+                    ls.RemovalFlair = f ?? new Flair();
                     toReturn.LicensingSmasher = ls;
                 }
                 if ( term != null ) {
@@ -321,7 +310,7 @@ WHERE s.subreddit_name like @subreddit
                 (
                     await conn.QueryAsync<SelfPromotionCombustorSettings, Flair, SelfPromotionCombustorSettings>( selfPromoQuery,
                     ( sp, flair ) => {
-                        sp.RemovalFlair = flair;
+                        sp.RemovalFlair = flair ?? new Flair();
                         return sp;
                     }
                     , param: new { subreddit }, splitOn: "Text" )
@@ -331,7 +320,7 @@ WHERE s.subreddit_name like @subreddit
             await conn.QueryAsync<YouTubeSpamDetectorSettings, Flair, YouTubeSpamDetectorModule, YouTubeSpamDetectorSettings>( spamDetectQuery,
             ( sd, flair, module ) => {
                 if ( toReturn.YouTubeSpamDetector == null ) {
-                    sd.RemovalFlair = flair;
+                    sd.RemovalFlair = flair ?? new Flair();
                     toReturn.YouTubeSpamDetector = sd;
                 }
                 switch ( module?.Name ) {

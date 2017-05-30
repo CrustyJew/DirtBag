@@ -2,15 +2,12 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp1.1</TargetFramework>
-    <AssemblyName>DirtBagWebserviceTests</AssemblyName>
-    <PackageId>DirtBagWebserviceTests</PackageId>
+    <AssemblyName>DirtbagWebserviceTests</AssemblyName>
+    <PackageId>DirtbagWebserviceTests</PackageId>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
-    <UserSecretsId>aspnet-DirtBagWebserviceTests-20170223045757</UserSecretsId>
+    <UserSecretsId>aspnet-DirtbagWebservice-20170223092822</UserSecretsId>
     <PackageTargetFallback>$(PackageTargetFallback);dotnet5.6;portable-net45+win8</PackageTargetFallback>
     <RuntimeFrameworkVersion>1.1.1</RuntimeFrameworkVersion>
-    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
-    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
-    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
   </PropertyGroup>
 
   <ItemGroup>

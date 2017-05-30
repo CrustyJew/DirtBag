@@ -20,6 +20,7 @@ namespace DirtbagWebservice.Models {
             Reason = reason;
             ReportReason = reportReason;
             Module = module;
+            RemovalFlair = new Flair();
         }
 
         public AnalysisScore( double score, string reason, string reportReason, Modules.Modules module, Flair removalFlair )

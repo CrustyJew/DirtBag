@@ -33,7 +33,7 @@ namespace DirtbagWebservice.Models {
         {
             get
             {
-                return Scores.Where( f => f.RemovalFlair != null ).Count() > 0;
+                return Scores.Where( f => f.RemovalFlair != null && f.RemovalFlair.Enabled).Count() > 0;
             }
         }
 
@@ -41,7 +41,7 @@ namespace DirtbagWebservice.Models {
         {
             get
             {
-                return string.Join( " / ", Scores.Where( f => f.RemovalFlair != null ).Select( f => f.RemovalFlair.Text ).Distinct() );
+                return string.Join( " / ", Scores.Where( f => f.RemovalFlair != null && f.RemovalFlair.Enabled).Select( f => f.RemovalFlair.Text ).Distinct() );
             }
         }
 
@@ -51,7 +51,7 @@ namespace DirtbagWebservice.Models {
             get
             {
                 Flair highestPrio = null;
-                foreach ( Flair f in Scores.Where( f => f.RemovalFlair != null ).Select( s => s.RemovalFlair ) ) {
+                foreach ( Flair f in Scores.Where( f => f.RemovalFlair != null && f.RemovalFlair.Enabled ).Select( s => s.RemovalFlair ) ) {
                     if ( highestPrio == null || f.Priority < highestPrio.Priority ) highestPrio = f;
                 }
                 return highestPrio?.Class;

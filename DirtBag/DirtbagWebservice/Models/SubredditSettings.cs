@@ -9,14 +9,18 @@ using System.Threading.Tasks;
 namespace DirtbagWebservice.Models {
     public class SubredditSettings {
         public string Subreddit { get; set; }
+        [JsonIgnore]
         public string BotName { get; set; }
+        [JsonIgnore]
         public string BotPass { internal get; set; }
+        [JsonIgnore]
         public string BotAppID { internal get; set; }
+        [JsonIgnore]
         public string BotAppSecret { internal get; set; }
         public double ReportScoreThreshold { get; set; }
         public double RemoveScoreThreshold { get; set; }
         public DateTime LastModified { get; set; }
-        public string ModifiedBy { get; set; }
+        public string ModifiedBy { get; internal set; }
 
         /*** MODULE SETTINGS ***/
         public LicensingSmasherSettings LicensingSmasher { get; set; }

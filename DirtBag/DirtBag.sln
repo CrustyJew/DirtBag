@@ -8,7 +8,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DirtBagWebserviceTests", "DirtBagWebserviceTests\DirtBagWebserviceTests.csproj", "{F30CDF93-E6B0-43F5-90BF-A7B6079F4512}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DirtbagWebserviceTests", "DirtBagWebserviceTests\DirtbagWebserviceTests.csproj", "{F30CDF93-E6B0-43F5-90BF-A7B6079F4512}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RabbitRequeue", "RabbitRequeue\RabbitRequeue.csproj", "{777580AA-8954-4BD6-9369-9F458A1E0AC1}"
 EndProject

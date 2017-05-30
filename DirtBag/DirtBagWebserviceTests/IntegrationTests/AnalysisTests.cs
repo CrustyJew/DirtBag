@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Moq;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace DirtbagWebserviceTests.IntegrationTests
 {
@@ -19,7 +20,7 @@ namespace DirtbagWebserviceTests.IntegrationTests
 
             testSettings = new DirtbagWebservice.Models.SubredditSettings {
                 LastModified = DateTime.Parse( "2017-02-25 14:24:00PM" ),
-                ModifiedBy = "TestUser",
+                //ModifiedBy = "TestUser",
                 RemoveScoreThreshold = 10,
                 ReportScoreThreshold = 5,
                 Subreddit = "testsubbie",
@@ -73,7 +74,7 @@ namespace DirtbagWebserviceTests.IntegrationTests
                 ThingID = "t3_666"
             };
 
-            var bll = new  DirtbagWebservice.BLL.AnalyzePostBLL(config,subSettings.Object, postHistory.Object, processedDAL.Object, null);
+            var bll = new  DirtbagWebservice.BLL.AnalyzePostBLL(config,subSettings.Object, postHistory.Object, processedDAL.Object, null, new LoggerFactory().CreateLogger<DirtbagWebservice.BLL.AnalyzePostBLL>());
 
             var results = await bll.AnalyzePost( "testsubbie", request );
 

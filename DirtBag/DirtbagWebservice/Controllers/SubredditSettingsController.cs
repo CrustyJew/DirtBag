@@ -14,19 +14,19 @@ namespace DirtbagWebservice.Controllers {
         }
 
         [Route("{subreddit}"), HttpGet]
-        public Task<Models.SubredditSettings> GetSettings(string subreddit, bool defaults = false ) {
+        public Task<Models.SubredditSettings> GetSettings( [FromRoute]string subreddit, bool defaults = false ) {
             return bll.GetSubredditSettingsAsync( subreddit, defaults );
         }
 
         [Route("{subreddit}"), HttpPost]
-        public Task UpdateSettings (string subreddit, [FromQuery] string modifiedBy, [FromBody] Models.SubredditSettings settings) {
+        public Task UpdateSettings ([FromRoute]string subreddit, [FromQuery] string modifiedBy, [FromBody] Models.SubredditSettings settings) {
             if ( string.IsNullOrWhiteSpace( modifiedBy ) ) {
                 throw new System.Exception("modifiedBy is null");
             }
             return bll.SetSubredditSettingsAsync( settings, modifiedBy );
         }
         [Route("{subreddit}/Purge"),HttpDelete]
-        public void PurgeCacheForSub(string subreddit ) {
+        public void PurgeCacheForSub( [FromRoute]string subreddit ) {
             bll.PurgeSubSettingsFromCache( subreddit );
         }
     }
