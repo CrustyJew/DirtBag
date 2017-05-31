@@ -32,7 +32,7 @@ namespace DirtbagWebservice {
             if(env.IsDevelopment()) {
                 // For more details on using the user secret store see http://go.microsoft.com/fwlink/?LinkID=532709
                 builder.AddUserSecrets<Startup>();
-                logger = new EasyNetQ.Loggers.ConsoleLogger();
+                //logger = new EasyNetQ.Loggers.ConsoleLogger();
             }
             Configuration = builder.Build();
 
@@ -67,19 +67,6 @@ namespace DirtbagWebservice {
 
             services.AddMvc();
 
-            rabbit = RabbitHutch.CreateBus(Configuration.GetConnectionString("Rabbit"),
-                x => {
-                    x.Register<ISerializer, DirtbagRabbitSerializer>()
-                     .Register<ITypeNameSerializer>(_ => new DirtbagTypeNameSerializer());
-                    if(logger != null) x.Register<IEasyNetQLogger>(_ => logger);
-                }).Advanced;
-            var exchange = rabbit.ExchangeDeclare(Configuration["RabbitExchange"], EasyNetQ.Topology.ExchangeType.Direct);
-            var queue = rabbit.QueueDeclare(Configuration["RabbitQueue"]);
-            rabbitListener = new DirtbagWebservice.RabbitListener(services.BuildServiceProvider(), rabbit);
-            var binding = rabbit.Bind(exchange, queue, Configuration["RabbitRoutingKey"]);
-
-            rabbit.Consume<Models.RabbitAnalysisRequestMessage>(queue, rabbitListener.Subscribe);
-
             services.AddAuthorization(options => {
                 options.AddPolicy("DirtbagAdmin", policy => policy.Requirements.Add(new AdminAuthRequirement()));
             });
@@ -105,6 +92,22 @@ namespace DirtbagWebservice {
             if(env.IsDevelopment()) {
                 loggerFactory.AddDebug();
             }
+
+
+            rabbit = RabbitHutch.CreateBus(Configuration.GetConnectionString("Rabbit"),
+                x => {
+                    x.Register<ISerializer, DirtbagRabbitSerializer>()
+                     .Register<ITypeNameSerializer>(_ => new DirtbagTypeNameSerializer());
+                    if(logger != null) x.Register<IEasyNetQLogger>(_ => logger);
+                }).Advanced;
+            var exchange = rabbit.ExchangeDeclare(Configuration["RabbitExchange"], EasyNetQ.Topology.ExchangeType.Direct);
+            var queue = rabbit.QueueDeclare(Configuration["RabbitQueue"]);
+            rabbitListener = new DirtbagWebservice.RabbitListener(app.ApplicationServices, loggerFactory.CreateLogger<RabbitListener>());
+            var binding = rabbit.Bind(exchange, queue, Configuration["RabbitRoutingKey"]);
+
+            rabbit.Consume<Models.RabbitAnalysisRequestMessage>(queue, rabbitListener.Subscribe,conf => { conf.WithPrefetchCount(25); });
+
+
 
             app.UseIdentityServerAuthentication(new IdentityServerAuthenticationOptions {
                 Authority = Configuration["OIDC_Authority"],

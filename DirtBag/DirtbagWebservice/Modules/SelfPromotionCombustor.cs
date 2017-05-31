@@ -50,7 +50,7 @@ namespace DirtbagWebservice.Modules {
 
         public async Task<AnalysisDetails> Analyze(AnalysisRequest request)
         {
-            var results = await Analyze(new List<AnalysisRequest>() { request });
+            var results = await Analyze(new List<AnalysisRequest>() { request }).ConfigureAwait(false);
             return results.Values.FirstOrDefault();
         }
         public async Task<Dictionary<string, AnalysisDetails>> Analyze( List<AnalysisRequest> requests ) {
@@ -63,7 +63,7 @@ namespace DirtbagWebservice.Modules {
                 //Task<Dictionary<string,string>> hist;
                 IEnumerable<Models.UserPostInfo> postHistory;
 
-                    postHistory = await _userPostHistDAL.GetUserPostingHistoryAsync( request.Author.Name );
+                    postHistory = await _userPostHistDAL.GetUserPostingHistoryAsync( request.Author.Name ).ConfigureAwait(false);
                     
                 
                 //hist = new Task<Dictionary<string, string>>(()=>new Dictionary<string,string>());

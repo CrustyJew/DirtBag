@@ -26,10 +26,12 @@ namespace RabbitRequeue
             var rabbit = RabbitHutch.CreateBus( Configuration.GetConnectionString( "Rabbit" ), x => x.Register<IEasyNetQLogger>( _ => logger ).Register<ITypeNameSerializer>( _ => new DirtbagTypeNameSerializer() ) ).Advanced;
             var exchange = rabbit.ExchangeDeclare( "ErrorExchange_" + Configuration["RabbitQueue"], EasyNetQ.Topology.ExchangeType.Direct );
             var queue = rabbit.QueueDeclare( "EasyNetQ_Default_Error_Queue" );
-
             rabbit.Consume<EasyNetQ.SystemMessages.Error>( queue, async ( m, i ) => {
                 string msg = m.Body.Message.Replace( "\"{", "{" ).Replace("}\"","}").Replace(@"\","");
-                await rabbit.PublishAsync( rabbit.ExchangeDeclare( m.Body.Exchange, EasyNetQ.Topology.ExchangeType.Direct ), m.Body.RoutingKey, true, new Message<DirtbagWebservice.Models.AnalysisRequest>(Newtonsoft.Json.JsonConvert.DeserializeObject<DirtbagWebservice.Models.AnalysisRequest>( msg ) ) );
+                await rabbit.PublishAsync( rabbit.ExchangeDeclare( m.Body.Exchange, EasyNetQ.Topology.ExchangeType.Direct ),
+                    //m.Body.RoutingKey
+                    "Dirtbag_ToAnalyze"
+                    , true, new Message<DirtbagWebservice.Models.RabbitAnalysisRequestMessage>(Newtonsoft.Json.JsonConvert.DeserializeObject<DirtbagWebservice.Models.RabbitAnalysisRequestMessage>( msg ) ) );
             } );
         }
     }

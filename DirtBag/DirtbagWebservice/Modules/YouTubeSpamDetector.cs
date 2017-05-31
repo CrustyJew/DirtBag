@@ -43,7 +43,7 @@ namespace DirtbagWebservice.Modules {
         }
         public async Task<AnalysisDetails> Analyze(AnalysisRequest request)
         {
-            var results = await Analyze(new List<AnalysisRequest>() { request });
+            var results = await Analyze(new List<AnalysisRequest>() { request }).ConfigureAwait(false);
             return results.Values.FirstOrDefault();
         }
         public async Task<Dictionary<string, AnalysisDetails>> Analyze( List<AnalysisRequest> requests ) {
@@ -99,7 +99,7 @@ namespace DirtbagWebservice.Modules {
             for ( var i = 0; i < youTubePosts.Keys.Count; i += 50 ) {
                 
                 req.Id = string.Join( ",", youTubePosts.Keys.Skip( i ).Take( 50 ) );
-                var response = await req.ExecuteAsync();
+                var response = await req.ExecuteAsync().ConfigureAwait(false);
 
                 foreach ( var vid in response.Items ) {
                     foreach ( var analysisReq in youTubePosts[vid.Id] ) {

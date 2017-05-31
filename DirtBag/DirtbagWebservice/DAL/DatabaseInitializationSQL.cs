@@ -20,7 +20,8 @@ if not exists( select * from sys.tables t join sys.schemas s on ( t.schema_id = 
 CREATE TABLE
 [SubReddits]( 
     [ID] INTEGER NOT NULL PRIMARY KEY IDENTITY, 
-    [SubName] varchar(50) NOT NULL
+    [SubName] varchar(50) NOT NULL,
+    [SentinelID] integer
 );
 
 if not exists( select * from sys.tables t join sys.schemas s on ( t.schema_id = s.schema_id ) where s.name = SCHEMA_NAME() and t.name = 'Actions' ) 
@@ -56,7 +57,7 @@ CREATE TABLE
     [MediaID] varchar(255) NOT NULL,
     [MediaPlatform] smallint NOT NULL,
     [Score] float,
-    [Reason] varchar(1000),
+    [Reason] varchar(MAX),
     [ReportReason] varchar(255),
     [FlairText] varchar(255),
     [FlairClass] varchar(255),

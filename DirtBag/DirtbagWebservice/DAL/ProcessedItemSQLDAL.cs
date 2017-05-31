@@ -13,6 +13,16 @@ namespace DirtbagWebservice.DAL {
 
         public async Task LogProcessedItemAsync( Models.ProcessedItem processed ) {
             string processedPostInsert = @"
+
+MERGE Subreddits WITH (HOLDLOCK) AS s 
+Using (VALUES (@SubName)) AS n (SubName) 
+ON s.SubName = n.SubName 
+WHEN NOT MATCHED BY TARGET THEN 
+INSERT (SubName) VALUES (n.SubName);
+
+INSERT INTO Subreddits (SubName)
+select @SubName from subreddits where not exists (select 1 from subreddits where subname = @SubName);
+
 INSERT INTO ProcessedItems(SubredditID,ThingID,Author,PermaLink,ThingType,MediaID,MediaChannelID,MediaPlatform,ActionID,SeenByModules)
 select sub.ID, @ThingID, @Author, @PermaLink, @ThingType, @MediaID, @MediaChannelID, @MediaPlatform, act.ID, @SeenByModules
 from Subreddits sub
@@ -20,8 +30,8 @@ inner join Actions act on act.ActionName = @Action
 where sub.SubName like @SubName
 ;";
             string analysisResultsInsert = @"
-INSERT INTO AnalysisScores([SubredditID], [ModuleID], [ThingID], [MediaID], [MediaChannelID], [MediaPlatform], [Score], [Reason], [ReportReason], [FlairText], [FlairClass], [FlairPriority])
-select sub.ID, @ModuleID, @ThingID, @MediaID, @MediaChannelID, @MediaPlatform, @Score, @Reason, @ReportReason, @FlairText, @FlairClass, @FlairPriority
+INSERT INTO AnalysisScores([SubredditID], [ModuleID], [ThingID], [MediaID], [MediaPlatform], [Score], [Reason], [ReportReason], [FlairText], [FlairClass], [FlairPriority])
+select sub.ID, @ModuleID, @ThingID, @MediaID, @MediaPlatform, @Score, @Reason, @ReportReason, @FlairText, @FlairClass, @FlairPriority
 from Subreddits sub
 where sub.SubName like @SubName
 ;";
@@ -43,9 +53,10 @@ where sub.SubName like @SubName
                     {"FlairPriority",score.RemovalFlair?.Priority }
                 });
             }
+            if(conn.State != ConnectionState.Open) conn.Open();
             using(var transactionScope = conn.BeginTransaction()) {
-                await conn.ExecuteAsync(processedPostInsert, processed);
-                await conn.ExecuteAsync(analysisResultsInsert, arParams);
+                await conn.ExecuteAsync(processedPostInsert, processed, transactionScope);
+                await conn.ExecuteAsync(analysisResultsInsert, arParams, transactionScope);
 
                 transactionScope.Commit();
             }
@@ -81,9 +92,10 @@ select sub.ID, @ModuleID, @ThingID, @MediaID, @MediaPlatform, @Score, @Reason, @
 from Subreddits sub
 where sub.SubName like @SubName
 ;";
+            if(conn.State != ConnectionState.Open) conn.Open();
             using(var transactionScope = conn.BeginTransaction()) {
-                await conn.ExecuteAsync(scoresDeleteOld, asParams);
-                await conn.ExecuteAsync(scoresUpdate, asParams);
+                await conn.ExecuteAsync(scoresDeleteOld, asParams, transactionScope);
+                await conn.ExecuteAsync(scoresUpdate, asParams, transactionScope);
                 transactionScope.Commit();
             }
         }

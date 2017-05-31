@@ -51,7 +51,7 @@ namespace DirtbagWebservice.Modules {
         private Regex LicenserMatching;
 
         public async Task<AnalysisDetails> Analyze(AnalysisRequest request) {
-            var results = await Analyze(new List<AnalysisRequest>() { request });
+            var results = await Analyze(new List<AnalysisRequest>() { request }).ConfigureAwait(false);
             return results.Values.FirstOrDefault();
         }
 
@@ -83,7 +83,7 @@ namespace DirtbagWebservice.Modules {
                 req.Id = string.Join( ",", ids );
 
                 var ytScrape = ScrapeYouTube( youTubePosts.Skip( i ).Take( 50 ).ToDictionary( p => p.Key, p => p.Value ), toReturn );
-                var response = await req.ExecuteAsync();
+                var response = await req.ExecuteAsync().ConfigureAwait(false);
 
                 foreach ( var vid in response.Items ) {
                     var redditThings = youTubePosts[vid.Id];
@@ -98,7 +98,7 @@ namespace DirtbagWebservice.Modules {
                     }
 
                 }
-                await ytScrape;
+                await ytScrape.ConfigureAwait(false);
             }
 
             return toReturn;

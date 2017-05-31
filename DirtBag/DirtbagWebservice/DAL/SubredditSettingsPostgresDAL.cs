@@ -30,17 +30,8 @@ edited_by = EXCLUDED.edited_by
 WHERE
 dbsets.subreddit_id = EXCLUDED.subreddit_id
 ";
-
-
-
-
-
-            conn.Open();
-            using ( var transact = conn.BeginTransaction() ) {
-
-                await conn.ExecuteAsync( subredditQuery, settings );
-                transact.Commit();
-            }
+                await conn.ExecuteAsync( subredditQuery, settings ).ConfigureAwait(false);
+            
 
         }
 
@@ -287,7 +278,7 @@ LEFT JOIN dirtbag.spam_detector_modules sd_m on sd_m.subreddit_id = s.id
 WHERE s.subreddit_name like @subreddit
 ";
             Models.SubredditSettings toReturn = new Models.SubredditSettings();
-            toReturn = await conn.QuerySingleOrDefaultAsync<SubredditSettings>( subredditQuery, new { subreddit } );
+            toReturn = await conn.QuerySingleOrDefaultAsync<SubredditSettings>( subredditQuery, new { subreddit } ).ConfigureAwait(false);
             if ( toReturn == null ) { return null; }
 
 
@@ -302,7 +293,7 @@ WHERE s.subreddit_name like @subreddit
                 }
                 return ls;
             }
-            , param: new { subreddit }, splitOn: "Text,MatchTerms" );
+            , param: new { subreddit }, splitOn: "Text,MatchTerms" ).ConfigureAwait(false);
             if ( toReturn.LicensingSmasher != null ) {
                 toReturn.LicensingSmasher.KnownLicensers = ( await conn.QueryAsync( licensingSmasherLicensors, new { subreddit } ) ).ToDictionary( r => (string) r.Key, r => (string) r.Value );
             }
@@ -313,7 +304,7 @@ WHERE s.subreddit_name like @subreddit
                         sp.RemovalFlair = flair ?? new Flair();
                         return sp;
                     }
-                    , param: new { subreddit }, splitOn: "Text" )
+                    , param: new { subreddit }, splitOn: "Text" ).ConfigureAwait(false)
                 ).SingleOrDefault();
 
 
@@ -342,7 +333,7 @@ WHERE s.subreddit_name like @subreddit
                         toReturn.YouTubeSpamDetector.CommentCountThreshold = module; break;
                 }
                 return sd;
-            }, param: new { subreddit }, splitOn: "Text,Name" );
+            }, param: new { subreddit }, splitOn: "Text,Name" ).ConfigureAwait(false);
 
 
 

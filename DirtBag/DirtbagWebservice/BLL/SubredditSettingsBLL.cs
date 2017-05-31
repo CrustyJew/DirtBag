@@ -4,12 +4,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace DirtbagWebservice.BLL {
     public class SubredditSettingsBLL : ISubredditSettingsBLL {
         private static IMemoryCache cache;
         private const string CACHE_PREFIX = "SubredditSettings:";
         private DAL.ISubredditSettingsDAL dal;
+        private static SemaphoreSlim cacheSemaphore = new SemaphoreSlim(1, 1);
 
         public SubredditSettingsBLL( DAL.ISubredditSettingsDAL ssDAL, IMemoryCache memCache ) {
             dal = ssDAL;
@@ -29,13 +31,13 @@ namespace DirtbagWebservice.BLL {
             if ( !CompareSettings(currentSettings, settings ) ) {
                 settings.ModifiedBy = modifiedBy;
                 settings.LastModified = now;
-                await dal.SetSubredditSettingsAsync( settings );
+                await dal.SetSubredditSettingsAsync( settings ).ConfigureAwait(false);
             }
             if(!CompareSettings(currentSettings?.LicensingSmasher, settings.LicensingSmasher ) ) {
                 settings.LicensingSmasher.ModifiedBy = modifiedBy;
                 settings.LicensingSmasher.LastModified = now;
 
-                await dal.SetLicensingSmasherSettingsAsync( settings.LicensingSmasher, settings.Subreddit );
+                await dal.SetLicensingSmasherSettingsAsync( settings.LicensingSmasher, settings.Subreddit ).ConfigureAwait(false);
 
                 IEnumerable<Models.DAL.LicensingSmasherTerm> termsToAdd = new List<Models.DAL.LicensingSmasherTerm>();
                 IEnumerable<Models.DAL.LicensingSmasherTerm> termsToRemove = new List<Models.DAL.LicensingSmasherTerm>();
@@ -47,10 +49,10 @@ namespace DirtbagWebservice.BLL {
                     termsToAdd = settings.LicensingSmasher.MatchTerms?.Select( t => new Models.DAL.LicensingSmasherTerm() { Term = t, Subreddit = settings.Subreddit } );
                 }
                 if(termsToAdd.Count() > 0 ) {
-                    await dal.AddLicensingSmasherTermsAsync( termsToAdd );
+                    await dal.AddLicensingSmasherTermsAsync( termsToAdd ).ConfigureAwait(false);
                 }
                 if(termsToRemove.Count() > 0 ) {
-                    await dal.DeleteLicensingSmasherTermsAsync( termsToRemove );
+                    await dal.DeleteLicensingSmasherTermsAsync( termsToRemove ).ConfigureAwait(false);
                 }
 
                 IEnumerable<KeyValuePair<string, string>> licensorsToAdd = new List<KeyValuePair<string, string>>();
@@ -70,7 +72,7 @@ namespace DirtbagWebservice.BLL {
                             DisplayName = l.Value,
                             LicensorID = l.Key
                         } )
-                        );
+                        ).ConfigureAwait(false);
                 }
 
                 if(licensorsToRemove.Count() > 0 ) {
@@ -80,20 +82,20 @@ namespace DirtbagWebservice.BLL {
                              DisplayName = l.Value,
                              LicensorID = l.Key
                          } )
-                        );
+                        ).ConfigureAwait(false);
                 }
             }
             if(!CompareSettings(currentSettings?.SelfPromotionCombustor, settings.SelfPromotionCombustor ) ) {
                 settings.SelfPromotionCombustor.ModifiedBy = modifiedBy;
                 settings.SelfPromotionCombustor.LastModified = now;
 
-                await dal.SetSelfPromoSettingsAsync( settings.SelfPromotionCombustor, settings.Subreddit );
+                await dal.SetSelfPromoSettingsAsync( settings.SelfPromotionCombustor, settings.Subreddit ).ConfigureAwait(false);
             }
             if(!CompareSettings(currentSettings?.YouTubeSpamDetector, settings.YouTubeSpamDetector ) ) {
                 settings.YouTubeSpamDetector.ModifiedBy = modifiedBy;
                 settings.YouTubeSpamDetector.LastModified = now;
 
-                await dal.SetSpamDetectorSettingsAsync( settings.YouTubeSpamDetector, settings.Subreddit );
+                await dal.SetSpamDetectorSettingsAsync( settings.YouTubeSpamDetector, settings.Subreddit ).ConfigureAwait(false);
 
                 //TODO refactor this bullshit to generics as well.
                 List<Models.DAL.SpamDetectorModule> spamModules = new List<Models.DAL.SpamDetectorModule>();
@@ -107,7 +109,7 @@ namespace DirtbagWebservice.BLL {
                     spamModules.Add( new Models.DAL.SpamDetectorModule( settings.Subreddit, settings.YouTubeSpamDetector.VoteCountThreshold ) );
                     spamModules.Add( new Models.DAL.SpamDetectorModule( settings.Subreddit, settings.YouTubeSpamDetector.ChannelSubscribersThreshold ) );
 
-                    await dal.SetSpamDetectorModuleSettingsAsync( spamModules );
+                    await dal.SetSpamDetectorModuleSettingsAsync( spamModules ).ConfigureAwait(false);
                 }
                 catch {
                     throw new Exception( "Failed to save SpamDetectorModules" );
@@ -148,27 +150,41 @@ namespace DirtbagWebservice.BLL {
                 return settings;
             }
             else {
-                var settings = await dal.GetSubredditSettingsAsync( subreddit );
-                if ( returnDefault ) {
-                    if ( settings == null ) {
-                        settings = SubredditSettings.GetDefaultSettings();
-                        settings.Subreddit = subreddit;
+                //not in cache.
+                await cacheSemaphore.WaitAsync();
+                try {
+                    //check if anyone else got the settings while waiting for semaphore
+                    if(!cache.TryGetValue(CACHE_PREFIX + subreddit, out cacheVal) && cacheVal != null) {
+                        cacheSemaphore.Release();
+                        return (SubredditSettings) cacheVal;
                     }
-                    if ( settings.LicensingSmasher == null ) {
-                        settings.LicensingSmasher = new LicensingSmasherSettings();
-                        settings.LicensingSmasher.SetDefaultSettings();
+
+                    var settings = await dal.GetSubredditSettingsAsync(subreddit);
+                    if(returnDefault) {
+                        if(settings == null) {
+                            settings = SubredditSettings.GetDefaultSettings();
+                            settings.Subreddit = subreddit;
+                        }
+                        if(settings.LicensingSmasher == null) {
+                            settings.LicensingSmasher = new LicensingSmasherSettings();
+                            settings.LicensingSmasher.SetDefaultSettings();
+                        }
+                        if(settings.SelfPromotionCombustor == null) {
+                            settings.SelfPromotionCombustor = new Models.SelfPromotionCombustorSettings();
+                            settings.SelfPromotionCombustor.SetDefaultSettings();
+                        }
+                        if(settings.YouTubeSpamDetector == null) {
+                            settings.YouTubeSpamDetector = new YouTubeSpamDetectorSettings();
+                            settings.YouTubeSpamDetector.SetDefaultSettings();
+                        }
                     }
-                    if ( settings.SelfPromotionCombustor == null ) {
-                        settings.SelfPromotionCombustor = new Models.SelfPromotionCombustorSettings();
-                        settings.SelfPromotionCombustor.SetDefaultSettings();
-                    }
-                    if ( settings.YouTubeSpamDetector == null ) {
-                        settings.YouTubeSpamDetector = new YouTubeSpamDetectorSettings();
-                        settings.YouTubeSpamDetector.SetDefaultSettings();
-                    }
+                    cache.Set(CACHE_PREFIX + subreddit, settings, DateTimeOffset.Now.AddMinutes(30));
+                    return settings;
                 }
-                cache.Set( CACHE_PREFIX + subreddit, settings, DateTimeOffset.Now.AddMinutes( 30 ) );
-                return settings;
+                finally {
+                    cacheSemaphore.Release();
+                }
+                
             }
         }
 

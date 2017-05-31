@@ -75,7 +75,8 @@ namespace DirtbagWebservice.BLL {
         }
         public async Task<Models.AnalysisResults> AnalyzePost(string subreddit, Models.AnalysisRequest request)
         {
-            var settings = await subSetsBLL.GetSubredditSettingsAsync(subreddit);
+            logger.LogInformation($"Analyzing: {subreddit} : {request.ThingID}");
+            var settings = await subSetsBLL.GetSubredditSettingsAsync(subreddit).ConfigureAwait(false);
             if(settings == null) {
                 logger.LogInformation($"{subreddit} does not have settings or dirtbag enabled");
                 return null;
@@ -92,32 +93,33 @@ namespace DirtbagWebservice.BLL {
             }
 
 
-            var results = await CombineResults(analysisTasks, settings, request.ThingID);
+            var results = await CombineResults(analysisTasks, settings, request.ThingID).ConfigureAwait(false);
+            logger.LogInformation($"Analysis Complete: {subreddit} : {request.ThingID} : {results.AnalysisDetails.TotalScore} - {results.RequiredAction}");
+            Models.ProcessedItem item = new Models.ProcessedItem(subreddit, request.ThingID, request.Author.Name, results.RequiredAction.ToString(), request.PermaLink, request.MediaID, request.MediaChannelID, request.MediaPlatform, results.AnalysisDetails);
 
-            Models.ProcessedItem item = new Models.ProcessedItem(subreddit, request.ThingID, results.RequiredAction.ToString(), request.PermaLink, request.MediaID, request.MediaPlatform);
-
-            try {
-                await processedDAL.LogProcessedItemAsync(item);
-            }
-            catch {
-                //ignore logging errors and respond anyway.
-            }
+            
+                await processedDAL.LogProcessedItemAsync(item).ConfigureAwait(false);
+            
 
             if(botAgentPool != null && results.RequiredAction != Models.AnalysisResults.Action.Nothing) {
-                var agent = botAgentPool.GetOrCreateAgent(settings.BotName, () => {
+                var agent = await botAgentPool.GetOrCreateAgentAsync(settings.BotName, () => {
+                    logger.LogInformation("Creating web agent for " + settings.BotName);
                     var toReturn = new RedditSharp.BotWebAgent(settings.BotName, settings.BotPass, settings.BotAppID, settings.BotAppSecret, null);
                     toReturn.RateLimiter = new RedditSharp.RateLimitManager(RedditSharp.RateLimitMode.SmallBurst);
-                    return toReturn;
+                    return Task.FromResult(toReturn);
                 });
                 
                 if(results.RequiredAction == Models.AnalysisResults.Action.Remove) {
-                    await RedditSharp.Things.VotableThing.RemoveAsync(agent, results.AnalysisDetails.ThingID);
+                    logger.LogInformation($"Removing thing {results.AnalysisDetails.ThingID} - {request.PermaLink}");
+                    await RedditSharp.Things.VotableThing.RemoveAsync(agent, results.AnalysisDetails.ThingID).ConfigureAwait(false);
                     if(results.AnalysisDetails.ThingType == Models.AnalyzableTypes.Post && results.AnalysisDetails.HasFlair) {
-                        await RedditSharp.Things.Post.SetFlairAsync(agent, subreddit, results.AnalysisDetails.ThingID, results.AnalysisDetails.FlairText, results.AnalysisDetails.FlairClass);
+                        await RedditSharp.Things.Post.SetFlairAsync(agent, subreddit, results.AnalysisDetails.ThingID, results.AnalysisDetails.FlairText, results.AnalysisDetails.FlairClass).ConfigureAwait(false);
                     }
                 }
                 else if(results.RequiredAction == Models.AnalysisResults.Action.Report) {
-                    await RedditSharp.Things.VotableThing.ReportAsync(agent, results.AnalysisDetails.ThingID, RedditSharp.Things.VotableThing.ReportType.Other, results.AnalysisDetails.ReportReason);
+
+                    logger.LogInformation($"Reporting thing {results.AnalysisDetails.ThingID} - {request.PermaLink}");
+                    await RedditSharp.Things.VotableThing.ReportAsync(agent, results.AnalysisDetails.ThingID, RedditSharp.Things.VotableThing.ReportType.Other, results.AnalysisDetails.ReportReason).ConfigureAwait(false);
                 }
             }
 

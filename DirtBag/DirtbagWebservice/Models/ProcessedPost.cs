@@ -23,10 +23,11 @@ namespace DirtbagWebservice.Models {
             AnalysisDetails = new AnalysisDetails();
         }
 
-        public ProcessedItem( string subName, string thingID, string action, string link, string mediaid, VideoProvider mediaProvider) {
+        public ProcessedItem( string subName, string thingID, string author, string action, string link, string mediaID, string mediaChannelID, VideoProvider mediaProvider, AnalysisDetails details) {
             SubName = subName;
             ThingID = thingID;
             Action = action;
+            Author = author;
             if (thingID.StartsWith("t1_"))
             {
                 ThingType = AnalyzableTypes.Comment;
@@ -35,10 +36,11 @@ namespace DirtbagWebservice.Models {
             {
                 ThingType = AnalyzableTypes.Post;
             }
-            MediaID = mediaid;
+            MediaID = mediaID;
             MediaPlatform = mediaProvider;
+            MediaChannelID = mediaChannelID;
             PermaLink = link;
-            AnalysisDetails = new AnalysisDetails();
+            AnalysisDetails = details;
         }
     }
 }

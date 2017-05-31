@@ -6,30 +6,30 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Text;
 using Newtonsoft.Json;
+using Microsoft.Extensions.Logging;
 
 namespace DirtbagWebservice
 {
     public class RabbitListener
     {
         private System.IServiceProvider provider;
-        private IAdvancedBus rabbitBus;
-        private IExchange resultsExchange;
-        private string resultRoutingKey;
-        private bool returnActionsOnly;
-        public RabbitListener(System.IServiceProvider provider, IAdvancedBus rabbitBus ) {
+        private ILogger<RabbitListener> logger;
+        private BLL.IAnalyzePostBLL analysisBLL;
+        public RabbitListener( System.IServiceProvider provider, ILogger<RabbitListener> logger ) {
             this.provider = provider;
-            this.rabbitBus = rabbitBus;
+            this.logger = logger;
         }
 
         public async Task Subscribe(IMessage<Models.RabbitAnalysisRequestMessage> request, MessageReceivedInfo info ) {
             var analysisBLL = (BLL.IAnalyzePostBLL) provider.GetService( typeof( BLL.IAnalyzePostBLL ) );
             try {
-                var results = await analysisBLL.AnalyzePost(request.Body.Subreddit, request.Body);
+                var results = await analysisBLL.AnalyzePost(request.Body.Subreddit, request.Body).ConfigureAwait(false);
                 //if ( results.RequiredAction != Models.AnalysisResults.Action.Nothing || !returnActionsOnly ) {
                 //    await rabbitBus.PublishAsync( resultsExchange, resultRoutingKey, true, new Message<Models.AnalysisResults>( results ) );
                 //}
             }
             catch(Exception ex) {
+                logger.LogError($"Error in analysis for {request.Body.Subreddit} {request.Body.ThingID}. {ex.Message} \r\n {ex.StackTrace}");
                 throw new EasyNetQ.EasyNetQException( "Failed to analyze..", ex );
             }
         }

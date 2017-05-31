@@ -6,6 +6,7 @@ using Xunit;
 using Moq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Data.SqlClient;
 
 namespace DirtbagWebserviceTests.IntegrationTests
 {
@@ -71,10 +72,11 @@ namespace DirtbagWebserviceTests.IntegrationTests
                 MediaChannelID = "UCsVXjNRWJMyXViNLM2pyMfg",
                 MediaChannelName = "Jukin Media",
                 MediaPlatform = DirtbagWebservice.Models.VideoProvider.YouTube,
+                PermaLink = "https://reddit.com",
                 ThingID = "t3_666"
             };
 
-            var bll = new  DirtbagWebservice.BLL.AnalyzePostBLL(config,subSettings.Object, postHistory.Object, processedDAL.Object, null, new LoggerFactory().CreateLogger<DirtbagWebservice.BLL.AnalyzePostBLL>());
+            var bll = new  DirtbagWebservice.BLL.AnalyzePostBLL(config,subSettings.Object, postHistory.Object, new DirtbagWebservice.DAL.ProcessedItemSQLDAL(new SqlConnection(config.GetConnectionString("Dirtbag"))), null, new LoggerFactory().CreateLogger<DirtbagWebservice.BLL.AnalyzePostBLL>());
 
             var results = await bll.AnalyzePost( "testsubbie", request );
 
@@ -84,6 +86,33 @@ namespace DirtbagWebserviceTests.IntegrationTests
             Assert.True( results.AnalysisDetails.HasFlair );
             Assert.Equal( "Licensed", results.AnalysisDetails.FlairText );
             Assert.Equal( "red", results.AnalysisDetails.FlairClass );
+        }
+        [Fact]
+        public async Task AnalysisTestAttributionLink() {
+            var subSettings = new Mock<DirtbagWebservice.BLL.ISubredditSettingsBLL>();
+            subSettings.Setup(s => s.GetSubredditSettingsAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                .Returns(Task.FromResult(testSettings));
+
+            var processedDAL = new Mock<DirtbagWebservice.DAL.IProcessedItemDAL>();
+            processedDAL.Setup(p => p.LogProcessedItemAsync(It.IsAny<DirtbagWebservice.Models.ProcessedItem>()))
+                .Returns(Task.FromResult(0));
+
+            var request = new DirtbagWebservice.Models.AnalysisRequest() {
+                Author = new DirtbagWebservice.Models.AuthorInfo { Name = "redhans", CommentKarma = 0, LinkKarma = 1, Created = DateTime.UtcNow },
+                EntryTime = DateTime.UtcNow,
+                MediaID = "r251n4oPe3Q",
+                MediaChannelID = "UCYzz2SkhAaM0FDKuGk-IPZg",
+                MediaChannelName = "Richard Aguilar",
+                MediaPlatform = DirtbagWebservice.Models.VideoProvider.YouTube,
+                PermaLink = "https://redd.it/6dz6lv",
+                ThingID = "t3_6dz6lv"
+            };
+            var bll = new DirtbagWebservice.BLL.AnalyzePostBLL(config, subSettings.Object, new DirtbagWebservice.DAL.UserPostingHistoryDAL(new Npgsql.NpgsqlConnection(config.GetConnectionString("SentinelDirtbag"))), new DirtbagWebservice.DAL.ProcessedItemSQLDAL(new SqlConnection(config.GetConnectionString("Dirtbag"))), null, new LoggerFactory().CreateLogger<DirtbagWebservice.BLL.AnalyzePostBLL>());
+
+            var results = await bll.AnalyzePost("testsubbie", request);
+
+            //var dal = new DirtbagWebservice.DAL.UserPostingHistoryDAL(new Npgsql.NpgsqlConnection(config.GetConnectionString("SentinelDirtbag")));
+            //var results = await dal.TestUserPostingHistoryAsync("redhans");
         }
     }
 }
