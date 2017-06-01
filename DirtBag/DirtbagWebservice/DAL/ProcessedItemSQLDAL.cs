@@ -1,8 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
+using DirtbagWebservice.Models;
 
 namespace DirtbagWebservice.DAL {
     public class ProcessedItemSQLDAL : IProcessedItemDAL {
@@ -150,6 +152,22 @@ AND subs.SubName = @subName
                 param: new { thingIDs, subName });
 
             return toReturn.Values?.AsEnumerable();
+        }
+
+        public Task<IEnumerable<ProcessedItem>> ReadProcessedItemAsync( string thingID, string subName ) {
+            string query = @"
+SELECT subs.SubName, pp.ThingID, pp.Author, pp.MediaID, pp.MediaChannelID, pp.MediaPlatform, pp.ThingType, act.ActionName as 'Action', pp.SeenByModules, 
+    scores.Score, scores.Reason, scores.ReportReason, scores.ModuleID, 
+    scores.FlairText as 'Text', scores.FlairClass as 'Class', scores.FlairPriority as 'Priority'
+FROM ProcessedItems pp
+LEFT JOIN AnalysisScores scores on scores.subredditID = pp.subredditID AND pp.thingID = scores.thingID
+LEFT JOIN Actions act on act.ID = pp.ActionID
+LEFT JOIN Subreddits subs on subs.ID = pp.SubredditID
+WHERE
+pp.ThingID = @thingID
+AND subs.SubName = @subName
+";
+            return conn.QueryAsync<ProcessedItem>(query, new { thingID, subName });
         }
     }
 }

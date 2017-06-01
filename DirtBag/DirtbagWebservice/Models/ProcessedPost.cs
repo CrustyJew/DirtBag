@@ -23,7 +23,7 @@ namespace DirtbagWebservice.Models {
             AnalysisDetails = new AnalysisDetails();
         }
 
-        public ProcessedItem( string subName, string thingID, string author, string action, string link, string mediaID, string mediaChannelID, VideoProvider mediaProvider, AnalysisDetails details) {
+        public ProcessedItem( string subName, string thingID, string author, string action, string link, string mediaID, string mediaChannelID, VideoProvider mediaProvider, AnalysisDetails details, Modules.Modules seenByModules) {
             SubName = subName;
             ThingID = thingID;
             Action = action;
@@ -41,6 +41,7 @@ namespace DirtbagWebservice.Models {
             MediaChannelID = mediaChannelID;
             PermaLink = link;
             AnalysisDetails = details;
+            SeenByModules = seenByModules;
         }
     }
 }
