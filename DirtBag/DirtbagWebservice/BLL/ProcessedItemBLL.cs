@@ -1,10 +1,11 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace DirtbagWebservice.BLL {
     public class ProcessedItemBLL : IProcessedItemBLL
     {
-        private DAL.ProcessedItemSQLDAL dal;
-        public ProcessedItemBLL(DAL.ProcessedItemSQLDAL ppDAL ) {
+        private DAL.IProcessedItemDAL dal;
+        public ProcessedItemBLL(DAL.IProcessedItemDAL ppDAL ) {
             dal = ppDAL;
         }
 

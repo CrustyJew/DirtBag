@@ -57,7 +57,7 @@ namespace DirtbagWebservice {
             services.AddTransient<DAL.IProcessedItemDAL>(( x ) => { return new DAL.ProcessedItemSQLDAL(new SqlConnection(DirtbagConnectionString)); });
             services.AddTransient<DAL.ISubredditSettingsDAL>(( x ) => { return new DAL.SubredditSettingsPostgresDAL(new NpgsqlConnection(SentinelConnectionString)); });
             services.AddTransient<BLL.ISubredditSettingsBLL, BLL.SubredditSettingsBLL>();
-            services.AddTransient<BLL.IAnalyzePostBLL, BLL.AnalyzePostBLL>();
+            services.AddTransient<BLL.IAnalyzeMediaBLL, BLL.AnalyzeMediaBLL>();
             services.AddTransient<BLL.IProcessedItemBLL, BLL.ProcessedItemBLL>();
 
             services.AddSingleton(new RedditSharp.WebAgentPool<string, RedditSharp.BotWebAgent>());
@@ -93,21 +93,21 @@ namespace DirtbagWebservice {
                 loggerFactory.AddDebug();
             }
 
+            if(String.IsNullOrWhiteSpace(Configuration["DisableRabbitQueue"])) {
+                rabbit = RabbitHutch.CreateBus(Configuration.GetConnectionString("Rabbit"),
+                    x => {
+                        x.Register<ISerializer, DirtbagRabbitSerializer>()
+                         .Register<ITypeNameSerializer>(_ => new DirtbagTypeNameSerializer());
+                        if(logger != null) x.Register<IEasyNetQLogger>(_ => logger);
+                    }).Advanced;
+                var exchange = rabbit.ExchangeDeclare(Configuration["RabbitExchange"], EasyNetQ.Topology.ExchangeType.Direct);
+                var queue = rabbit.QueueDeclare(Configuration["RabbitQueue"]);
+                rabbitListener = new DirtbagWebservice.RabbitListener(app.ApplicationServices, loggerFactory.CreateLogger<RabbitListener>());
+                var binding = rabbit.Bind(exchange, queue, Configuration["RabbitRoutingKey"]);
 
-            rabbit = RabbitHutch.CreateBus(Configuration.GetConnectionString("Rabbit"),
-                x => {
-                    x.Register<ISerializer, DirtbagRabbitSerializer>()
-                     .Register<ITypeNameSerializer>(_ => new DirtbagTypeNameSerializer());
-                    if(logger != null) x.Register<IEasyNetQLogger>(_ => logger);
-                }).Advanced;
-            var exchange = rabbit.ExchangeDeclare(Configuration["RabbitExchange"], EasyNetQ.Topology.ExchangeType.Direct);
-            var queue = rabbit.QueueDeclare(Configuration["RabbitQueue"]);
-            rabbitListener = new DirtbagWebservice.RabbitListener(app.ApplicationServices, loggerFactory.CreateLogger<RabbitListener>());
-            var binding = rabbit.Bind(exchange, queue, Configuration["RabbitRoutingKey"]);
+                rabbit.Consume<Models.RabbitAnalysisRequestMessage>(queue, rabbitListener.Subscribe, conf => { conf.WithPrefetchCount(25); });
 
-            rabbit.Consume<Models.RabbitAnalysisRequestMessage>(queue, rabbitListener.Subscribe,conf => { conf.WithPrefetchCount(25); });
-
-
+            }
 
             app.UseIdentityServerAuthentication(new IdentityServerAuthenticationOptions {
                 Authority = Configuration["OIDC_Authority"],

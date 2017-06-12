@@ -76,9 +76,9 @@ namespace DirtbagWebserviceTests.IntegrationTests
                 ThingID = "t3_666"
             };
 
-            var bll = new  DirtbagWebservice.BLL.AnalyzePostBLL(config,subSettings.Object, postHistory.Object, new DirtbagWebservice.DAL.ProcessedItemSQLDAL(new SqlConnection(config.GetConnectionString("Dirtbag"))), null, new LoggerFactory().CreateLogger<DirtbagWebservice.BLL.AnalyzePostBLL>());
+            var bll = new  DirtbagWebservice.BLL.AnalyzeMediaBLL(config,subSettings.Object, postHistory.Object, new DirtbagWebservice.DAL.ProcessedItemSQLDAL(new SqlConnection(config.GetConnectionString("Dirtbag"))), null, new LoggerFactory().CreateLogger<DirtbagWebservice.BLL.AnalyzeMediaBLL>());
 
-            var results = await bll.AnalyzePost( "testsubbie", request );
+            var results = await bll.AnalyzeMedia( "testsubbie", request, false );
 
             Assert.NotNull( results );
             Assert.Equal( "t3_666", results.AnalysisDetails.ThingID );
@@ -107,9 +107,9 @@ namespace DirtbagWebserviceTests.IntegrationTests
                 PermaLink = "https://redd.it/6dz6lv",
                 ThingID = "t3_6dz6lv"
             };
-            var bll = new DirtbagWebservice.BLL.AnalyzePostBLL(config, subSettings.Object, new DirtbagWebservice.DAL.UserPostingHistoryDAL(new Npgsql.NpgsqlConnection(config.GetConnectionString("SentinelDirtbag"))), new DirtbagWebservice.DAL.ProcessedItemSQLDAL(new SqlConnection(config.GetConnectionString("Dirtbag"))), null, new LoggerFactory().CreateLogger<DirtbagWebservice.BLL.AnalyzePostBLL>());
+            var bll = new DirtbagWebservice.BLL.AnalyzeMediaBLL(config, subSettings.Object, new DirtbagWebservice.DAL.UserPostingHistoryDAL(new Npgsql.NpgsqlConnection(config.GetConnectionString("SentinelDirtbag"))), new DirtbagWebservice.DAL.ProcessedItemSQLDAL(new SqlConnection(config.GetConnectionString("Dirtbag"))), null, new LoggerFactory().CreateLogger<DirtbagWebservice.BLL.AnalyzeMediaBLL>());
 
-            var results = await bll.AnalyzePost("testsubbie", request);
+            var results = await bll.AnalyzeMedia("testsubbie", request, false);
 
             //var dal = new DirtbagWebservice.DAL.UserPostingHistoryDAL(new Npgsql.NpgsqlConnection(config.GetConnectionString("SentinelDirtbag")));
             //var results = await dal.TestUserPostingHistoryAsync("redhans");

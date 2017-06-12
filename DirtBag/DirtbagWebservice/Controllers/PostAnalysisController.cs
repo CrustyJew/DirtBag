@@ -8,21 +8,27 @@ namespace DirtbagWebservice.Controllers {
     [Route("api/Analysis")]
     [Authorize]
     public class PostAnalysisController : Controller {
-        private BLL.IAnalyzePostBLL analyzeBLL;
+        private BLL.IAnalyzeMediaBLL analyzeBLL;
         private BLL.IProcessedItemBLL processedBLL;
 
-        public PostAnalysisController( BLL.IAnalyzePostBLL analyzePostBLL, BLL.IProcessedItemBLL processedPostBLL ) {
+        public PostAnalysisController( BLL.IAnalyzeMediaBLL analyzePostBLL, BLL.IProcessedItemBLL processedPostBLL ) {
             analyzeBLL = analyzePostBLL;
             processedBLL = processedPostBLL;
         }
 
-        [Route("{sub}"), HttpGet]
+        [HttpGet("{sub}")]
         public Task<IEnumerable<Models.ProcessedItem>> GetAnalysis( [FromRoute] string sub, [FromQuery] string thingID ) {
-            if(!User.HasClaim("uri:snoonotes:subreddit"))
+            if(!User.IsInRole(sub.ToLower())) throw new UnauthorizedAccessException("Not a mod of that sub!");
             return processedBLL.ReadProcessedPost(thingID, sub);
         }
 
-        [Route("{sub}"), HttpPut]
+        [HttpPost("{sub}")]
+        public Task<Models.AnalysisResults> DoAnalysis( [FromRoute] string sub, [FromBody] Models.AnalysisRequest request ) {
+            if(!User.IsInRole(sub.ToLower())) throw new UnauthorizedAccessException("Not a mod of that sub!");
+            return analyzeBLL.AnalyzeMedia(sub, request, false);
+        }
+
+        [HttpPut("{sub}")]
         public Task<Models.ProcessedItem> UpdateAnalysis( string sub, [FromQuery]string thingID, [FromQuery]string mediaID, [FromQuery]Models.VideoProvider mediaPlatform ) {
             return analyzeBLL.UpdateAnalysisAsync(sub, thingID, mediaID, mediaPlatform, User.Identity.Name);
         }

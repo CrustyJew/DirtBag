@@ -14,16 +14,16 @@ namespace DirtbagWebservice
     {
         private System.IServiceProvider provider;
         private ILogger<RabbitListener> logger;
-        private BLL.IAnalyzePostBLL analysisBLL;
+        private BLL.IAnalyzeMediaBLL analysisBLL;
         public RabbitListener( System.IServiceProvider provider, ILogger<RabbitListener> logger ) {
             this.provider = provider;
             this.logger = logger;
         }
 
         public async Task Subscribe(IMessage<Models.RabbitAnalysisRequestMessage> request, MessageReceivedInfo info ) {
-            var analysisBLL = (BLL.IAnalyzePostBLL) provider.GetService( typeof( BLL.IAnalyzePostBLL ) );
+            var analysisBLL = (BLL.IAnalyzeMediaBLL) provider.GetService( typeof( BLL.IAnalyzeMediaBLL ) );
             try {
-                var results = await analysisBLL.AnalyzePost(request.Body.Subreddit, request.Body).ConfigureAwait(false);
+                var results = await analysisBLL.AnalyzeMedia(request.Body.Subreddit, request.Body, true).ConfigureAwait(false);
                 //if ( results.RequiredAction != Models.AnalysisResults.Action.Nothing || !returnActionsOnly ) {
                 //    await rabbitBus.PublishAsync( resultsExchange, resultRoutingKey, true, new Message<Models.AnalysisResults>( results ) );
                 //}
