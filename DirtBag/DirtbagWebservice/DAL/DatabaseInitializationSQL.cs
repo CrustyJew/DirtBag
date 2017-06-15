@@ -42,6 +42,7 @@ CREATE TABLE
     [ThingType] tinyint NOT NULL,
     [MediaID] varchar(255) NOT NULL,
     [MediaChannelID] varchar(255) NOT NULL,
+    [MediaChannelName] nvarchar(255),
     [MediaPlatform] smallint NOT NULL,
     [ActionID] tinyint, 
     [SeenByModules] INTEGER

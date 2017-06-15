@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,12 +11,16 @@ namespace DirtbagWebservice.Models {
         public string SubName { get; set; }
         public string ThingID { get; set; }
         public string Author { get; set; }
+        [JsonConverter(typeof(StringEnumConverter))]
         public AnalyzableTypes ThingType { get; set; }
         public string PermaLink { get; set; }
         public string MediaID { get; set; }
         public string MediaChannelID { get; set; }
+        public string MediaChannelName { get; set; }
+        [JsonConverter(typeof(StringEnumConverter))]
         public VideoProvider MediaPlatform { get; set; }
         public string Action { get; set; }
+        [JsonConverter(typeof(StringEnumConverter))]
         public Modules.Modules SeenByModules { get; set; }
         public AnalysisDetails AnalysisDetails { get; set; }
 
@@ -23,7 +28,7 @@ namespace DirtbagWebservice.Models {
             AnalysisDetails = new AnalysisDetails();
         }
 
-        public ProcessedItem( string subName, string thingID, string author, string action, string link, string mediaID, string mediaChannelID, VideoProvider mediaProvider, AnalysisDetails details, Modules.Modules seenByModules) {
+        public ProcessedItem( string subName, string thingID, string author, string action, string link, string mediaID, string mediaChannelID, string mediaChannelName, VideoProvider mediaProvider, AnalysisDetails details, Modules.Modules seenByModules) {
             SubName = subName;
             ThingID = thingID;
             Action = action;
@@ -39,6 +44,7 @@ namespace DirtbagWebservice.Models {
             MediaID = mediaID;
             MediaPlatform = mediaProvider;
             MediaChannelID = mediaChannelID;
+            MediaChannelName = mediaChannelName;
             PermaLink = link;
             AnalysisDetails = details;
             SeenByModules = seenByModules;

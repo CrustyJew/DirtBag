@@ -17,6 +17,7 @@ namespace DirtbagWebservice
         public static void Main(string[] args)
         {
             var host = new WebHostBuilder()
+                .UseApplicationInsights()
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseUrls("http://localhost:16666/Dirtbag")

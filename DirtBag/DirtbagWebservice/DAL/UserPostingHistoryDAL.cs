@@ -22,7 +22,7 @@ inner join media_info mi on mi.thing_id = rt.thing_id
 where rt.author = @username 
 AND mi.thing_id like 't3_%'
 ";
-            var results = await _conn.QueryAsync<Models.UserPostInfo>( query, new { username } ).ConfigureAwait(false);
+            var results = await _conn.QueryAsync<Models.UserPostInfo>( query, new { username = new CitextParameter(username) } ).ConfigureAwait(false);
             return results;
 
         }

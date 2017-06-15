@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,6 +12,8 @@ namespace DirtbagWebservice.Models {
         public string Reason { get; set; }
         public string ReportReason { get; set; }
         public Flair RemovalFlair { get; set; }
+
+        [JsonConverter(typeof(StringEnumConverter))]
         public Modules.Modules Module { get; set; }
         public AnalysisScore() {
             Score = 0;

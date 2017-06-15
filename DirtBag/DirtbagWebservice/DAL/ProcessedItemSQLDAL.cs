@@ -154,10 +154,11 @@ AND subs.SubName = @subName
             return toReturn.Values?.AsEnumerable();
         }
 
-        public Task<IEnumerable<ProcessedItem>> ReadProcessedItemAsync( string thingID, string subName ) {
+        public async Task<AnalysisResponse> GetThingAnalysis( string thingID, string subName ) {
             string query = @"
-SELECT subs.SubName, pp.ThingID, pp.Author, pp.MediaID, pp.MediaChannelID, pp.MediaPlatform, pp.ThingType, act.ActionName as 'Action', pp.SeenByModules, 
-    scores.Score, scores.Reason, scores.ReportReason, scores.ModuleID, 
+SELECT subs.SubName, pp.ThingID, pp.Author, pp.ThingType, act.ActionName as 'Action', pp.SeenByModules, pp.PermaLink, 
+    pp.MediaID, pp.MediaChannelID, pp.MediaChannelName, pp.MediaPlatform,
+    scores.Score, scores.Reason, scores.ReportReason, scores.ModuleID as 'Module', 
     scores.FlairText as 'Text', scores.FlairClass as 'Class', scores.FlairPriority as 'Priority'
 FROM ProcessedItems pp
 LEFT JOIN AnalysisScores scores on scores.subredditID = pp.subredditID AND pp.thingID = scores.thingID
@@ -167,7 +168,26 @@ WHERE
 pp.ThingID = @thingID
 AND subs.SubName = @subName
 ";
-            return conn.QueryAsync<ProcessedItem>(query, new { thingID, subName });
+            AnalysisResponse toReturn = null;
+            await conn.QueryAsync<AnalysisResponse,MediaAnalysis, AnalysisScore, Flair, AnalysisResponse>(query, (ar,media,score,flair)=> {
+                
+                if(toReturn == null) {
+                    toReturn = ar;
+                }
+                var mediaAnalysis = toReturn.Analysis.SingleOrDefault(a => a.MediaChannelID == media.MediaChannelID && a.MediaID == media.MediaID && a.MediaPlatform == media.MediaPlatform);
+                if(mediaAnalysis == null) {
+                    mediaAnalysis = media;
+                    toReturn.Analysis.Add(mediaAnalysis);
+                }
+                if(score != null) {
+                    //only 1 flair attached to a score so don't have to do list bullshit
+                    score.RemovalFlair = flair ?? new Flair();
+                    mediaAnalysis.Scores.Add(score);
+                }
+                return ar;
+            },splitOn:"MediaID,Score,Text",param: new { thingID, subName });
+
+            return toReturn;
         }
     }
 }

@@ -9,8 +9,8 @@ namespace DirtbagWebservice.BLL {
             dal = ppDAL;
         }
 
-        public Task<IEnumerable<Models.ProcessedItem>> ReadProcessedPost(string thingID, string subreddit) {
-            return dal.ReadProcessedItemAsync( thingID, subreddit );
+        public Task<Models.AnalysisResponse> ReadThingAnalysis(string thingID, string subreddit) {
+            return dal.GetThingAnalysis( thingID, subreddit );
         }
     }
 }

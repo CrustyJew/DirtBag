@@ -99,7 +99,7 @@ namespace DirtbagWebservice.BLL {
 
             var results = await CombineResults(analysisTasks, settings, request.ThingID).ConfigureAwait(false);
             logger.LogInformation($"Analysis Complete: {settings.Subreddit} : {request.ThingID} : {results.AnalysisDetails.TotalScore} - {results.RequiredAction}");
-            Models.ProcessedItem item = new Models.ProcessedItem(settings.Subreddit, request.ThingID, request.Author.Name, results.RequiredAction.ToString(), request.PermaLink, request.MediaID, request.MediaChannelID, request.MediaPlatform, results.AnalysisDetails,results.AnalysisDetails.AnalyzingModule);
+            Models.ProcessedItem item = new Models.ProcessedItem(settings.Subreddit, request.ThingID, request.Author.Name, results.RequiredAction.ToString(), request.PermaLink, request.MediaID, request.MediaChannelID, request.MediaChannelName, request.MediaPlatform, results.AnalysisDetails,results.AnalysisDetails.AnalyzingModule);
 
             if(actOnInfo) {
                 await processedDAL.LogProcessedItemAsync(item).ConfigureAwait(false);

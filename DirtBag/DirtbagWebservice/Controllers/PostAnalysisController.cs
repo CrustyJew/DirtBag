@@ -17,9 +17,9 @@ namespace DirtbagWebservice.Controllers {
         }
 
         [HttpGet("{sub}")]
-        public Task<IEnumerable<Models.ProcessedItem>> GetAnalysis( [FromRoute] string sub, [FromQuery] string thingID ) {
+        public Task<Models.AnalysisResponse> GetAnalysis( [FromRoute] string sub, [FromQuery] string thingID ) {
             if(!User.IsInRole(sub.ToLower())) throw new UnauthorizedAccessException("Not a mod of that sub!");
-            return processedBLL.ReadProcessedPost(thingID, sub);
+            return processedBLL.ReadThingAnalysis(thingID, sub);
         }
 
         [HttpPost("{sub}")]

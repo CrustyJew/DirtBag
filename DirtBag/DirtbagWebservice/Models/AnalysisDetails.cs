@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using RedditSharp.Things;
 using System;
 using System.Collections.Generic;
@@ -81,6 +82,7 @@ namespace DirtbagWebservice.Models {
         }
 
         public string ThingID { get; set; }
+        [JsonConverter(typeof(StringEnumConverter))]
         public Models.AnalyzableTypes ThingType { get; set; }
 
     }

@@ -6,6 +6,6 @@ namespace DirtbagWebservice.BLL
 {
     public interface IProcessedItemBLL
     {
-        Task<IEnumerable<ProcessedItem>> ReadProcessedPost( string thingID, string subreddit);
+        Task<AnalysisResponse> ReadThingAnalysis( string thingID, string subreddit);
     }
 }
