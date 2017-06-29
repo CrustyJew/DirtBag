@@ -30,6 +30,7 @@ namespace DirtbagWebservice.Controllers {
 
         [HttpPut("{sub}")]
         public Task<Models.ProcessedItem> UpdateAnalysis( string sub, [FromQuery]string thingID, [FromQuery]string mediaID, [FromQuery]Models.VideoProvider mediaPlatform ) {
+            if(!User.IsInRole(sub.ToLower())) throw new UnauthorizedAccessException("Not a mod of that sub!");
             return analyzeBLL.UpdateAnalysisAsync(sub, thingID, mediaID, mediaPlatform, User.Identity.Name);
         }
     }

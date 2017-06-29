@@ -45,6 +45,28 @@ namespace DirtbagWebservice.BLL {
 
             await processedDAL.UpdatedAnalysisScoresAsync(subreddit, thingID, mediaID, mediaPlatform, updatedResults.AnalysisDetails.Scores, updateBy);
 
+            if( botAgentPool != null && updatedResults.RequiredAction != Models.AnalysisResults.Action.Nothing && (string.IsNullOrWhiteSpace(config["SkipBotActions"]) || config["SkipBotActions"].ToLower() == "false")) {
+                var agent = await botAgentPool.GetOrCreateAgentAsync(settings.BotName, () => {
+                    logger.LogInformation("Creating web agent for " + settings.BotName);
+                    var toReturn = new RedditSharp.BotWebAgent(settings.BotName, settings.BotPass, settings.BotAppID, settings.BotAppSecret, null);
+                    toReturn.RateLimiter = new RedditSharp.RateLimitManager(RedditSharp.RateLimitMode.SmallBurst);
+                    return Task.FromResult(toReturn);
+                });
+
+                if(updatedResults.RequiredAction == Models.AnalysisResults.Action.Remove && previousResults.Action != "Remove") {
+                    logger.LogInformation($"Removing thing {updatedResults.AnalysisDetails.ThingID} - {request.PermaLink}");
+                    await RedditSharp.Things.VotableThing.RemoveAsync(agent, updatedResults.AnalysisDetails.ThingID).ConfigureAwait(false);
+                    if(updatedResults.AnalysisDetails.ThingType == Models.AnalyzableTypes.Post && updatedResults.AnalysisDetails.HasFlair) {
+                        await RedditSharp.Things.Post.SetFlairAsync(agent, settings.Subreddit, updatedResults.AnalysisDetails.ThingID, updatedResults.AnalysisDetails.FlairText, updatedResults.AnalysisDetails.FlairClass).ConfigureAwait(false);
+                    }
+                }
+                else if(updatedResults.RequiredAction == Models.AnalysisResults.Action.Report && previousResults.Action != "Report") {
+
+                    logger.LogInformation($"Reporting thing {updatedResults.AnalysisDetails.ThingID} - {request.PermaLink}");
+                    await RedditSharp.Things.VotableThing.ReportAsync(agent, updatedResults.AnalysisDetails.ThingID, RedditSharp.Things.VotableThing.ReportType.Other, updatedResults.AnalysisDetails.ReportReason).ConfigureAwait(false);
+                }
+            }
+
             //easier to just look the stupid thing up again and return
             return await processedDAL.ReadProcessedItemAsync(thingID, subreddit, mediaID, mediaPlatform);
 
@@ -105,7 +127,7 @@ namespace DirtbagWebservice.BLL {
                 await processedDAL.LogProcessedItemAsync(item).ConfigureAwait(false);
             }
 
-            if(actOnInfo && botAgentPool != null && results.RequiredAction != Models.AnalysisResults.Action.Nothing) {
+            if(actOnInfo && botAgentPool != null && results.RequiredAction != Models.AnalysisResults.Action.Nothing && (string.IsNullOrWhiteSpace(config["SkipBotActions"]) || config["SkipBotActions"].ToLower() == "false")) {
                 var agent = await botAgentPool.GetOrCreateAgentAsync(settings.BotName, () => {
                     logger.LogInformation("Creating web agent for " + settings.BotName);
                     var toReturn = new RedditSharp.BotWebAgent(settings.BotName, settings.BotPass, settings.BotAppID, settings.BotAppSecret, null);

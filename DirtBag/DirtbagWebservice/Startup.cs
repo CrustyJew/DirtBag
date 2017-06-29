@@ -56,6 +56,8 @@ namespace DirtbagWebservice {
             services.AddTransient<DAL.IUserPostingHistoryDAL>(( x ) => { return new DAL.UserPostingHistoryDAL(new NpgsqlConnection(SentinelConnectionString)); });
             services.AddTransient<DAL.IProcessedItemDAL>(( x ) => { return new DAL.ProcessedItemSQLDAL(new SqlConnection(DirtbagConnectionString)); });
             services.AddTransient<DAL.ISubredditSettingsDAL>(( x ) => { return new DAL.SubredditSettingsPostgresDAL(new NpgsqlConnection(SentinelConnectionString)); });
+            services.AddTransient<DAL.ISentinelChannelBanDAL>(( x ) => { return new DAL.SentinelChannelBanDAL(new NpgsqlConnection(SentinelConnectionString)); });
+            services.AddTransient<BLL.ISentinelChannelBanBLL, BLL.SentinelChannelBanBLL>();
             services.AddTransient<BLL.ISubredditSettingsBLL, BLL.SubredditSettingsBLL>();
             services.AddTransient<BLL.IAnalyzeMediaBLL, BLL.AnalyzeMediaBLL>();
             services.AddTransient<BLL.IProcessedItemBLL, BLL.ProcessedItemBLL>();
