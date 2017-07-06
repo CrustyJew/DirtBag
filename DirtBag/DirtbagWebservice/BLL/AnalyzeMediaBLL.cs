@@ -45,7 +45,7 @@ namespace DirtbagWebservice.BLL {
 
             await processedDAL.UpdatedAnalysisScoresAsync(subreddit, thingID, mediaID, mediaPlatform, updatedResults.AnalysisDetails.Scores, updateBy);
 
-            if( botAgentPool != null && updatedResults.RequiredAction != Models.AnalysisResults.Action.Nothing && (string.IsNullOrWhiteSpace(config["SkipBotActions"]) || config["SkipBotActions"].ToLower() == "false")) {
+            if( botAgentPool != null && updatedResults.RequiredAction != Models.AnalysisResults.Action.None && (string.IsNullOrWhiteSpace(config["SkipBotActions"]) || config["SkipBotActions"].ToLower() == "false")) {
                 var agent = await botAgentPool.GetOrCreateAgentAsync(settings.BotName, () => {
                     logger.LogInformation("Creating web agent for " + settings.BotName);
                     var toReturn = new RedditSharp.BotWebAgent(settings.BotName, settings.BotPass, settings.BotAppID, settings.BotAppSecret, null);
@@ -75,6 +75,7 @@ namespace DirtbagWebservice.BLL {
         private async Task<Models.AnalysisResults> CombineResults( List<Task<Models.AnalysisDetails>> analysisTasks, Models.SubredditSettings settings, string thingid ) {
             var results = new Models.AnalysisResults();
             results.AnalysisDetails.ThingID = thingid;
+            results.AnalysisDetails.ThingType = thingid.ToLower().StartsWith("t3_") ? Models.AnalyzableTypes.Post : Models.AnalyzableTypes.Comment;
 
             while(analysisTasks.Count > 0) {
                 var finishedTask = await Task.WhenAny(analysisTasks);
@@ -91,7 +92,7 @@ namespace DirtbagWebservice.BLL {
                 results.RequiredAction = Models.AnalysisResults.Action.Report;
             }
             else {
-                results.RequiredAction = Models.AnalysisResults.Action.Nothing;
+                results.RequiredAction = Models.AnalysisResults.Action.None;
             }
             return results;
         }
@@ -127,7 +128,7 @@ namespace DirtbagWebservice.BLL {
                 await processedDAL.LogProcessedItemAsync(item).ConfigureAwait(false);
             }
 
-            if(actOnInfo && botAgentPool != null && results.RequiredAction != Models.AnalysisResults.Action.Nothing && (string.IsNullOrWhiteSpace(config["SkipBotActions"]) || config["SkipBotActions"].ToLower() == "false")) {
+            if(actOnInfo && botAgentPool != null && results.RequiredAction != Models.AnalysisResults.Action.None && (string.IsNullOrWhiteSpace(config["SkipBotActions"]) || config["SkipBotActions"].ToLower() == "false")) {
                 var agent = await botAgentPool.GetOrCreateAgentAsync(settings.BotName, () => {
                     logger.LogInformation("Creating web agent for " + settings.BotName);
                     var toReturn = new RedditSharp.BotWebAgent(settings.BotName, settings.BotPass, settings.BotAppID, settings.BotAppSecret, null);

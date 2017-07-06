@@ -14,8 +14,9 @@ namespace DirtbagWebservice.DAL
         }
 
         public Task<IEnumerable<Models.SentinelChannelBan>> GetSentinelChannelBan(string sub, string thingid ) {
+            //needs distinct currently to handle playlists more gracefully
             string query = @"
-SELECT bl.media_channel_id as ""MediaChannelID"", bl.media_author as ""MediaAuthor"", bl.media_platform_id as ""MediaPlatform"", 
+SELECT distinct bl.media_channel_id as ""MediaChannelID"", bl.media_author as ""MediaAuthor"", bl.media_platform_id as ""MediaPlatform"", 
     bl.blacklist_utc as ""BlacklistDateUTC"", bl.blacklist_by as ""BlacklistBy"", bl.media_channel_url as ""MediaChannelURL"", case when s.subreddit_name like 'TheSentinelBot' then 'true' else 'false' end as ""GlobalBan""
 FROM public.reddit_thing rt 
 left join public.media_info mi on mi.thing_id = rt.thing_id

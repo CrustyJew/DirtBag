@@ -22,11 +22,9 @@ ON s.SubName = n.SubName
 WHEN NOT MATCHED BY TARGET THEN 
 INSERT (SubName) VALUES (n.SubName);
 
-INSERT INTO Subreddits (SubName)
-select @SubName from subreddits where not exists (select 1 from subreddits where subname = @SubName);
 
-INSERT INTO ProcessedItems(SubredditID,ThingID,Author,PermaLink,ThingType,MediaID,MediaChannelID,MediaPlatform,ActionID,SeenByModules)
-select sub.ID, @ThingID, @Author, @PermaLink, @ThingType, @MediaID, @MediaChannelID, @MediaPlatform, act.ID, @SeenByModules
+INSERT INTO ProcessedItems(SubredditID,ThingID,Author,PermaLink,ThingType,MediaID,MediaChannelID,MediaChannelName,MediaPlatform,ActionID,SeenByModules)
+select sub.ID, @ThingID, @Author, @PermaLink, @ThingType, @MediaID, @MediaChannelID, @MediaChannelName, @MediaPlatform, act.ID, @SeenByModules
 from Subreddits sub
 inner join Actions act on act.ActionName = @Action
 where sub.SubName like @SubName
@@ -108,7 +106,7 @@ SELECT subs.SubName, pp.ThingID, pp.Author, pp.MediaID, pp.MediaChannelID, pp.Me
     scores.Score, scores.Reason, scores.ReportReason, scores.ModuleID, 
     scores.FlairText as 'Text', scores.FlairClass as 'Class', scores.FlairPriority as 'Priority'
 FROM ProcessedItems pp
-LEFT JOIN AnalysisScores scores on scores.subredditID = pp.subredditID AND pp.thingID = scores.thingID
+LEFT JOIN AnalysisScores scores on scores.subredditID = pp.subredditID AND pp.thingID = scores.thingID AND pp.mediaID = scores.mediaID AND pp.MediaPlatform = scores.MediaPlatform
 LEFT JOIN Actions act on act.ID = pp.ActionID
 LEFT JOIN Subreddits subs on subs.ID = pp.SubredditID
 WHERE
@@ -126,7 +124,7 @@ SELECT subs.SubName, pp.ThingID, pp.Author, pp.MediaID, pp.MediaChannelID, pp.Me
     scores.Score, scores.Reason, scores.ReportReason, scores.ModuleID, 
     scores.FlairText as 'Text', scores.FlairClass as 'Class', scores.FlairPriority as 'Priority'
 FROM ProcessedItems pp
-LEFT JOIN AnalysisScores scores on scores.subredditID = pp.subredditID AND pp.thingID = scores.thingID
+LEFT JOIN AnalysisScores scores on scores.subredditID = pp.subredditID AND pp.thingID = scores.thingID AND pp.mediaID = scores.mediaID AND pp.MediaPlatform = scores.MediaPlatform
 LEFT JOIN Actions act on act.ID = pp.ActionID
 LEFT JOIN Subreddits subs on subs.ID = pp.SubredditID
 WHERE
@@ -161,7 +159,7 @@ SELECT subs.SubName, pp.ThingID, pp.Author, pp.ThingType, act.ActionName as 'Act
     scores.Score, scores.Reason, scores.ReportReason, scores.ModuleID as 'Module', 
     scores.FlairText as 'Text', scores.FlairClass as 'Class', scores.FlairPriority as 'Priority'
 FROM ProcessedItems pp
-LEFT JOIN AnalysisScores scores on scores.subredditID = pp.subredditID AND pp.thingID = scores.thingID
+LEFT JOIN AnalysisScores scores on scores.subredditID = pp.subredditID AND pp.thingID = scores.thingID AND pp.mediaID = scores.mediaID AND pp.MediaPlatform = scores.MediaPlatform
 LEFT JOIN Actions act on act.ID = pp.ActionID
 LEFT JOIN Subreddits subs on subs.ID = pp.SubredditID
 WHERE

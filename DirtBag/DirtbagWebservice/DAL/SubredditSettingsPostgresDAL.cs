@@ -38,8 +38,8 @@ dbsets.subreddit_id = EXCLUDED.subreddit_id
         public Task SetLicensingSmasherSettingsAsync( LicensingSmasherSettings settings, string subreddit ) {
 
             string licensingQuery = @"
-INSERT INTO dirtbag.licensing_smasher as lsmash (subreddit_id, enabled, score_multiplier, edited_utc, edited_by, removal_flair_text, removal_flair_class, removal_flair_priority)
-SELECT s.id, @Enabled, @ScoreMultiplier, @LastModified, @ModifiedBy, @FlairText, @FlairClass, @FlairPriority
+INSERT INTO dirtbag.licensing_smasher as lsmash (subreddit_id, enabled, score_multiplier, edited_utc, edited_by, removal_flair_text, removal_flair_class, removal_flair_priority, removal_flair_enabled)
+SELECT s.id, @Enabled, @ScoreMultiplier, @LastModified, @ModifiedBy, @FlairText, @FlairClass, @FlairPriority, @FlairEnabled
 FROM public.subreddit s
 WHERE s.subreddit_name like @subreddit
 ON CONFLICT (subreddit_id) DO UPDATE SET
@@ -62,6 +62,7 @@ lsmash.subreddit_id = EXCLUDED.subreddit_id
                     flairclass = settings.RemovalFlair?.Class,
                     flairpriority = settings.RemovalFlair?.Priority,
                     flairtext = settings.RemovalFlair?.Text,
+                    flairenabled = settings.RemovalFlair?.Enabled,
                     settings.ScoreMultiplier,
                 } );
 
@@ -133,8 +134,8 @@ AND licensor_id = @LicensorID;
         public Task SetSelfPromoSettingsAsync( SelfPromotionCombustorSettings settings, string subreddit ) {
 
             string selfPromoQuery = @"
-INSERT INTO dirtbag.self_promotion_combustor as spromo (subreddit_id, enabled, score_multiplier, percentage_threshold, include_post, grace_period, edited_utc, edited_by, removal_flair_text, removal_flair_class, removal_flair_priority)
-SELECT s.id, @Enabled, @ScoreMultiplier, @PercentageThreshold, @IncludePostInPercentage, @GracePeriod, @LastModified, @ModifiedBy, @FlairText, @FlairClass, @FlairPriority
+INSERT INTO dirtbag.self_promotion_combustor as spromo (subreddit_id, enabled, score_multiplier, percentage_threshold, include_post, grace_period, edited_utc, edited_by, removal_flair_text, removal_flair_class, removal_flair_priority, removal_flair_enabled)
+SELECT s.id, @Enabled, @ScoreMultiplier, @PercentageThreshold, @IncludePostInPercentage, @GracePeriod, @LastModified, @ModifiedBy, @FlairText, @FlairClass, @FlairPriority, @FlairEnabled
 FROM public.subreddit s
 WHERE s.subreddit_name like @subreddit
 ON CONFLICT (subreddit_id) DO UPDATE SET
@@ -148,6 +149,7 @@ edited_by = EXCLUDED.edited_by,
 removal_flair_text = EXCLUDED.removal_flair_text,
 removal_flair_class = EXCLUDED.removal_flair_class,
 removal_flair_priority = EXCLUDED.removal_flair_priority
+removal_flair_enabled = EXCLUDED.removal_flair_enabled
 WHERE 
 spromo.subreddit_id = EXCLUDED.subreddit_id
 ";
@@ -163,6 +165,7 @@ spromo.subreddit_id = EXCLUDED.subreddit_id
                         flairclass = settings.RemovalFlair?.Class,
                         flairpriority = settings.RemovalFlair?.Priority,
                         flairtext = settings.RemovalFlair?.Text,
+                        flairenabled = settings.RemovalFlair?.Enabled,
                         settings.ScoreMultiplier
                     } );
         }
@@ -171,8 +174,8 @@ spromo.subreddit_id = EXCLUDED.subreddit_id
 
 
             string spamDetectorQuery = @"
-INSERT INTO dirtbag.spam_detector as spamd (subreddit_id, enabled, score_multiplier, edited_utc, edited_by, removal_flair_text, removal_flair_class, removal_flair_priority)
-SELECT s.id, @Enabled, @ScoreMultiplier, @LastModified, @ModifiedBy, @FlairText, @FlairClass, @FlairPriority
+INSERT INTO dirtbag.spam_detector as spamd (subreddit_id, enabled, score_multiplier, edited_utc, edited_by, removal_flair_text, removal_flair_class, removal_flair_priority, removal_flair_enabled)
+SELECT s.id, @Enabled, @ScoreMultiplier, @LastModified, @ModifiedBy, @FlairText, @FlairClass, @FlairPriority, @FlairEnabled
 FROM public.subreddit s
 WHERE s.subreddit_name like @subreddit
 ON CONFLICT (subreddit_id) DO UPDATE SET
@@ -183,6 +186,7 @@ edited_by = EXCLUDED.edited_by,
 removal_flair_text = EXCLUDED.removal_flair_text,
 removal_flair_class = EXCLUDED.removal_flair_class,
 removal_flair_priority = EXCLUDED.removal_flair_priority
+removal_flair_enabled = EXCLUDED.removal_flair_enabled
 WHERE 
 spamd.subreddit_id = EXCLUDED.subreddit_id
 ";
@@ -196,6 +200,7 @@ spamd.subreddit_id = EXCLUDED.subreddit_id
                     flairclass = settings.RemovalFlair?.Class,
                     flairpriority = settings.RemovalFlair?.Priority,
                     flairtext = settings.RemovalFlair?.Text,
+                    flairenabled = settings.RemovalFlair?.Enabled,
                     settings.ScoreMultiplier
                 } );
 
@@ -237,7 +242,7 @@ AND s.dirtbag_enabled = true
             string licensingSmasherQuery = @"
 SELECT
 ls.enabled ""Enabled"", ls.score_multiplier ""ScoreMultiplier"", ls.edited_utc ""LastModified"", ls.edited_by ""ModifiedBy"",
-ls.removal_flair_text ""Text"", ls.removal_flair_class ""Class"", ls.removal_flair_priority ""Priority"",
+ls.removal_flair_text ""Text"", ls.removal_flair_class ""Class"", ls.removal_flair_priority ""Priority"", ls.removal_flair_enabled ""Enabled"",
 ls_t.match_term ""MatchTerms""
 
 FROM dirtbag.licensing_smasher ls
@@ -258,7 +263,7 @@ WHERE s.subreddit_name like @subreddit
 SELECT
 spc.enabled ""Enabled"", spc.score_multiplier ""ScoreMultiplier"", spc.percentage_threshold ""PercentageThreshold"", spc.include_post ""IncludePostInPercentage"", 
     spc.grace_period ""GracePeriod"", spc.edited_utc ""LastModified"", spc.edited_by ""ModifiedBy"",
-spc.removal_flair_text ""Text"", spc.removal_flair_class ""Class"", spc.removal_flair_priority ""Priority""
+spc.removal_flair_text ""Text"", spc.removal_flair_class ""Class"", spc.removal_flair_priority ""Priority"", spc.removal_flair_enabled ""Enabled""
 
 FROM dirtbag.self_promotion_combustor spc 
 INNER JOIN public.subreddit s on s.id = spc.subreddit_id
@@ -268,7 +273,7 @@ WHERE s.subreddit_name like @subreddit
             string spamDetectQuery = @"
 SELECT
 sd.enabled ""Enabled"", sd.score_multiplier ""ScoreMultiplier"", sd.edited_utc ""LastModified"", sd.edited_by ""ModifiedBy"",
-sd.removal_flair_text ""Text"", sd.removal_flair_class ""Class"", sd.removal_flair_priority ""Priority"",
+sd.removal_flair_text ""Text"", sd.removal_flair_class ""Class"", sd.removal_flair_priority ""Priority"", sd.removal_flair_enabled ""Enabled"",
 sd_m.module_name ""Name"", sd_m.enabled ""Enabled"", sd_m.threshold ""Value"", sd_m.weight ""Weight""
 
 FROM dirtbag.spam_detector sd

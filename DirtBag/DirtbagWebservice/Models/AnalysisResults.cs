@@ -18,7 +18,7 @@ namespace DirtbagWebservice.Models {
         }
 
         public enum Action {
-            Remove, Report, Nothing
+            Remove, Report, None
         }
     }
 }
