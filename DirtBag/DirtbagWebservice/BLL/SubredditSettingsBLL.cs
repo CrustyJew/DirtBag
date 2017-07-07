@@ -127,7 +127,7 @@ namespace DirtbagWebservice.BLL {
 
         private async Task<SubredditSettings> GetOrUpdateSettingsAsync( string subreddit, bool returnDefault = false ) {
             object cacheVal;
-            if ( !cache.TryGetValue( CACHE_PREFIX + subreddit, out cacheVal ) && cacheVal != null ) {
+            if ( cache.TryGetValue( CACHE_PREFIX + subreddit, out cacheVal ) && cacheVal != null ) {
                 var settings = (SubredditSettings) cacheVal;
                 if ( returnDefault ) {
                     if ( settings == null ) {
@@ -154,14 +154,17 @@ namespace DirtbagWebservice.BLL {
                 await cacheSemaphore.WaitAsync();
                 try {
                     //check if anyone else got the settings while waiting for semaphore
-                    if(!cache.TryGetValue(CACHE_PREFIX + subreddit, out cacheVal) && cacheVal != null) {
+                    if(cache.TryGetValue(CACHE_PREFIX + subreddit, out cacheVal) && cacheVal != null) {
                         cacheSemaphore.Release();
                         return (SubredditSettings) cacheVal;
                     }
 
                     var settings = await dal.GetSubredditSettingsAsync(subreddit);
+                    bool addToCache = true;
                     if(returnDefault) {
                         if(settings == null) {
+                            //settings were entirely null, so sub is either disabled in TSB or has no settings at all, so don't store it in the cache
+                            addToCache = false;
                             settings = SubredditSettings.GetDefaultSettings();
                             settings.Subreddit = subreddit;
                         }
@@ -178,7 +181,9 @@ namespace DirtbagWebservice.BLL {
                             settings.YouTubeSpamDetector.SetDefaultSettings();
                         }
                     }
-                    cache.Set(CACHE_PREFIX + subreddit, settings, DateTimeOffset.Now.AddMinutes(30));
+                    if(addToCache) {
+                        cache.Set(CACHE_PREFIX + subreddit, settings, DateTimeOffset.Now.AddMinutes(15));
+                    }
                     return settings;
                 }
                 finally {

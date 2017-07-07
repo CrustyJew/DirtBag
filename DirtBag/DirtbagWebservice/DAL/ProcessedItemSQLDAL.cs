@@ -100,22 +100,8 @@ where sub.SubName like @SubName
             }
         }
 
-        public Task<Models.ProcessedItem> ReadProcessedItemAsync( string thingID, string subName, string mediaID, Models.VideoProvider mediaPlatform ) {
-            string query = @"
-SELECT subs.SubName, pp.ThingID, pp.Author, pp.MediaID, pp.MediaChannelID, pp.MediaPlatform, pp.ThingType, act.ActionName as 'Action', pp.SeenByModules, 
-    scores.Score, scores.Reason, scores.ReportReason, scores.ModuleID, 
-    scores.FlairText as 'Text', scores.FlairClass as 'Class', scores.FlairPriority as 'Priority'
-FROM ProcessedItems pp
-LEFT JOIN AnalysisScores scores on scores.subredditID = pp.subredditID AND pp.thingID = scores.thingID AND pp.mediaID = scores.mediaID AND pp.MediaPlatform = scores.MediaPlatform
-LEFT JOIN Actions act on act.ID = pp.ActionID
-LEFT JOIN Subreddits subs on subs.ID = pp.SubredditID
-WHERE
-pp.ThingID = @thingID
-AND subs.SubName = @subName
-AND pp.MediaID = @mediaID
-AND pp.MediaPlatform = @mediaPlatform
-";
-            return conn.QueryFirstOrDefaultAsync<Models.ProcessedItem>(query, new { thingID, subName, mediaID, mediaPlatform });
+        public async Task<Models.ProcessedItem> ReadProcessedItemAsync( string thingID, string subName) {
+            return (await ReadProcessedItemsAsync(new string[] { thingID }, subName).ConfigureAwait(false)).FirstOrDefault();
         }
 
         public async Task<IEnumerable<Models.ProcessedItem>> ReadProcessedItemsAsync( IEnumerable<string> thingIDs, string subName ) {
@@ -147,7 +133,7 @@ AND subs.SubName = @subName
                     return pi;
                 },
                 splitOn: "Score,Text",
-                param: new { thingIDs, subName });
+                param: new { thingIDs, subName }).ConfigureAwait(false);
 
             return toReturn.Values?.AsEnumerable();
         }
@@ -183,7 +169,7 @@ AND subs.SubName = @subName
                     mediaAnalysis.Scores.Add(score);
                 }
                 return ar;
-            },splitOn:"MediaID,Score,Text",param: new { thingID, subName });
+            },splitOn:"MediaID,Score,Text",param: new { thingID, subName }).ConfigureAwait(false);
 
             return toReturn;
         }

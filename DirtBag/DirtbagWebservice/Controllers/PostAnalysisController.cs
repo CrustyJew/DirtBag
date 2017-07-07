@@ -22,16 +22,17 @@ namespace DirtbagWebservice.Controllers {
             return processedBLL.ReadThingAnalysis(thingID, sub);
         }
 
-        [HttpPost("{sub}")]
-        public Task<Models.AnalysisResults> DoAnalysis( [FromRoute] string sub, [FromBody] Models.AnalysisRequest request ) {
-            if(!User.IsInRole(sub.ToLower())) throw new UnauthorizedAccessException("Not a mod of that sub!");
-            return analyzeBLL.AnalyzeMedia(sub, request, false);
-        }
+        //[HttpPost("{sub}")]
+        //public Task<Models.AnalysisResults> DoAnalysis( [FromRoute] string sub, [FromBody] Models.AnalysisRequest request ) {
+        //    if(!User.IsInRole(sub.ToLower())) throw new UnauthorizedAccessException("Not a mod of that sub!");
+        //    return analyzeBLL.AnalyzeMedia(sub, request, false);
+        //}
 
         [HttpPut("{sub}")]
-        public Task<Models.ProcessedItem> UpdateAnalysis( string sub, [FromQuery]string thingID, [FromQuery]string mediaID, [FromQuery]Models.VideoProvider mediaPlatform ) {
+        public Task<Models.AnalysisResponse> UpdateAnalysis( string sub, [FromQuery]string thingID, [FromQuery]string mediaID, [FromQuery]Models.VideoProvider mediaPlatform ) {
             if(!User.IsInRole(sub.ToLower())) throw new UnauthorizedAccessException("Not a mod of that sub!");
-            return analyzeBLL.UpdateAnalysisAsync(sub, thingID, mediaID, mediaPlatform, User.Identity.Name);
+            return analyzeBLL.UpdateAnalysisAsync(sub, thingID, User.Identity.Name);
         }
+
     }
 }

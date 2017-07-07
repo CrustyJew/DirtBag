@@ -15,7 +15,7 @@ namespace DirtbagWebservice.Controllers {
 
         [Route("{subreddit}"), HttpGet]
         public Task<Models.SubredditSettings> GetSettings( [FromRoute]string subreddit, bool defaults = false ) {
-            return bll.GetSubredditSettingsAsync( subreddit, defaults );
+            return bll.GetSubredditSettingsAsync( subreddit, true );
         }
 
         [Route("{subreddit}"), HttpPost]

@@ -25,50 +25,73 @@ namespace DirtbagWebservice.BLL {
             this.logger = logger;
         }
 
-        public async Task<Models.ProcessedItem> UpdateAnalysisAsync( string subreddit, string thingID, string mediaID, Models.VideoProvider mediaPlatform, string updateBy ) {
-            var previousResults = await processedDAL.ReadProcessedItemAsync(thingID, subreddit, mediaID, mediaPlatform);
-            Models.AnalysisRequest request = new Models.AnalysisRequest() {
-                MediaChannelID = previousResults.MediaChannelID,
-                MediaID = previousResults.MediaID,
-                MediaPlatform = previousResults.MediaPlatform,
-                ThingID = previousResults.ThingID,
-                PermaLink = previousResults.PermaLink
-            };
-            //Only rerun things that don't need to run at the time a post was made
+        public async Task<Models.AnalysisResponse> UpdateAnalysisAsync( string subreddit, string thingID, string updateBy ) {
+            var previousResults = await processedDAL.GetThingAnalysis(thingID, subreddit);
+
+            List<Models.AnalysisRequest> analysisRequests = new List<Models.AnalysisRequest>();
+
+            foreach(var analysis in previousResults.Analysis) {
+                Models.AnalysisRequest request = new Models.AnalysisRequest() {
+                    MediaChannelID = analysis.MediaChannelID,
+                    MediaID = analysis.MediaID,
+                    MediaPlatform = analysis.MediaPlatform,
+                    ThingID = previousResults.ThingID,
+                    PermaLink = previousResults.PermaLink
+                };
+
+                analysisRequests.Add(request);
+            }
+
+            List<Task> reprocessTasks = new List<Task>();
+
+            
             var settings = await subSetsBLL.GetSubredditSettingsAsync(subreddit);
-            List<Task<Models.AnalysisDetails>> analysisTasks = new List<Task<Models.AnalysisDetails>>();
-            if(settings.LicensingSmasher.Enabled) {
-                analysisTasks.Add(new Modules.LicensingSmasher(config, settings.LicensingSmasher, subreddit).Analyze(request));
-            }
 
-            var updatedResults =  await CombineResults(analysisTasks, settings, request.ThingID);
+            foreach(var request in analysisRequests) {
+                reprocessTasks.Add(Task.Run(async () => {
+                    
+                    List<Task<Models.AnalysisDetails>> analysisTasks = new List<Task<Models.AnalysisDetails>>();
 
-            await processedDAL.UpdatedAnalysisScoresAsync(subreddit, thingID, mediaID, mediaPlatform, updatedResults.AnalysisDetails.Scores, updateBy);
-
-            if( botAgentPool != null && updatedResults.RequiredAction != Models.AnalysisResults.Action.None && (string.IsNullOrWhiteSpace(config["SkipBotActions"]) || config["SkipBotActions"].ToLower() == "false")) {
-                var agent = await botAgentPool.GetOrCreateAgentAsync(settings.BotName, () => {
-                    logger.LogInformation("Creating web agent for " + settings.BotName);
-                    var toReturn = new RedditSharp.BotWebAgent(settings.BotName, settings.BotPass, settings.BotAppID, settings.BotAppSecret, null);
-                    toReturn.RateLimiter = new RedditSharp.RateLimitManager(RedditSharp.RateLimitMode.SmallBurst);
-                    return Task.FromResult(toReturn);
-                });
-
-                if(updatedResults.RequiredAction == Models.AnalysisResults.Action.Remove && previousResults.Action != "Remove") {
-                    logger.LogInformation($"Removing thing {updatedResults.AnalysisDetails.ThingID} - {request.PermaLink}");
-                    await RedditSharp.Things.VotableThing.RemoveAsync(agent, updatedResults.AnalysisDetails.ThingID).ConfigureAwait(false);
-                    if(updatedResults.AnalysisDetails.ThingType == Models.AnalyzableTypes.Post && updatedResults.AnalysisDetails.HasFlair) {
-                        await RedditSharp.Things.Post.SetFlairAsync(agent, settings.Subreddit, updatedResults.AnalysisDetails.ThingID, updatedResults.AnalysisDetails.FlairText, updatedResults.AnalysisDetails.FlairClass).ConfigureAwait(false);
+                    //Only rerun things that don't need to run at the time a post was made
+                    if(settings.LicensingSmasher.Enabled) {
+                        analysisTasks.Add(new Modules.LicensingSmasher(config, settings.LicensingSmasher, subreddit).Analyze(request));
                     }
-                }
-                else if(updatedResults.RequiredAction == Models.AnalysisResults.Action.Report && previousResults.Action != "Report") {
 
-                    logger.LogInformation($"Reporting thing {updatedResults.AnalysisDetails.ThingID} - {request.PermaLink}");
-                    await RedditSharp.Things.VotableThing.ReportAsync(agent, updatedResults.AnalysisDetails.ThingID, RedditSharp.Things.VotableThing.ReportType.Other, updatedResults.AnalysisDetails.ReportReason).ConfigureAwait(false);
+                    if(analysisTasks.Count == 0) {
+                        //module disabled, bail out, don't update
+                        return;
+                    }
+
+                    var updatedResults = await CombineResults(analysisTasks, settings, thingID);
+
+                    await processedDAL.UpdatedAnalysisScoresAsync(subreddit, thingID, request.MediaID, request.MediaPlatform, updatedResults.AnalysisDetails.Scores, updateBy);
+
+                    if(botAgentPool != null && updatedResults.RequiredAction != Models.AnalysisResults.Action.None && (string.IsNullOrWhiteSpace(config["SkipBotActions"]) || config["SkipBotActions"].ToLower() == "false")) {
+                        var agent = await botAgentPool.GetOrCreateAgentAsync(settings.BotName, () => {
+                            logger.LogInformation("Creating web agent for " + settings.BotName);
+                            var toReturn = new RedditSharp.BotWebAgent(settings.BotName, settings.BotPass, settings.BotAppID, settings.BotAppSecret, null);
+                            toReturn.RateLimiter = new RedditSharp.RateLimitManager(RedditSharp.RateLimitMode.SmallBurst);
+                            return Task.FromResult(toReturn);
+                        });
+
+                        if(updatedResults.RequiredAction == Models.AnalysisResults.Action.Remove && previousResults.Action != "Remove") {
+                            logger.LogInformation($"Removing thing {updatedResults.AnalysisDetails.ThingID} - {request.PermaLink}");
+                            await RedditSharp.Things.VotableThing.RemoveAsync(agent, updatedResults.AnalysisDetails.ThingID).ConfigureAwait(false);
+                            if(updatedResults.AnalysisDetails.ThingType == Models.AnalyzableTypes.Post && updatedResults.AnalysisDetails.HasFlair) {
+                                await RedditSharp.Things.Post.SetFlairAsync(agent, settings.Subreddit, updatedResults.AnalysisDetails.ThingID, updatedResults.AnalysisDetails.FlairText, updatedResults.AnalysisDetails.FlairClass).ConfigureAwait(false);
+                            }
+                        }
+                        else if(updatedResults.RequiredAction == Models.AnalysisResults.Action.Report && previousResults.Action != "Report") {
+
+                            logger.LogInformation($"Reporting thing {updatedResults.AnalysisDetails.ThingID} - {request.PermaLink}");
+                            await RedditSharp.Things.VotableThing.ReportAsync(agent, updatedResults.AnalysisDetails.ThingID, RedditSharp.Things.VotableThing.ReportType.Other, updatedResults.AnalysisDetails.ReportReason).ConfigureAwait(false);
+                        }
+                    }
+                }));
                 }
-            }
 
             //easier to just look the stupid thing up again and return
-            return await processedDAL.ReadProcessedItemAsync(thingID, subreddit, mediaID, mediaPlatform);
+                return await processedDAL.GetThingAnalysis(thingID, subreddit).ConfigureAwait(false);
 
         }
 
