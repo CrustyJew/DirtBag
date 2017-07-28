@@ -8,6 +8,8 @@ using Microsoft.Azure.WebJobs;
 using RedditSharp.Azure;
 using RedditSharp.Things;
 using System.Data.SqlClient;
+using Npgsql;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace DirtbagInboxParser {
     public class Functions {
@@ -97,7 +99,10 @@ namespace DirtbagInboxParser {
         }
 
         public static async Task ReEvaluateLicensing ( [TimerTrigger("00:05:00")] TimerTriggerAttribute trigger ) {
-            
+            var settingsDAL = new Dirtbag.DAL.SubredditSettingsPostgresDAL(new NpgsqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings["SentinelDirtbag"].ConnectionString));
+            var settingsBLL = new Dirtbag.BLL.SubredditSettingsBLL(settingsDAL, Program.cache);
+            var analysisBLL = new Dirtbag.BLL.AnalyzeMediaBLL(System.Configuration.ConfigurationManager, settingsBLL)
+            var scanner = new LicensingRescanner();
         }
     }
 }

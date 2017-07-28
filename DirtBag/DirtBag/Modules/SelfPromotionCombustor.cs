@@ -58,7 +58,7 @@ namespace Dirtbag.Modules {
             foreach ( var request in requests ) { //TODO error handling
                 var youTubePosts = new Dictionary<string, List<string>>();
 
-                toReturn.Add( request.ThingID, new AnalysisDetails( request.ThingID, ModuleEnum ) );
+                toReturn.Add( request.ThingID, new AnalysisDetails( request.ThingID, ModuleEnum, request.MediaID, request.MediaChannelID, request.MediaChannelName, request.MediaPlatform) );
                 
                 //Task<Dictionary<string,string>> hist;
                 IEnumerable<Models.UserPostInfo> postHistory;

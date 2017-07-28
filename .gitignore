@@ -3,6 +3,7 @@
 
 # User-specific files
 PrivateConfig.config
+PrivateConfig.json
 *.suo
 *.user
 *.userosscache
@@ -251,3 +252,5 @@ node_modules
 .node_repl_history
 ##### -END- ##### -- FILES/LOCATIONS TO IGNORE FOR NODE PROJECTS -- #### -END- #####
 */**/PublishProfiles/*.pubxml
+/DirtBag/DirtbagInboxParser/PrivateConfig.json
+/DirtBag/DirtbagInboxParser/PrivateConfig.json

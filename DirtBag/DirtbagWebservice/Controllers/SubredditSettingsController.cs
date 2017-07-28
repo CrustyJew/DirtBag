@@ -7,19 +7,19 @@ namespace DirtbagWebservice.Controllers {
     [Route( "api/Settings" )]
 
     public class SubredditSettingsController : Controller {
-        BLL.ISubredditSettingsBLL bll;
+        Dirtbag.BLL.ISubredditSettingsBLL bll;
 
-        public SubredditSettingsController(BLL.ISubredditSettingsBLL ssBLL ) {
+        public SubredditSettingsController( Dirtbag.BLL.ISubredditSettingsBLL ssBLL ) {
             bll = ssBLL;
         }
 
         [Route("{subreddit}"), HttpGet]
-        public Task<Models.SubredditSettings> GetSettings( [FromRoute]string subreddit, bool defaults = false ) {
+        public Task<Dirtbag.Models.SubredditSettings> GetSettings( [FromRoute]string subreddit, bool defaults = false ) {
             return bll.GetSubredditSettingsAsync( subreddit, true );
         }
 
         [Route("{subreddit}"), HttpPost]
-        public Task UpdateSettings ([FromRoute]string subreddit, [FromQuery] string modifiedBy, [FromBody] Models.SubredditSettings settings) {
+        public Task UpdateSettings ([FromRoute]string subreddit, [FromQuery] string modifiedBy, [FromBody] Dirtbag.Models.SubredditSettings settings) {
             if ( string.IsNullOrWhiteSpace( modifiedBy ) ) {
                 throw new System.Exception("modifiedBy is null");
             }

@@ -64,7 +64,7 @@ namespace Dirtbag.Modules {
                 if ( toReturn.ContainsKey( request.ThingID ) ) {
                     continue; 
                 }
-                toReturn.Add( request.ThingID, new AnalysisDetails( request.ThingID, ModuleEnum ) );
+                toReturn.Add( request.ThingID, new AnalysisDetails( request.ThingID, ModuleEnum, request.MediaID, request.MediaChannelID, request.MediaChannelName, request.MediaPlatform ) );
 
                 if ( !string.IsNullOrEmpty( request.MediaID ) && request.MediaPlatform == VideoProvider.YouTube ) {
                     if ( !youTubePosts.ContainsKey( request.MediaID ) ) youTubePosts.Add( request.MediaID, new List<string>() );

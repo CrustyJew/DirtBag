@@ -52,7 +52,7 @@ namespace Dirtbag.Modules {
             var youTubePosts = new Dictionary<string, List<AnalysisRequest>>();
             var channels = new Dictionary<string, List<AnalysisRequest>>();
             foreach ( var request in requests ) {
-                toReturn.Add( request.ThingID, new AnalysisDetails( request.ThingID, ModuleEnum ) );
+                toReturn.Add( request.ThingID, new AnalysisDetails( request.ThingID, ModuleEnum, request.MediaID, request.MediaChannelID, request.MediaChannelName, request.MediaPlatform) );
                 if ( request.MediaPlatform == VideoProvider.YouTube ) {
                     if ( !string.IsNullOrEmpty( request.MediaID ) ) {
                         if ( !youTubePosts.ContainsKey( request.MediaID ) ) youTubePosts.Add( request.MediaID, new List<AnalysisRequest>() );

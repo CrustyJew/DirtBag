@@ -62,29 +62,33 @@ namespace Dirtbag.BLL {
 
                     var updatedResults = await CombineResults(analysisTasks, settings);
 
-                    await processedDAL.UpdatedAnalysisScoresAsync(subreddit, thingID, request.MediaID, request.MediaPlatform, updatedResults.AnalysisDetails.Scores, updateBy);
+            foreach (var updResult in updatedResults) {
+                await processedDAL.UpdatedAnalysisScoresAsync(subreddit, updResult.Key, updResult.Value.AnalysisDetails.MediaID, updResult.Value.AnalysisDetails.MediaPlatform, updResult.Value.AnalysisDetails.Scores, updateBy);
 
-                    if(botAgentPool != null && updatedResults.RequiredAction != Models.AnalysisResults.Action.None && (string.IsNullOrWhiteSpace(config["SkipBotActions"]) || config["SkipBotActions"].ToLower() == "false")) {
-                        var agent = await botAgentPool.GetOrCreateAgentAsync(settings.BotName, () => {
-                            logger.LogInformation("Creating web agent for " + settings.BotName);
-                            var toReturn = new RedditSharp.BotWebAgent(settings.BotName, settings.BotPass, settings.BotAppID, settings.BotAppSecret, null);
-                            toReturn.RateLimiter = new RedditSharp.RateLimitManager(RedditSharp.RateLimitMode.SmallBurst);
-                            return Task.FromResult(toReturn);
-                        });
+                if (botAgentPool != null && updResult.Value.RequiredAction != Models.AnalysisResults.Action.None && (string.IsNullOrWhiteSpace(config["SkipBotActions"]) || config["SkipBotActions"].ToLower() == "false")) {
+                    var agent = await botAgentPool.GetOrCreateAgentAsync(settings.BotName, () => {
+                        logger.LogInformation("Creating web agent for " + settings.BotName);
+                        var toReturn = new RedditSharp.BotWebAgent(settings.BotName, settings.BotPass, settings.BotAppID, settings.BotAppSecret, null);
+                        toReturn.RateLimiter = new RedditSharp.RateLimitManager(RedditSharp.RateLimitMode.SmallBurst);
+                        return Task.FromResult(toReturn);
+                    });
 
-                        if(updatedResults.RequiredAction == Models.AnalysisResults.Action.Remove && previousResults.Action != "Remove") {
-                            logger.LogInformation($"Removing thing {updatedResults.AnalysisDetails.ThingID} - {request.PermaLink}");
-                            await RedditSharp.Things.ModeratableThing.RemoveAsync(agent, updatedResults.AnalysisDetails.ThingID).ConfigureAwait(false);
-                            if(updatedResults.AnalysisDetails.ThingType == Models.AnalyzableTypes.Post && updatedResults.AnalysisDetails.HasFlair) {
-                                await RedditSharp.Things.Post.SetFlairAsync(agent, settings.Subreddit, updatedResults.AnalysisDetails.ThingID, updatedResults.AnalysisDetails.FlairText, updatedResults.AnalysisDetails.FlairClass).ConfigureAwait(false);
-                            }
-                        }
-                        else if(updatedResults.RequiredAction == Models.AnalysisResults.Action.Report && previousResults.Action != "Report") {
+                    var prevResults = previousResults.SingleOrDefault(r => r.ThingID == updResult.Key);
 
-                            logger.LogInformation($"Reporting thing {updatedResults.AnalysisDetails.ThingID} - {request.PermaLink}");
-                            await RedditSharp.Things.ModeratableThing.ReportAsync(agent, updatedResults.AnalysisDetails.ThingID, RedditSharp.Things.ModeratableThing.ReportType.Other, updatedResults.AnalysisDetails.ReportReason).ConfigureAwait(false);
+                    if (updResult.Value.RequiredAction == Models.AnalysisResults.Action.Remove && prevResults?.Action != "Remove") {
+                        logger.LogInformation($"Removing thing {updResult.Value.AnalysisDetails.ThingID} - {prevResults.PermaLink}");
+                        await RedditSharp.Things.ModeratableThing.RemoveAsync(agent, updResult.Value.AnalysisDetails.ThingID).ConfigureAwait(false);
+                        if (updResult.Value.AnalysisDetails.ThingType == Models.AnalyzableTypes.Post && updResult.Value.AnalysisDetails.HasFlair) {
+                            await RedditSharp.Things.Post.SetFlairAsync(agent, settings.Subreddit, updResult.Value.AnalysisDetails.ThingID, updResult.Value.AnalysisDetails.FlairText, updResult.Value.AnalysisDetails.FlairClass).ConfigureAwait(false);
                         }
                     }
+                    else if (updResult.Value.RequiredAction == Models.AnalysisResults.Action.Report && prevResults.Action != "Report") {
+
+                        logger.LogInformation($"Reporting thing {updResult.Value.AnalysisDetails.ThingID} - {prevResults.PermaLink}");
+                        await RedditSharp.Things.ModeratableThing.ReportAsync(agent, updResult.Value.AnalysisDetails.ThingID, RedditSharp.Things.ModeratableThing.ReportType.Other, updResult.Value.AnalysisDetails.ReportReason).ConfigureAwait(false);
+                    }
+                }
+            }
 
 
                     
@@ -136,8 +140,20 @@ namespace Dirtbag.BLL {
                     }
                     results.AnalysisDetails.Scores.AddRange(details.Scores);
                     results.AnalysisDetails.AnalyzingModule = results.AnalysisDetails.AnalyzingModule | details.AnalyzingModule;
+
+                    if (results.AnalysisDetails.TotalScore >= settings.RemoveScoreThreshold && settings.RemoveScoreThreshold > 0) {
+                        results.RequiredAction = Models.AnalysisResults.Action.Remove;
+                    }
+                    else if (results.AnalysisDetails.TotalScore >= settings.ReportScoreThreshold && settings.ReportScoreThreshold > 0) {
+                        results.RequiredAction = Models.AnalysisResults.Action.Report;
+                    }
+                    else {
+                        results.RequiredAction = Models.AnalysisResults.Action.None;
+                    }
                 }
             }
+
+            return toReturn;
         }
 
         public async Task<Models.AnalysisResults> AnalyzeMedia(string subreddit, Models.AnalysisRequest request, bool actOnInfo = true ) {

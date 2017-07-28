@@ -58,6 +58,11 @@ namespace Dirtbag.Models {
                 return highestPrio?.Class;
             }
         }
+        public string MediaID { get; set; }
+        public string MediaChannelID { get; set; }
+        public string MediaChannelName { get; set; }
+        [JsonConverter(typeof(StringEnumConverter))]
+        public VideoProvider MediaPlatform { get; set; }
 
         [JsonIgnore]
         public Modules.Modules AnalyzingModule { get; set; }
@@ -69,7 +74,7 @@ namespace Dirtbag.Models {
             Scores = new List<AnalysisScore>();
         }
 
-        public AnalysisDetails( string thingID, Modules.Modules module ) : this() {
+        public AnalysisDetails( string thingID, Modules.Modules module, string mediaID, string mediaChannelID, string mediaChannelName, VideoProvider mediaPlatform ) : this() {
             ThingID = thingID;
             string lthingID = thingID.ToLower();
             if ( lthingID.StartsWith( "t1_" ) ) {
@@ -79,6 +84,10 @@ namespace Dirtbag.Models {
                 ThingType = AnalyzableTypes.Post;
             }
             AnalyzingModule = module;
+            MediaID = MediaID;
+            MediaChannelID = mediaChannelID;
+            MediaChannelName = mediaChannelName;
+            MediaPlatform = mediaPlatform;
         }
 
         public string ThingID { get; set; }
