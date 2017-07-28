@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DirtbagWebservice\DirtbagWebservice.csproj" />
+    <ProjectReference Include="..\Dirtbag\Dirtbag.csproj" />
   </ItemGroup>
 
   <ItemGroup>
