@@ -27,13 +27,13 @@ namespace DirtbagWebserviceTests.IntegrationTests {
         [Fact]
         public async Task GetDefaultSubredditSettingsTest() {
             var conn = new NpgsqlConnection( config.GetConnectionString( "Sentinel" ) );
-            var dal = new DirtbagWebservice.DAL.SubredditSettingsPostgresDAL( conn );
+            var dal = new Dirtbag.DAL.SubredditSettingsPostgresDAL( conn );
             var cache = serviceProvider.GetRequiredService<IMemoryCache>();
-            var bll = new DirtbagWebservice.BLL.SubredditSettingsBLL( dal, cache );
+            var bll = new Dirtbag.BLL.SubredditSettingsBLL( dal, cache );
 
             var settings = await bll.GetSubredditSettingsAsync( "thissubdoesntexist", true );
 
-            var expected = DirtbagWebservice.Models.SubredditSettings.GetDefaultSettings();
+            var expected = Dirtbag.Models.SubredditSettings.GetDefaultSettings();
             expected.Subreddit = "thissubdoesntexist";
 
             Assert.NotNull( settings );
@@ -45,11 +45,11 @@ namespace DirtbagWebserviceTests.IntegrationTests {
         [Fact]
         public async Task SetSubredditSettingsTest() {
             var conn = new NpgsqlConnection( config.GetConnectionString( "Sentinel" ) );
-            var dal = new DirtbagWebservice.DAL.SubredditSettingsPostgresDAL( conn );
+            var dal = new Dirtbag.DAL.SubredditSettingsPostgresDAL( conn );
             var cache = serviceProvider.GetRequiredService<IMemoryCache>();
-            var bll = new DirtbagWebservice.BLL.SubredditSettingsBLL( dal, cache );
+            var bll = new Dirtbag.BLL.SubredditSettingsBLL( dal, cache );
 
-            var settings = DirtbagWebservice.Models.SubredditSettings.GetDefaultSettings();
+            var settings = Dirtbag.Models.SubredditSettings.GetDefaultSettings();
             settings.Subreddit = "thesentinel_dev";
 
             settings.RemoveScoreThreshold = 5;
@@ -72,7 +72,7 @@ namespace DirtbagWebserviceTests.IntegrationTests {
 
             settings.SelfPromotionCombustor.GracePeriod = 1000;
             settings.SelfPromotionCombustor.RemovalFlair = null;
-            settings.YouTubeSpamDetector.RemovalFlair = new DirtbagWebservice.Models.Flair( "testflair", "testclass", 1 );
+            settings.YouTubeSpamDetector.RemovalFlair = new Dirtbag.Models.Flair( "testflair", "testclass", 1 );
             settings.YouTubeSpamDetector.LicensedChannel.Enabled = false;
             settings.YouTubeSpamDetector.LicensedChannel.Weight = 99;
 

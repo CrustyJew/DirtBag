@@ -52,6 +52,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\RedditSharp\RedditSharp\RedditSharp.csproj" />
+    <ProjectReference Include="..\Dirtbag\Dirtbag.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -62,6 +63,12 @@
 
   <ItemGroup>
     <WCFMetadata Include="Connected Services" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="BLL\" />
+    <Folder Include="DAL\" />
+    <Folder Include="Models\" />
   </ItemGroup>
 
 </Project>

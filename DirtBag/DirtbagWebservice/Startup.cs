@@ -16,6 +16,8 @@ using IdentityModel.Client;
 using Microsoft.AspNetCore.Authorization;
 using NLog.Extensions.Logging;
 using NLog.Web;
+using Dirtbag.DAL;
+using Dirtbag.BLL;
 
 namespace DirtbagWebservice {
     public class Startup {
@@ -53,18 +55,18 @@ namespace DirtbagWebservice {
             // Add framework services.
 
             services.AddSingleton<IConfigurationRoot>(Configuration);
-            services.AddTransient<DAL.IUserPostingHistoryDAL>(( x ) => { return new DAL.UserPostingHistoryDAL(new NpgsqlConnection(SentinelConnectionString)); });
-            services.AddTransient<DAL.IProcessedItemDAL>(( x ) => { return new DAL.ProcessedItemSQLDAL(new SqlConnection(DirtbagConnectionString)); });
-            services.AddTransient<DAL.ISubredditSettingsDAL>(( x ) => { return new DAL.SubredditSettingsPostgresDAL(new NpgsqlConnection(SentinelConnectionString)); });
-            services.AddTransient<DAL.ISentinelChannelBanDAL>(( x ) => { return new DAL.SentinelChannelBanDAL(new NpgsqlConnection(SentinelConnectionString)); });
-            services.AddTransient<BLL.ISentinelChannelBanBLL, BLL.SentinelChannelBanBLL>();
-            services.AddTransient<BLL.ISubredditSettingsBLL, BLL.SubredditSettingsBLL>();
-            services.AddTransient<BLL.IAnalyzeMediaBLL, BLL.AnalyzeMediaBLL>();
-            services.AddTransient<BLL.IProcessedItemBLL, BLL.ProcessedItemBLL>();
+            services.AddTransient<IUserPostingHistoryDAL>(( x ) => { return new UserPostingHistoryDAL(new NpgsqlConnection(SentinelConnectionString)); });
+            services.AddTransient<IProcessedItemDAL>(( x ) => { return new ProcessedItemSQLDAL(new SqlConnection(DirtbagConnectionString)); });
+            services.AddTransient<ISubredditSettingsDAL>(( x ) => { return new SubredditSettingsPostgresDAL(new NpgsqlConnection(SentinelConnectionString)); });
+            services.AddTransient<ISentinelChannelBanDAL>(( x ) => { return new SentinelChannelBanDAL(new NpgsqlConnection(SentinelConnectionString)); });
+            services.AddTransient<ISentinelChannelBanBLL, SentinelChannelBanBLL>();
+            services.AddTransient<ISubredditSettingsBLL, SubredditSettingsBLL>();
+            services.AddTransient<IAnalyzeMediaBLL, AnalyzeMediaBLL>();
+            services.AddTransient<IProcessedItemBLL, ProcessedItemBLL>();
 
             services.AddSingleton(new RedditSharp.WebAgentPool<string, RedditSharp.BotWebAgent>());
 
-            new DAL.DatabaseInitializationSQL(new SqlConnection(DirtbagConnectionString)).InitializeTablesAndData().Wait();
+            new DatabaseInitializationSQL(new SqlConnection(DirtbagConnectionString)).InitializeTablesAndData().Wait();
 
 
             services.AddMvc();
@@ -107,7 +109,7 @@ namespace DirtbagWebservice {
                 rabbitListener = new DirtbagWebservice.RabbitListener(app.ApplicationServices, loggerFactory.CreateLogger<RabbitListener>());
                 var binding = rabbit.Bind(exchange, queue, Configuration["RabbitRoutingKey"]);
 
-                rabbit.Consume<Models.RabbitAnalysisRequestMessage>(queue, rabbitListener.Subscribe, conf => { conf.WithPrefetchCount(25); });
+                rabbit.Consume<Dirtbag.Models.RabbitAnalysisRequestMessage>(queue, rabbitListener.Subscribe, conf => { conf.WithPrefetchCount(25); });
 
             }
 

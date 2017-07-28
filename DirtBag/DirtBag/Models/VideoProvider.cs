@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DirtBag.Models {
+namespace Dirtbag.Models {
     public enum VideoProvider {
         Unknown = 0,
         YouTube = 1,
@@ -13,6 +13,9 @@ namespace DirtBag.Models {
         DailyMotion = 4,
         Instagram = 5,
         SoundCloud = 6,
-        Streamable = 7 //*
+        Streamable = 7, //*
+        Twitch = 8,
+        Imgur = 9,
+        Twitter = 10
     }
 }

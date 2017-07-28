@@ -14,14 +14,14 @@ namespace DirtbagWebservice
     {
         private System.IServiceProvider provider;
         private ILogger<RabbitListener> logger;
-        private BLL.IAnalyzeMediaBLL analysisBLL;
+        private Dirtbag.BLL.IAnalyzeMediaBLL analysisBLL;
         public RabbitListener( System.IServiceProvider provider, ILogger<RabbitListener> logger ) {
             this.provider = provider;
             this.logger = logger;
         }
 
-        public async Task Subscribe(IMessage<Models.RabbitAnalysisRequestMessage> request, MessageReceivedInfo info ) {
-            var analysisBLL = (BLL.IAnalyzeMediaBLL) provider.GetService( typeof( BLL.IAnalyzeMediaBLL ) );
+        public async Task Subscribe(IMessage<Dirtbag.Models.RabbitAnalysisRequestMessage> request, MessageReceivedInfo info ) {
+            var analysisBLL = (Dirtbag.BLL.IAnalyzeMediaBLL) provider.GetService( typeof( Dirtbag.BLL.IAnalyzeMediaBLL ) );
             try {
                 var results = await analysisBLL.AnalyzeMedia(request.Body.Subreddit, request.Body, true).ConfigureAwait(false);
                 //if ( results.RequiredAction != Models.AnalysisResults.Action.Nothing || !returnActionsOnly ) {
@@ -37,7 +37,7 @@ namespace DirtbagWebservice
 
     public class DirtbagTypeNameSerializer : ITypeNameSerializer {
         public Type DeSerialize( string typeName ) {
-            return typeof( Models.RabbitAnalysisRequestMessage );
+            return typeof( Dirtbag.Models.RabbitAnalysisRequestMessage );
         }
 
         public string Serialize( Type type ) {
@@ -73,7 +73,7 @@ namespace DirtbagWebservice
 
         public object BytesToMessage( string typeName, byte[] bytes ) {
             if ( bytes == null ) throw new ArgumentNullException( "bytes" );
-            typeName = typeName ?? typeof( Models.RabbitAnalysisRequestMessage ).ToString();
+            typeName = typeName ?? typeof( Dirtbag.Models.RabbitAnalysisRequestMessage ).ToString();
             var type = typeNameSerializer.DeSerialize( typeName );
             return JsonConvert.DeserializeObject( Encoding.UTF8.GetString( bytes ), type, serializerSettings );
         }

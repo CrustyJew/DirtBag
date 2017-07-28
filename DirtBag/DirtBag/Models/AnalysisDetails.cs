@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using RedditSharp.Things;
 using System;
 using System.Collections.Generic;
@@ -6,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DirtBag.Models {
+namespace Dirtbag.Models {
     public class AnalysisDetails {
 
         public double TotalScore
@@ -33,7 +34,7 @@ namespace DirtBag.Models {
         {
             get
             {
-                return Scores.Where( f => f.RemovalFlair != null ).Count() > 0;
+                return Scores.Where( f => f.RemovalFlair != null && f.RemovalFlair.Enabled).Count() > 0;
             }
         }
 
@@ -41,7 +42,7 @@ namespace DirtBag.Models {
         {
             get
             {
-                return string.Join( " / ", Scores.Where( f => f.RemovalFlair != null ).Select( f => f.RemovalFlair.Text ).Distinct() );
+                return string.Join( " / ", Scores.Where( f => f.RemovalFlair != null && f.RemovalFlair.Enabled).Select( f => f.RemovalFlair.Text ).Distinct() );
             }
         }
 
@@ -51,7 +52,7 @@ namespace DirtBag.Models {
             get
             {
                 Flair highestPrio = null;
-                foreach ( Flair f in Scores.Where( f => f.RemovalFlair != null ).Select( s => s.RemovalFlair ) ) {
+                foreach ( Flair f in Scores.Where( f => f.RemovalFlair != null && f.RemovalFlair.Enabled ).Select( s => s.RemovalFlair ) ) {
                     if ( highestPrio == null || f.Priority < highestPrio.Priority ) highestPrio = f;
                 }
                 return highestPrio?.Class;
@@ -81,6 +82,7 @@ namespace DirtBag.Models {
         }
 
         public string ThingID { get; set; }
+        [JsonConverter(typeof(StringEnumConverter))]
         public Models.AnalyzableTypes ThingType { get; set; }
 
     }

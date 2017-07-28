@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DirtBag.Models {
+namespace Dirtbag.Models {
     public class AnalysisResults {
         [JsonConverter( typeof( StringEnumConverter ) )]
         public Action RequiredAction { get; set; }
@@ -18,7 +18,7 @@ namespace DirtBag.Models {
         }
 
         public enum Action {
-            Remove, Report, Nothing
+            Remove, Report, None
         }
     }
 }

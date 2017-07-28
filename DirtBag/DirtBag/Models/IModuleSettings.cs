@@ -1,17 +1,18 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using System;
 
-namespace DirtBag.Models {
+namespace Dirtbag.Models {
     public interface IModuleSettings {
 		[JsonProperty]
         bool Enabled { get; set; }
-		[JsonProperty]
-		int EveryXRuns { get; set; }
         [JsonProperty]
         double ScoreMultiplier { get; set; }
-		[JsonConverter( typeof( StringEnumConverter ) )]
-		[JsonProperty]
-		PostType PostTypes { get; set; }
+
+        [JsonProperty]
+        DateTime LastModified { get; set; }
+        [JsonProperty]
+        string ModifiedBy { get; set; }
 
         void SetDefaultSettings();
     }

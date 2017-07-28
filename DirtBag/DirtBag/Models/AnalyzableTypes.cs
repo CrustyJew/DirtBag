@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DirtBag.Models {
+namespace Dirtbag.Models {
     public enum AnalyzableTypes {
         Post = 1,
         Comment = 2

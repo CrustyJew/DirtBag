@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace DirtBag.Modules {
+namespace Dirtbag.Modules {
     [Flags]
     public enum Modules {
         None = 0x00,

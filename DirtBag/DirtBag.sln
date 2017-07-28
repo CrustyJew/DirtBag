@@ -16,6 +16,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DirtbagWebservice", "Dirtba
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RedditSharp", "..\..\RedditSharp\RedditSharp\RedditSharp.csproj", "{58D28BF2-3F61-44D9-9EF5-4017B00BBA31}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirtbagInboxParser", "DirtbagInboxParser\DirtbagInboxParser.csproj", "{26B88275-07EF-47D2-882A-53907A845647}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dirtbag", "Dirtbag\Dirtbag.csproj", "{EC11FE03-3E26-4E87-BC61-52F7E8C572D5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,6 +42,14 @@ Global
 		{58D28BF2-3F61-44D9-9EF5-4017B00BBA31}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{58D28BF2-3F61-44D9-9EF5-4017B00BBA31}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{58D28BF2-3F61-44D9-9EF5-4017B00BBA31}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26B88275-07EF-47D2-882A-53907A845647}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26B88275-07EF-47D2-882A-53907A845647}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26B88275-07EF-47D2-882A-53907A845647}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26B88275-07EF-47D2-882A-53907A845647}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EC11FE03-3E26-4E87-BC61-52F7E8C572D5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC11FE03-3E26-4E87-BC61-52F7E8C572D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EC11FE03-3E26-4E87-BC61-52F7E8C572D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC11FE03-3E26-4E87-BC61-52F7E8C572D5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

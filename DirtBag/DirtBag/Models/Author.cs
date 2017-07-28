@@ -1,15 +1,18 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DirtBag.Models {
+namespace Dirtbag.Models {
     public class AuthorInfo {
         public string Name { get; set; }
-        public DateTime Created { get; set; }
-        public int CommentKarma { get; set; }
-        public int LinkKarma { get; set; }
+        [JsonConverter(typeof(UnixTimeStampConverter))]
+        public DateTime? Created { get; set; }
+        public int? CommentKarma { get; set; }
+        public int? LinkKarma { get; set; }
 
     }
 }

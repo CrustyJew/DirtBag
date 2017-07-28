@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using DirtBag.Helpers;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using HtmlAgilityPack;
@@ -13,9 +11,10 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using RedditSharp;
 using RedditSharp.Things;
-using DirtBag.Models;
+using Dirtbag.Models;
+using Microsoft.Extensions.Configuration;
 
-namespace DirtBag.Modules {
+namespace Dirtbag.Modules {
     class LicensingSmasher : IModule {
         public string ModuleName { get { return "LicensingSmasher"; } }
         public Modules ModuleEnum { get { return Modules.LicensingSmasher; } }
@@ -28,12 +27,12 @@ namespace DirtBag.Modules {
         public Dictionary<string, string> KnownLicensers { get; set; }
         public Flair RemovalFlair { get; set; }
         
-        public LicensingSmasher() {
-            var key = ConfigurationManager.AppSettings["YouTubeAPIKey"];
+        public LicensingSmasher(IConfigurationRoot config) {
+            var key = config["YouTubeAPIKey"];
             if ( string.IsNullOrEmpty( key ) ) throw new Exception( "Provide setting 'YouTubeAPIKey' in AppConfig" );
             YouTubeAPIKey = key;
         }
-        public LicensingSmasher( LicensingSmasherSettings settings, string sub ) : this() {
+        public LicensingSmasher( IConfigurationRoot config, LicensingSmasherSettings settings, string sub ) : this(config) {
             Subreddit = sub;
             TermsToMatch = settings.MatchTerms.ToList();
             KnownLicensers = settings.KnownLicensers;
@@ -52,7 +51,7 @@ namespace DirtBag.Modules {
         private Regex LicenserMatching;
 
         public async Task<AnalysisDetails> Analyze(AnalysisRequest request) {
-            var results = await Analyze(new List<AnalysisRequest>() { request });
+            var results = await Analyze(new List<AnalysisRequest>() { request }).ConfigureAwait(false);
             return results.Values.FirstOrDefault();
         }
 
@@ -67,9 +66,12 @@ namespace DirtBag.Modules {
                 }
                 toReturn.Add( request.ThingID, new AnalysisDetails( request.ThingID, ModuleEnum ) );
 
-                if ( !string.IsNullOrEmpty( request.VideoID ) ) {
-                    if ( !youTubePosts.ContainsKey( request.VideoID ) ) youTubePosts.Add( request.VideoID, new List<string>() );
-                    youTubePosts[request.VideoID].Add( request.ThingID );
+                if ( !string.IsNullOrEmpty( request.MediaID ) && request.MediaPlatform == VideoProvider.YouTube ) {
+                    if ( !youTubePosts.ContainsKey( request.MediaID ) ) youTubePosts.Add( request.MediaID, new List<string>() );
+                    youTubePosts[request.MediaID].Add( request.ThingID );
+                }
+                else if (request.MediaPlatform != VideoProvider.YouTube) {
+                    toReturn[request.ThingID].Scores.Add( new AnalysisScore( 0, $"{request.MediaPlatform} is unsupported", "", Modules.LicensingSmasher ) );
                 }
 
             }
@@ -81,7 +83,7 @@ namespace DirtBag.Modules {
                 req.Id = string.Join( ",", ids );
 
                 var ytScrape = ScrapeYouTube( youTubePosts.Skip( i ).Take( 50 ).ToDictionary( p => p.Key, p => p.Value ), toReturn );
-                var response = await req.ExecuteAsync();
+                var response = await req.ExecuteAsync().ConfigureAwait(false);
 
                 foreach ( var vid in response.Items ) {
                     var redditThings = youTubePosts[vid.Id];
@@ -96,7 +98,7 @@ namespace DirtBag.Modules {
                     }
 
                 }
-                await ytScrape;
+                await ytScrape.ConfigureAwait(false);
             }
 
             return toReturn;
