@@ -15,6 +15,7 @@ namespace Dirtbag.Models {
 
         public AnalysisResults() {
             AnalysisDetails = new Models.AnalysisDetails();
+            RequiredAction = Action.None;
         }
 
         public enum Action {

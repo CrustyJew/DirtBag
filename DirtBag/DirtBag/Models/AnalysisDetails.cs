@@ -84,7 +84,7 @@ namespace Dirtbag.Models {
                 ThingType = AnalyzableTypes.Post;
             }
             AnalyzingModule = module;
-            MediaID = MediaID;
+            MediaID = mediaID;
             MediaChannelID = mediaChannelID;
             MediaChannelName = mediaChannelName;
             MediaPlatform = mediaPlatform;

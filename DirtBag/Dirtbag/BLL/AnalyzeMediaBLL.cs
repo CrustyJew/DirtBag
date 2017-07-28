@@ -60,32 +60,48 @@ namespace Dirtbag.BLL {
                         return;
                     }
 
-                    var updatedResults = await CombineResults(analysisTasks, settings);
+                    var updatedResults = await CombineResults(analysisTasks, settings).ConfigureAwait(false);
+            foreach(var updResult in updatedResults) {
+                foreach(var updMediaIDResult in updResult.Value) {
+                    await processedDAL.UpdatedAnalysisScoresAsync(subreddit, updResult.Key, updMediaIDResult.AnalysisDetails.MediaID, updMediaIDResult.AnalysisDetails.MediaPlatform, updMediaIDResult.AnalysisDetails.Scores, updateBy).ConfigureAwait(false);
 
-            foreach (var updResult in updatedResults) {
-                await processedDAL.UpdatedAnalysisScoresAsync(subreddit, updResult.Key, updResult.Value.AnalysisDetails.MediaID, updResult.Value.AnalysisDetails.MediaPlatform, updResult.Value.AnalysisDetails.Scores, updateBy);
+                    var newResults = await processedDAL.GetThingAnalysis(updResult.Key, subreddit).ConfigureAwait(false);
+                    Models.AnalysisResults.Action newAction = Models.AnalysisResults.Action.None;
 
-                if (botAgentPool != null && updResult.Value.RequiredAction != Models.AnalysisResults.Action.None && (string.IsNullOrWhiteSpace(config["SkipBotActions"]) || config["SkipBotActions"].ToLower() == "false")) {
-                    var agent = await botAgentPool.GetOrCreateAgentAsync(settings.BotName, () => {
-                        logger.LogInformation("Creating web agent for " + settings.BotName);
-                        var toReturn = new RedditSharp.BotWebAgent(settings.BotName, settings.BotPass, settings.BotAppID, settings.BotAppSecret, null);
-                        toReturn.RateLimiter = new RedditSharp.RateLimitManager(RedditSharp.RateLimitMode.SmallBurst);
-                        return Task.FromResult(toReturn);
-                    });
-
-                    var prevResults = previousResults.SingleOrDefault(r => r.ThingID == updResult.Key);
-
-                    if (updResult.Value.RequiredAction == Models.AnalysisResults.Action.Remove && prevResults?.Action != "Remove") {
-                        logger.LogInformation($"Removing thing {updResult.Value.AnalysisDetails.ThingID} - {prevResults.PermaLink}");
-                        await RedditSharp.Things.ModeratableThing.RemoveAsync(agent, updResult.Value.AnalysisDetails.ThingID).ConfigureAwait(false);
-                        if (updResult.Value.AnalysisDetails.ThingType == Models.AnalyzableTypes.Post && updResult.Value.AnalysisDetails.HasFlair) {
-                            await RedditSharp.Things.Post.SetFlairAsync(agent, settings.Subreddit, updResult.Value.AnalysisDetails.ThingID, updResult.Value.AnalysisDetails.FlairText, updResult.Value.AnalysisDetails.FlairClass).ConfigureAwait(false);
-                        }
+                    if(newResults.HighScore >= settings.RemoveScoreThreshold && settings.RemoveScoreThreshold > 0) {
+                        newAction = Models.AnalysisResults.Action.Remove;
                     }
-                    else if (updResult.Value.RequiredAction == Models.AnalysisResults.Action.Report && prevResults.Action != "Report") {
+                    else if(newResults.HighScore >= settings.ReportScoreThreshold && settings.ReportScoreThreshold > 0) {
+                        newAction = Models.AnalysisResults.Action.Report;
+                    }
+                    else {
+                        newAction = Models.AnalysisResults.Action.None;
+                    }
 
-                        logger.LogInformation($"Reporting thing {updResult.Value.AnalysisDetails.ThingID} - {prevResults.PermaLink}");
-                        await RedditSharp.Things.ModeratableThing.ReportAsync(agent, updResult.Value.AnalysisDetails.ThingID, RedditSharp.Things.ModeratableThing.ReportType.Other, updResult.Value.AnalysisDetails.ReportReason).ConfigureAwait(false);
+                    if(botAgentPool != null && newAction != Models.AnalysisResults.Action.None && (string.IsNullOrWhiteSpace(config["SkipBotActions"]) || config["SkipBotActions"].ToLower() == "false")) {
+                        var agent = await botAgentPool.GetOrCreateAgentAsync(settings.BotName, () => {
+                            logger.LogInformation("Creating web agent for " + settings.BotName);
+                            var toReturn = new RedditSharp.BotWebAgent(settings.BotName, settings.BotPass, settings.BotAppID, settings.BotAppSecret, null);
+                            toReturn.RateLimiter = new RedditSharp.RateLimitManager(RedditSharp.RateLimitMode.SmallBurst);
+                            return Task.FromResult(toReturn);
+                        });
+
+                        var prevResults = previousResults.SingleOrDefault(r => r.ThingID == updResult.Key);
+
+                        if(newAction == Models.AnalysisResults.Action.Remove && prevResults?.Action != "Remove") {
+                            logger.LogInformation($"Removing thing {updMediaIDResult.AnalysisDetails.ThingID} - {prevResults.PermaLink}");
+                            await RedditSharp.Things.ModeratableThing.RemoveAsync(agent, updMediaIDResult.AnalysisDetails.ThingID).ConfigureAwait(false);
+                            if(updMediaIDResult.AnalysisDetails.ThingType == Models.AnalyzableTypes.Post && updMediaIDResult.AnalysisDetails.HasFlair) {
+                                await RedditSharp.Things.Post.SetFlairAsync(agent, settings.Subreddit, updMediaIDResult.AnalysisDetails.ThingID, updMediaIDResult.AnalysisDetails.FlairText, updMediaIDResult.AnalysisDetails.FlairClass).ConfigureAwait(false);
+                                await processedDAL.UpdateProcessedPostActionAsync(subreddit, updMediaIDResult.AnalysisDetails.ThingID, updMediaIDResult.AnalysisDetails.MediaID, updMediaIDResult.AnalysisDetails.MediaPlatform, "Remove").ConfigureAwait(false);
+                            }
+                        }
+                        else if(newAction == Models.AnalysisResults.Action.Report && prevResults.Action != "Report") {
+
+                            logger.LogInformation($"Reporting thing {updMediaIDResult.AnalysisDetails.ThingID} - {prevResults.PermaLink}");
+                            await RedditSharp.Things.ModeratableThing.ReportAsync(agent, updMediaIDResult.AnalysisDetails.ThingID, RedditSharp.Things.ModeratableThing.ReportType.Other, updMediaIDResult.AnalysisDetails.ReportReason).ConfigureAwait(false);
+                            await processedDAL.UpdateProcessedPostActionAsync(subreddit, updMediaIDResult.AnalysisDetails.ThingID, updMediaIDResult.AnalysisDetails.MediaID, updMediaIDResult.AnalysisDetails.MediaPlatform, "Report").ConfigureAwait(false);
+                        }
                     }
                 }
             }
@@ -121,8 +137,8 @@ namespace Dirtbag.BLL {
             return results;
         }
 
-        private async Task<Dictionary<string, Models.AnalysisResults>> CombineResults(List<Task<Dictionary<string, Models.AnalysisDetails>>> analysisTasks, Models.SubredditSettings settings ) {
-            var toReturn = new Dictionary<string, Models.AnalysisResults>();
+        private async Task<Dictionary<string, List<Models.AnalysisResults>>> CombineResults(List<Task<Dictionary<string, Models.AnalysisDetails>>> analysisTasks, Models.SubredditSettings settings) {
+            var toReturn = new Dictionary<string, List<Models.AnalysisResults>>();
 
             while(analysisTasks.Count > 0) {
                 var finishedTask = await Task.WhenAny(analysisTasks).ConfigureAwait(false);
@@ -130,26 +146,24 @@ namespace Dirtbag.BLL {
                 var result = await finishedTask;
 
                 foreach(string thingid in result.Keys) {
-                    Models.AnalysisResults results;
+                    List<Models.AnalysisResults> results;
                     var details = result[thingid];
                     if(!toReturn.TryGetValue(thingid, out results)) {
-                        results = new Models.AnalysisResults();
-                        results.AnalysisDetails.ThingID = thingid;
-                        results.AnalysisDetails.ThingType = thingid.ToLower().StartsWith("t3_") ? Models.AnalyzableTypes.Post : Models.AnalyzableTypes.Comment;
+                        results = new List<Models.AnalysisResults>();
                         toReturn.Add(thingid, results);
                     }
-                    results.AnalysisDetails.Scores.AddRange(details.Scores);
-                    results.AnalysisDetails.AnalyzingModule = results.AnalysisDetails.AnalyzingModule | details.AnalyzingModule;
+                    Models.AnalysisResults mediaIDResult = results.SingleOrDefault(r=>r.AnalysisDetails.MediaID == details.MediaID & r.AnalysisDetails.MediaPlatform == details.MediaPlatform);
+                    if(mediaIDResult == null) {
+                        mediaIDResult = new Models.AnalysisResults();
+                        mediaIDResult.AnalysisDetails = details;
+                    }
+                    results.Add(mediaIDResult);
+                    //results.AnalysisDetails.ThingID = thingid;
+                    //results.AnalysisDetails.ThingType = thingid.ToLower().StartsWith("t3_") ? Models.AnalyzableTypes.Post : Models.AnalyzableTypes.Comment;
+                    //results.AnalysisDetails.Scores.AddRange(details.Scores);
+                    //results.AnalysisDetails.AnalyzingModule = results.AnalysisDetails.AnalyzingModule | details.AnalyzingModule;
 
-                    if (results.AnalysisDetails.TotalScore >= settings.RemoveScoreThreshold && settings.RemoveScoreThreshold > 0) {
-                        results.RequiredAction = Models.AnalysisResults.Action.Remove;
-                    }
-                    else if (results.AnalysisDetails.TotalScore >= settings.ReportScoreThreshold && settings.ReportScoreThreshold > 0) {
-                        results.RequiredAction = Models.AnalysisResults.Action.Report;
-                    }
-                    else {
-                        results.RequiredAction = Models.AnalysisResults.Action.None;
-                    }
+                   
                 }
             }
 

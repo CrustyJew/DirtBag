@@ -31,7 +31,7 @@ namespace RabbitRequeue
                 await rabbit.PublishAsync( rabbit.ExchangeDeclare( m.Body.Exchange, EasyNetQ.Topology.ExchangeType.Direct ),
                     //m.Body.RoutingKey
                     "Dirtbag_ToAnalyze"
-                    , true, new Message<DirtbagWebservice.Models.RabbitAnalysisRequestMessage>(Newtonsoft.Json.JsonConvert.DeserializeObject<DirtbagWebservice.Models.RabbitAnalysisRequestMessage>( msg ) ) );
+                    , true, new Message<Dirtbag.Models.RabbitAnalysisRequestMessage>(Newtonsoft.Json.JsonConvert.DeserializeObject<Dirtbag.Models.RabbitAnalysisRequestMessage>( msg ) ) );
             } );
         }
     }

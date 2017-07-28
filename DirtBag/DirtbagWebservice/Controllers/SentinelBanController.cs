@@ -13,13 +13,13 @@ namespace DirtbagWebservice.Controllers
     [Authorize]
     public class SentinelBanController : Controller {
 
-        private BLL.ISentinelChannelBanBLL bll;
-        public SentinelBanController(BLL.ISentinelChannelBanBLL sentinelChannelBanBLL ) {
+        private Dirtbag.BLL.ISentinelChannelBanBLL bll;
+        public SentinelBanController(Dirtbag.BLL.ISentinelChannelBanBLL sentinelChannelBanBLL ) {
             bll = sentinelChannelBanBLL;
         }
     
         [HttpGet("{sub}/{thingid}")]
-        public Task<IEnumerable<Models.SentinelChannelBan>> CheckBanList([FromRoute]string sub, [FromRoute] string thingid ) {
+        public Task<IEnumerable<Dirtbag.Models.SentinelChannelBan>> CheckBanList([FromRoute]string sub, [FromRoute] string thingid ) {
             if(!User.IsInRole(sub.ToLower())) throw new UnauthorizedAccessException("Not a moderator of that sub");
             return bll.CheckSentinelChannelBan(sub, thingid);
         }

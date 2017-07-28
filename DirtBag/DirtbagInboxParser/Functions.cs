@@ -10,6 +10,7 @@ using RedditSharp.Things;
 using System.Data.SqlClient;
 using Npgsql;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 
 namespace DirtbagInboxParser {
     public class Functions {
@@ -31,7 +32,7 @@ namespace DirtbagInboxParser {
                 return;
             }
             Post post;
-            RedditSharp.Reddit reddit = new RedditSharp.Reddit(Program.BotAgent, false);
+            RedditSharp.Reddit reddit = new RedditSharp.Reddit(Program.DirtbagAgent, false);
             try {
                 post = await reddit.GetPostAsync(new Uri(message.Body));
             }
@@ -42,7 +43,7 @@ namespace DirtbagInboxParser {
 
             string subreddit = post.SubredditName;
 
-            var mods = await Subreddit.GetModeratorsAsync(Program.BotAgent, subreddit);
+            var mods = await Subreddit.GetModeratorsAsync(Program.DirtbagAgent, subreddit);
 
             if(!mods.Any(m=>m.Name.ToLower() == message.AuthorName.ToLower())) {
                 await message.ReplyAsync($"You aren't a mod of {post.SubredditName}! What are you doing here? Go on! GIT!");
@@ -98,11 +99,23 @@ namespace DirtbagInboxParser {
 
         }
 
-        public static async Task ReEvaluateLicensing ( [TimerTrigger("00:05:00")] TimerTriggerAttribute trigger ) {
-            var settingsDAL = new Dirtbag.DAL.SubredditSettingsPostgresDAL(new NpgsqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings["SentinelDirtbag"].ConnectionString));
-            var settingsBLL = new Dirtbag.BLL.SubredditSettingsBLL(settingsDAL, Program.cache);
-            var analysisBLL = new Dirtbag.BLL.AnalyzeMediaBLL(System.Configuration.ConfigurationManager, settingsBLL)
-            var scanner = new LicensingRescanner();
+        //public static async Task ReEvaluateLicensing ( [TimerTrigger("00:05:00")] TimerInfo trigger ) {
+
+        //    var scanner = new LicensingRescanner();
+        //    await scanner.Rescan().ConfigureAwait(false);
+        //}
+
+        public static async Task ProcessSentinelBotQueue( [RabbitMQ("Dirtbag","Sentinel", "Dirtbag_ToAnalyze")] Dirtbag.Models.RabbitAnalysisRequestMessage request) {
+            var sentinelConn = new NpgsqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings["SentinelDirtbag"].ConnectionString);
+            var settingsDAL = new Dirtbag.DAL.SubredditSettingsPostgresDAL(sentinelConn);
+            var settingsBLL = new Dirtbag.BLL.SubredditSettingsBLL(settingsDAL, Program.MemCache);
+            var processedItemDAL = new Dirtbag.DAL.ProcessedItemSQLDAL(new SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings["Dirtbag"].ConnectionString));
+            var userPostHistoryDAL = new Dirtbag.DAL.UserPostingHistoryDAL(sentinelConn);
+
+            ILoggerFactory loggerFactory = new LoggerFactory();
+            var analysisBLL = new Dirtbag.BLL.AnalyzeMediaBLL(Program.ConfigRoot, settingsBLL, userPostHistoryDAL, processedItemDAL, Program.BotAgentPool, loggerFactory.CreateLogger<Dirtbag.BLL.AnalyzeMediaBLL>());
+            
+            await analysisBLL.AnalyzeMedia(request.Subreddit, request).ConfigureAwait(false);
         }
     }
 }

@@ -5,6 +5,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using Dirtbag.Models;
+using Microsoft.SqlServer.Server;
+using System.Data.SqlClient;
 
 namespace Dirtbag.DAL {
     public class ProcessedItemSQLDAL : IProcessedItemDAL {
@@ -83,7 +85,7 @@ where sub.SubName like @SubName
             }
             string scoresDeleteOld = @"
 DELETE a
-OUTPUT DELETED.ID, GETUTCDATE() as 'HistDate', @UpdateRequestor as 'RequestedBy', DELETED.SubredditID, DELETED.ModuleID, DELETED.ThingID, DELETED.MediaID, DELETED.MediaPlatform, DELETED.Score, DELETED.Reason, DELETED.ReportReason, DELETED.FlairText, DELETED.FlairClass, DELETED.Priority into AnalysisScoresHistory
+OUTPUT DELETED.ID, GETUTCDATE() as 'HistDate', @UpdateRequestor as 'RequestedBy', DELETED.SubredditID, DELETED.ModuleID, DELETED.ThingID, DELETED.MediaID, DELETED.MediaPlatform, DELETED.Score, DELETED.Reason, DELETED.ReportReason, DELETED.FlairText, DELETED.FlairClass, DELETED.FlairPriority into AnalysisScoresHistory
 FROM AnalysisScores a WHERE ThingID = @ThingID AND MediaID = @MediaID AND MediaPlatform = @MediaPlatform AND ModuleID = @ModuleID;
 ";
             string scoresUpdate = @"
@@ -100,43 +102,21 @@ where sub.SubName like @SubName
             }
         }
 
-        public async Task<Models.ProcessedItem> ReadProcessedItemAsync( string thingID, string subName) {
-            return (await ReadProcessedItemsAsync(new string[] { thingID }, subName).ConfigureAwait(false)).FirstOrDefault();
-        }
-
-        public async Task<IEnumerable<Models.ProcessedItem>> ReadProcessedItemsAsync( IEnumerable<string> thingIDs, string subName ) {
+        public Task UpdateProcessedPostActionAsync(string subName, string thingID, string mediaID, VideoProvider mediaPlatform, string action ) {
             string query = @"
-SELECT subs.SubName, pp.ThingID, pp.Author, pp.MediaID, pp.MediaChannelID, pp.MediaPlatform, pp.ThingType, act.ActionName as 'Action', pp.SeenByModules, 
-    scores.Score, scores.Reason, scores.ReportReason, scores.ModuleID, 
-    scores.FlairText as 'Text', scores.FlairClass as 'Class', scores.FlairPriority as 'Priority'
+UPDATE pp
+SET actionID = act.ID
 FROM ProcessedItems pp
-LEFT JOIN AnalysisScores scores on scores.subredditID = pp.subredditID AND pp.thingID = scores.thingID AND pp.mediaID = scores.mediaID AND pp.MediaPlatform = scores.MediaPlatform
-LEFT JOIN Actions act on act.ID = pp.ActionID
-LEFT JOIN Subreddits subs on subs.ID = pp.SubredditID
-WHERE
-pp.ThingID IN @thingIDs
-AND subs.SubName = @subName
+inner join Subreddits sub on sub.ID = pp.subredditID
+inner join Actions act on act.ActionName = @Action
+WHERE sub.SubName like @subName
+AND pp.ThingID = @thingID
+AND pp.MediaID = @mediaID
+AND pp.MediaPlatform = @mediaPlatform
 ";
-            Dictionary<string, Models.ProcessedItem> toReturn = new Dictionary<string, Models.ProcessedItem>();
-
-            var result = await conn.QueryAsync<Models.ProcessedItem, Models.AnalysisScore, Models.Flair, Models.ProcessedItem>(
-                query,
-                ( pi, score, flair ) => {
-                    Models.ProcessedItem item;
-                    if(!toReturn.TryGetValue(pi.ThingID, out item)) {
-                        item = pi;
-                        toReturn.Add(item.ThingID, item);
-                    }
-                    score.RemovalFlair = flair;
-                    item.AnalysisDetails.Scores.Add(score);
-
-                    return pi;
-                },
-                splitOn: "Score,Text",
-                param: new { thingIDs, subName }).ConfigureAwait(false);
-
-            return toReturn.Values?.AsEnumerable();
+            return conn.ExecuteAsync(query, new { subName, thingID, mediaID, mediaPlatform, action });
         }
+        
 
         public async Task<AnalysisResponse> GetThingAnalysis( string thingID, string subName ) {
             string query = @"
@@ -157,6 +137,14 @@ AND subs.SubName = @subName
                 
                 if(toReturn == null) {
                     toReturn = ar;
+                }
+                else {
+                    if(toReturn.Action == "None" && ar.Action != "None") { //takes max action from all mediaids in thingid
+                        toReturn.Action = ar.Action;
+                    }
+                    else if(toReturn.Action == "Report" && ar.Action == "Remove") {
+                        toReturn.Action = ar.Action;
+                    }
                 }
                 var mediaAnalysis = toReturn.Analysis.SingleOrDefault(a => a.MediaChannelID == media.MediaChannelID && a.MediaID == media.MediaID && a.MediaPlatform == media.MediaPlatform);
                 if(mediaAnalysis == null) {
@@ -184,9 +172,11 @@ FROM ProcessedItems pp
 LEFT JOIN AnalysisScores scores on scores.subredditID = pp.subredditID AND pp.thingID = scores.thingID AND pp.mediaID = scores.mediaID AND pp.MediaPlatform = scores.MediaPlatform
 LEFT JOIN Actions act on act.ID = pp.ActionID
 LEFT JOIN Subreddits subs on subs.ID = pp.SubredditID
-WHERE
-pp.ThingID in @thingIDs
+inner join @thingIDs tids on tids.thingid = pp.ThingID
 ";
+
+            var parameters = new Helpers.ThingIDTVP(thingIDs);
+
             List<AnalysisResponse> toReturn = new List<AnalysisResponse>();
             await conn.QueryAsync<AnalysisResponse, MediaAnalysis, AnalysisScore, Flair, AnalysisResponse>(query, ( ar, media, score, flair ) => {
                 if(ar.SubName.ToLower() != subName.ToLower()) return ar;
@@ -207,7 +197,7 @@ pp.ThingID in @thingIDs
                     mediaAnalysis.Scores.Add(score);
                 }
                 return ar;
-            }, splitOn: "MediaID,Score,Text", param: thingIDs).ConfigureAwait(false);
+            }, splitOn: "MediaID,Score,Text", param: parameters).ConfigureAwait(false);
 
             return toReturn;
         }

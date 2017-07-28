@@ -155,7 +155,6 @@ namespace Dirtbag.BLL {
                 try {
                     //check if anyone else got the settings while waiting for semaphore
                     if(cache.TryGetValue(CACHE_PREFIX + subreddit, out cacheVal) && cacheVal != null) {
-                        cacheSemaphore.Release();
                         return (SubredditSettings) cacheVal;
                     }
 

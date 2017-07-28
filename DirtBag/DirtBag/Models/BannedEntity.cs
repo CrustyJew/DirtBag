@@ -13,7 +13,17 @@ namespace Dirtbag.Models {
 
         public string BannedBy { get; set; }
         public string BanReason { get; set; }
-        public DateTime? BanDate { get; set; }
+
+        private DateTime? _banDate;
+        public DateTime? BanDate {
+            get { return _banDate; }
+            set {
+                if(value.HasValue) {
+                    _banDate = DateTime.SpecifyKind(value.Value, DateTimeKind.Utc);
+                }
+                else _banDate = null;
+            }
+        }
         public string ThingID { get; set; }
 
 
