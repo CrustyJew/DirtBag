@@ -99,11 +99,11 @@ namespace DirtbagInboxParser {
 
         }
 
-        //public static async Task ReEvaluateLicensing ( [TimerTrigger("00:05:00")] TimerInfo trigger ) {
+        public static async Task ReEvaluateLicensing( [TimerTrigger("00:05:00")] TimerInfo trigger ) {
 
-        //    var scanner = new LicensingRescanner();
-        //    await scanner.Rescan().ConfigureAwait(false);
-        //}
+            var scanner = new LicensingRescanner();
+            await scanner.Rescan().ConfigureAwait(false);
+        }
 
         public static async Task ProcessSentinelBotQueue( [RabbitMQ("Dirtbag","Sentinel", "Dirtbag_ToAnalyze")] Dirtbag.Models.RabbitAnalysisRequestMessage request) {
             var sentinelConn = new NpgsqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings["SentinelDirtbag"].ConnectionString);
