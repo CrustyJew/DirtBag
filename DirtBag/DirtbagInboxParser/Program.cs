@@ -20,7 +20,7 @@ namespace DirtbagInboxParser {
         public static IConfigurationRoot ConfigRoot;
         static void Main() {
             BotAgentPool = new RedditSharp.WebAgentPool<string, RedditSharp.BotWebAgent>();
-            ConfigRoot = new ConfigurationBuilder().AddJsonFile("PrivateConfig.json", true).Build();
+            ConfigRoot = new ConfigurationBuilder().AddJsonFile("PrivateConfig.json", true).AddEnvironmentVariables().Build();
             MemCache = new MemoryCache(new MemoryCacheOptions());
 
             DirtbagAgent = new RedditSharp.BotWebAgent(ConfigRoot["BotUsername"], ConfigRoot["BotPassword"], ConfigRoot["BotClientID"], ConfigRoot["BotClientSecret"], ConfigRoot["BotRedirectURI"]);
