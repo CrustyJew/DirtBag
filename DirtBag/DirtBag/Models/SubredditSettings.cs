@@ -9,6 +9,8 @@ namespace Dirtbag.Models {
     public class SubredditSettings {
         public string Subreddit { get; set; }
         [JsonIgnore]
+        public bool Enabled { get; set; }
+        [JsonIgnore]
         public string BotName { get; set; }
         [JsonIgnore]
         public string BotPass { internal get; set; }

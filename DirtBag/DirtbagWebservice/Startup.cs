@@ -53,7 +53,7 @@ namespace DirtbagWebservice {
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices( IServiceCollection services ) {
             // Add framework services.
-
+            services.AddMemoryCache();
             services.AddSingleton<IConfigurationRoot>(Configuration);
             services.AddTransient<IUserPostingHistoryDAL>(( x ) => { return new UserPostingHistoryDAL(new NpgsqlConnection(SentinelConnectionString)); });
             services.AddTransient<IProcessedItemDAL>(( x ) => { return new ProcessedItemSQLDAL(new SqlConnection(DirtbagConnectionString)); });
@@ -96,7 +96,6 @@ namespace DirtbagWebservice {
             if(env.IsDevelopment()) {
                 loggerFactory.AddDebug();
             }
-
             if(String.IsNullOrWhiteSpace(Configuration["DisableRabbitQueue"])) {
                 rabbit = RabbitHutch.CreateBus(Configuration.GetConnectionString("Rabbit"),
                     x => {

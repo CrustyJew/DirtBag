@@ -49,13 +49,14 @@ edited_utc = EXCLUDED.edited_utc,
 edited_by = EXCLUDED.edited_by,
 removal_flair_text = EXCLUDED.removal_flair_text,
 removal_flair_class = EXCLUDED.removal_flair_class,
-removal_flair_priority = EXCLUDED.removal_flair_priority
+removal_flair_priority = EXCLUDED.removal_flair_priority,
+removal_flair_enabled = EXCLUDED.removal_flair_enabled
 WHERE 
 lsmash.subreddit_id = EXCLUDED.subreddit_id
 ";
             return conn.ExecuteAsync(licensingQuery,
                 new {
-                    subreddit,
+                    subreddit = new CitextParameter(subreddit),
                     settings.Enabled,
                     settings.LastModified,
                     settings.ModifiedBy,
@@ -148,14 +149,14 @@ edited_utc = EXCLUDED.edited_utc,
 edited_by = EXCLUDED.edited_by,
 removal_flair_text = EXCLUDED.removal_flair_text,
 removal_flair_class = EXCLUDED.removal_flair_class,
-removal_flair_priority = EXCLUDED.removal_flair_priority
+removal_flair_priority = EXCLUDED.removal_flair_priority,
 removal_flair_enabled = EXCLUDED.removal_flair_enabled
 WHERE 
 spromo.subreddit_id = EXCLUDED.subreddit_id
 ";
             return conn.ExecuteAsync(selfPromoQuery,
                     new {
-                        subreddit,
+                        subreddit = new CitextParameter(subreddit),
                         settings.Enabled,
                         settings.GracePeriod,
                         settings.IncludePostInPercentage,
@@ -185,7 +186,7 @@ edited_utc = EXCLUDED.edited_utc,
 edited_by = EXCLUDED.edited_by,
 removal_flair_text = EXCLUDED.removal_flair_text,
 removal_flair_class = EXCLUDED.removal_flair_class,
-removal_flair_priority = EXCLUDED.removal_flair_priority
+removal_flair_priority = EXCLUDED.removal_flair_priority,
 removal_flair_enabled = EXCLUDED.removal_flair_enabled
 WHERE 
 spamd.subreddit_id = EXCLUDED.subreddit_id
@@ -193,7 +194,7 @@ spamd.subreddit_id = EXCLUDED.subreddit_id
 
             return conn.ExecuteAsync(spamDetectorQuery,
                 new {
-                    subreddit,
+                    subreddit = new CitextParameter(subreddit),
                     settings.Enabled,
                     settings.LastModified,
                     settings.ModifiedBy,
@@ -283,7 +284,7 @@ LEFT JOIN dirtbag.spam_detector_modules sd_m on sd_m.subreddit_id = s.id
 WHERE s.subreddit_name like @subreddit
 ";
             Models.SubredditSettings toReturn = new Models.SubredditSettings();
-            toReturn = await conn.QuerySingleOrDefaultAsync<SubredditSettings>(subredditQuery, new { subreddit }).ConfigureAwait(false);
+            toReturn = await conn.QuerySingleOrDefaultAsync<SubredditSettings>(subredditQuery, new { subreddit = new CitextParameter(subreddit) }).ConfigureAwait(false);
             if(toReturn == null) { return null; }
 
 
@@ -298,9 +299,9 @@ WHERE s.subreddit_name like @subreddit
                 }
                 return ls;
             }
-            , param: new { subreddit }, splitOn: "Text,MatchTerms").ConfigureAwait(false);
+            , param: new { subreddit = new CitextParameter(subreddit) }, splitOn: "Text,MatchTerms").ConfigureAwait(false);
             if(toReturn.LicensingSmasher != null) {
-                toReturn.LicensingSmasher.KnownLicensers = (await conn.QueryAsync(licensingSmasherLicensors, new { subreddit })).ToDictionary(r => (string) r.Key, r => (string) r.Value);
+                toReturn.LicensingSmasher.KnownLicensers = (await conn.QueryAsync(licensingSmasherLicensors, new { subreddit = new CitextParameter(subreddit) })).ToDictionary(r => (string) r.Key, r => (string) r.Value);
             }
             toReturn.SelfPromotionCombustor =
                 (
@@ -309,7 +310,7 @@ WHERE s.subreddit_name like @subreddit
                         sp.RemovalFlair = flair ?? new Flair();
                         return sp;
                     }
-                    , param: new { subreddit }, splitOn: "Text").ConfigureAwait(false)
+                    , param: new { subreddit = new CitextParameter(subreddit) }, splitOn: "Text").ConfigureAwait(false)
                 ).SingleOrDefault();
 
 
@@ -338,7 +339,7 @@ WHERE s.subreddit_name like @subreddit
                         toReturn.YouTubeSpamDetector.CommentCountThreshold = module; break;
                 }
                 return sd;
-            }, param: new { subreddit }, splitOn: "Text,Name").ConfigureAwait(false);
+            }, param: new { subreddit = new CitextParameter(subreddit) }, splitOn: "Text,Name").ConfigureAwait(false);
 
 
 
@@ -353,6 +354,14 @@ INNER JOIN public.subreddit s on s.id = ls.subreddit_id
 WHERE s.dirtbag_enabled = true and ls.enabled = true
 ";
             return conn.QueryAsync<string>(licensingSmasherSubsQuery);
+        }
+
+        public Task<bool> DirtbagEnabledAsync(string subreddit ) {
+            string query = @"
+select count(1) 
+from public.subreddit s 
+where s.subreddit_name = @subreddit AND s.dirtbag_enabled = true";
+            return conn.ExecuteScalarAsync<bool>(query, new { subreddit = new CitextParameter(subreddit) });
         }
     }
 }

@@ -69,14 +69,14 @@ namespace Dirtbag.Models {
         public void SetDefaultSettings() {
             Enabled = false;
             ScoreMultiplier = 1;
-            ChannelAgeThreshold = new YouTubeSpamDetectorModule { Name = "ChannelAgeThreshold", Value = 14, Enabled = true, Weight = 3 };
+            ChannelAgeThreshold = new YouTubeSpamDetectorModule { Name = "ChannelAgeThreshold", Value = 30, Enabled = true, Weight = 3 };
             ViewCountThreshold = new YouTubeSpamDetectorModule { Name = "ViewCountThreshold", Value = 200, Enabled = true, Weight = 1 };
             VoteCountThreshold = new YouTubeSpamDetectorModule { Name = "VoteCountThreshold", Value = 25, Enabled = true, Weight = 1 };
-            NegativeVoteRatio = new YouTubeSpamDetectorModule { Name = "NegativeVoteRatio", Enabled = true, Weight = 1 };
-            RedditAccountAgeThreshold = new YouTubeSpamDetectorModule { Name = "RedditAccountAgeThreshold", Value = 30, Enabled = true, Weight = 2 };
-            LicensedChannel = new YouTubeSpamDetectorModule { Name = "LicensedChannel", Enabled = true, Weight = 1 };
+            NegativeVoteRatio = new YouTubeSpamDetectorModule { Name = "NegativeVoteRatio", Enabled = false, Weight = 1 };
+            RedditAccountAgeThreshold = new YouTubeSpamDetectorModule { Name = "RedditAccountAgeThreshold", Value = 60, Enabled = true, Weight = 3 };
+            LicensedChannel = new YouTubeSpamDetectorModule { Name = "LicensedChannel", Enabled = false, Weight = 1 };
             ChannelSubscribersThreshold = new YouTubeSpamDetectorModule { Name = "ChannelSubscribersThreshold", Value = 25, Enabled = true, Weight = 1 };
-            CommentCountThreshold = new YouTubeSpamDetectorModule { Name = "CommentCountThreshold", Value = 10, Enabled = false, Weight = 1 };
+            CommentCountThreshold = new YouTubeSpamDetectorModule { Name = "CommentCountThreshold", Value = 10, Enabled = true, Weight = 1 };
             RemovalFlair = new Flair();
         }
     }

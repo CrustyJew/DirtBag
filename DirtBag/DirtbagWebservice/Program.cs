@@ -22,6 +22,7 @@ namespace DirtbagWebservice
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseUrls("http://localhost:16666/Dirtbag")
                 .UseIISIntegration()
+                .UseApplicationInsights()
                 .UseStartup<Startup>()
                 .Build();
 

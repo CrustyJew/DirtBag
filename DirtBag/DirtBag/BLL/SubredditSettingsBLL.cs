@@ -157,7 +157,7 @@ namespace Dirtbag.BLL {
                     if(cache.TryGetValue(CACHE_PREFIX + subreddit, out cacheVal) && cacheVal != null) {
                         return (SubredditSettings) cacheVal;
                     }
-
+                    returnDefault = returnDefault || await dal.DirtbagEnabledAsync(subreddit);
                     var settings = await dal.GetSubredditSettingsAsync(subreddit);
                     bool addToCache = true;
                     if(returnDefault) {
@@ -180,7 +180,7 @@ namespace Dirtbag.BLL {
                             settings.YouTubeSpamDetector.SetDefaultSettings();
                         }
                     }
-                    if(addToCache) {
+                    if(addToCache && settings != null) {
                         cache.Set(CACHE_PREFIX + subreddit, settings, DateTimeOffset.Now.AddMinutes(15));
                     }
                     return settings;

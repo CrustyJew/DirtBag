@@ -16,5 +16,6 @@ namespace Dirtbag.DAL {
         Task UpsertLicensingSmasherLicensorsAsync( IEnumerable<Models.DAL.LicensingSmasherLicensor> licensors );
 
         Task<IEnumerable<string>> GetLicensingSmasherSubredditsAsync();
+        Task<bool> DirtbagEnabledAsync( string subreddit );
     }
 }
