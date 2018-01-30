@@ -283,7 +283,7 @@ LEFT JOIN dirtbag.spam_detector_modules sd_m on sd_m.subreddit_id = s.id
 
 WHERE s.subreddit_name like @subreddit
 ";
-            Models.SubredditSettings toReturn = new Models.SubredditSettings();
+            Models.SubredditSettings toReturn = null;
             toReturn = await conn.QuerySingleOrDefaultAsync<SubredditSettings>(subredditQuery, new { subreddit = new CitextParameter(subreddit) }).ConfigureAwait(false);
             if(toReturn == null) { return null; }
 
@@ -301,7 +301,7 @@ WHERE s.subreddit_name like @subreddit
             }
             , param: new { subreddit = new CitextParameter(subreddit) }, splitOn: "Text,MatchTerms").ConfigureAwait(false);
             if(toReturn.LicensingSmasher != null) {
-                toReturn.LicensingSmasher.KnownLicensers = (await conn.QueryAsync(licensingSmasherLicensors, new { subreddit = new CitextParameter(subreddit) })).ToDictionary(r => (string) r.Key, r => (string) r.Value);
+                toReturn.LicensingSmasher.KnownLicensers = (await conn.QueryAsync(licensingSmasherLicensors, new { subreddit = new CitextParameter(subreddit) })).Select(r => new KeyValuePair<string,string>((string) r.Key, (string) r.Value)).ToList();
             }
             toReturn.SelfPromotionCombustor =
                 (

@@ -27,7 +27,7 @@ namespace DirtbagWebserviceTests.IntegrationTests
                 Subreddit = "testsubbie",
                 LicensingSmasher = new Dirtbag.Models.LicensingSmasherSettings {
                     Enabled = true,
-                    KnownLicensers = new Dictionary<string, string> { { "H7XeNNPkVV3JZxXm-O-MCA", "Jukin Media" } },
+                    KnownLicensers = new List<KeyValuePair<string, string>>{ new KeyValuePair<string, string>( "H7XeNNPkVV3JZxXm-O-MCA", "Jukin Media" ) },
                     MatchTerms = new List<string> { "mtashed" },
                     RemovalFlair = new Dirtbag.Models.Flair( "Licensed", "red", 1 ),
                     ScoreMultiplier = 2

@@ -38,7 +38,7 @@ namespace DirtbagWebserviceTests.IntegrationTests {
 
             Assert.NotNull( settings );
             Assert.Equal( expected.RemoveScoreThreshold, settings.RemoveScoreThreshold );
-            Assert.Equal( expected.LicensingSmasher.KnownLicensers.Keys, settings.LicensingSmasher.KnownLicensers.Keys );
+            Assert.Equal( expected.LicensingSmasher.KnownLicensers.Select(kl=>kl.Key), settings.LicensingSmasher.KnownLicensers.Select(kl => kl.Key));
         }
 
         //Please don't judge me for the sins I'm about to commit.
@@ -63,10 +63,10 @@ namespace DirtbagWebserviceTests.IntegrationTests {
             Assert.Equal( settings.LicensingSmasher.ScoreMultiplier, results.LicensingSmasher.ScoreMultiplier );
             Assert.Equal( settings.RemoveScoreThreshold, results.RemoveScoreThreshold );
             Assert.Equal( settings.LicensingSmasher.KnownLicensers.Count, results.LicensingSmasher.KnownLicensers.Count );
-            Assert.Equal( settings.LicensingSmasher.KnownLicensers.Keys, settings.LicensingSmasher.KnownLicensers.Keys );
+            Assert.Equal( settings.LicensingSmasher.KnownLicensers.Select(kl => kl.Key), settings.LicensingSmasher.KnownLicensers.Select(kl => kl.Key));
 
-            settings.LicensingSmasher.KnownLicensers = new Dictionary<string, string>();
-            settings.LicensingSmasher.KnownLicensers.Add( "testkey", "testvalue" );
+            settings.LicensingSmasher.KnownLicensers = new List<KeyValuePair<string, string>>();
+            settings.LicensingSmasher.KnownLicensers.Add(new KeyValuePair<string, string>( "testkey", "testvalue" ));
             settings.LicensingSmasher.MatchTerms = new List<string>();
             settings.LicensingSmasher.MatchTerms.Add( "testterm" );
 

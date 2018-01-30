@@ -30,10 +30,13 @@ namespace DirtbagWebservice.Controllers {
                 Request.Body.Position = 0;
                 string req = new StreamReader(Request.Body).ReadToEnd();
 
-                throw new System.Exception($"Settings failed to be deserialized or were null. Len:{Request.Body.Length}, {Request.Headers["Content-Length"]} | {req.Length} | {Request.Headers["Content-Type"]}");
+                Response.StatusCode = 400;
+
+                return Task.FromResult(BadRequest(new { message = $"Settings failed to be deserialized or were null. Len:{Request.Body.Length}, {Request.Headers["Content-Length"]} | {req.Length} | {Request.Headers["Content-Type"]}" }));
+                
             }
             settings.Subreddit = subreddit;
-            return bll.SetSubredditSettingsAsync( settings, modifiedBy );
+            return bll.SetSubredditSettingsAsync(settings, modifiedBy);
         }
         [Route("{subreddit}/Purge"),HttpDelete]
         public void PurgeCacheForSub( [FromRoute]string subreddit ) {

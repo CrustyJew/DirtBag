@@ -18,6 +18,7 @@ using NLog.Extensions.Logging;
 using NLog.Web;
 using Dirtbag.DAL;
 using Dirtbag.BLL;
+using Microsoft.AspNetCore.Mvc.Formatters;
 
 namespace DirtbagWebservice {
     public class Startup {
@@ -69,7 +70,9 @@ namespace DirtbagWebservice {
             new DatabaseInitializationSQL(new SqlConnection(DirtbagConnectionString)).InitializeTablesAndData().Wait();
 
 
-            services.AddMvc();
+            services.AddMvc().AddJsonOptions(opt => {
+                opt.SerializerSettings.NullValueHandling = Newtonsoft.Json.NullValueHandling.Include;
+            });
 
             services.AddAuthorization(options => {
                 options.AddPolicy("DirtbagAdmin", policy => policy.Requirements.Add(new AdminAuthRequirement()));

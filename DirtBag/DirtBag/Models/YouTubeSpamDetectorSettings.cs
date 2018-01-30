@@ -67,7 +67,7 @@ namespace Dirtbag.Models {
         }
 
         public void SetDefaultSettings() {
-            Enabled = false;
+            Enabled = true;
             ScoreMultiplier = 1;
             ChannelAgeThreshold = new YouTubeSpamDetectorModule { Name = "ChannelAgeThreshold", Value = 30, Enabled = true, Weight = 3 };
             ViewCountThreshold = new YouTubeSpamDetectorModule { Name = "ViewCountThreshold", Value = 200, Enabled = true, Weight = 1 };

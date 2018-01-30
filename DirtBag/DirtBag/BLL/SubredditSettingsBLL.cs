@@ -220,7 +220,7 @@ namespace Dirtbag.BLL {
             if ( current.Enabled == newSettings.Enabled &&
                 CompareSettings( current.RemovalFlair, newSettings.RemovalFlair ) &&
                 current.ScoreMultiplier == newSettings.ScoreMultiplier &&
-                current.KnownLicensers.DictionaryEqual( newSettings.KnownLicensers ) &&
+                current.KnownLicensers.ListKVPEqual( newSettings.KnownLicensers ) &&
                 Enumerable.SequenceEqual( current.MatchTerms, newSettings.MatchTerms ) ) {
 
                 return true;

@@ -24,7 +24,7 @@ namespace Dirtbag.Modules {
         public string Subreddit { get; set; }
         public string YouTubeAPIKey { get; set; }
         public List<string> TermsToMatch { get; set; }
-        public Dictionary<string, string> KnownLicensers { get; set; }
+        public List<KeyValuePair<string,string>> KnownLicensers { get; set; }
         public Flair RemovalFlair { get; set; }
         
         public LicensingSmasher(IConfigurationRoot config) {
@@ -39,7 +39,7 @@ namespace Dirtbag.Modules {
             Settings = settings;
             RemovalFlair = settings.RemovalFlair;
             TermMatching = new Regex( string.Join( "|", settings.MatchTerms ), RegexOptions.IgnoreCase );
-            LicenserMatching = new Regex( "^" + string.Join( "$|^", settings.KnownLicensers.Keys ) + "$", RegexOptions.IgnoreCase );
+            LicenserMatching = new Regex( "^" + string.Join( "$|^", settings.KnownLicensers.Select(kl=>kl.Key) ) + "$", RegexOptions.IgnoreCase );
         }
         private const int STRINGMATCH_SCORE = 3;
         private const int ATTRIBUTION_SCORE = 2;
@@ -141,7 +141,7 @@ namespace Dirtbag.Modules {
                 var match = LicenserMatching.Match( owner ).Value;
                 score = new AnalysisScore( ATTRIBUTION_SCORE * Settings.ScoreMultiplier, string.Format( "Video is monetized by '{0}'", owner ), "Monetized", ModuleEnum );
                 if ( !string.IsNullOrEmpty( match ) ) {
-                    score = new AnalysisScore( ATTRIBUTION_MATCH_SCORE * Settings.ScoreMultiplier, string.Format( "Video is licensed through a network : '{0}'", KnownLicensers[match] ), string.Format( "Video licensed by '{0}'", KnownLicensers[match] ), ModuleEnum, RemovalFlair );
+                    score = new AnalysisScore( ATTRIBUTION_MATCH_SCORE * Settings.ScoreMultiplier, string.Format( "Video is licensed through a network : '{0}'", KnownLicensers.First(kl=>kl.Key == match) ), string.Format( "Video licensed by '{0}'", KnownLicensers.First(kl=>kl.Key == match) ), ModuleEnum, RemovalFlair );
                     return score;
                 }
 

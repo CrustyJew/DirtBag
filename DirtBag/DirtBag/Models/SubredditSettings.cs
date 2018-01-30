@@ -31,8 +31,8 @@ namespace Dirtbag.Models {
 
         public static SubredditSettings GetDefaultSettings() {
             SubredditSettings toReturn = new Models.SubredditSettings();
-            toReturn.RemoveScoreThreshold = -1;
-            toReturn.ReportScoreThreshold = -1;
+            toReturn.RemoveScoreThreshold = 8;
+            toReturn.ReportScoreThreshold = 6;
             toReturn.LicensingSmasher = new LicensingSmasherSettings();
             toReturn.LicensingSmasher.SetDefaultSettings();
             toReturn.SelfPromotionCombustor = new SelfPromotionCombustorSettings();
