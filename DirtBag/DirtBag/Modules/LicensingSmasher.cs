@@ -83,20 +83,22 @@ namespace Dirtbag.Modules {
                 req.Id = string.Join( ",", ids );
 
                 var ytScrape = ScrapeYouTube( youTubePosts.Skip( i ).Take( 50 ).ToDictionary( p => p.Key, p => p.Value ), toReturn );
-                var response = await req.ExecuteAsync().ConfigureAwait(false);
+                if(TermsToMatch.Count > 0) {
+                    var response = await req.ExecuteAsync().ConfigureAwait(false);
 
-                foreach ( var vid in response.Items ) {
-                    var redditThings = youTubePosts[vid.Id];
-                    //var scores = toReturn[post.Id].Scores;
+                    foreach(var vid in response.Items) {
+                        var redditThings = youTubePosts[vid.Id];
+                        //var scores = toReturn[post.Id].Scores;
 
-                    var termMatches = TermMatching.Matches( vid.Snippet.Description ).Cast<Match>().Select( m => m.Value ).ToList();
-                    termMatches.AddRange( TermMatching.Matches( vid.Snippet.Title ).Cast<Match>().Select( m => m.Value ).ToList().Distinct() );
-                    if ( termMatches.Count > 0 ) {
-                        foreach ( var thingID in redditThings ) {
-                            toReturn[thingID].Scores.Add( new AnalysisScore( STRINGMATCH_SCORE * Settings.ScoreMultiplier, "YouTube video title or description has the following term(s): " + string.Join( ", ", termMatches ), "Match: " + string.Join( ", ", termMatches ), ModuleEnum, RemovalFlair ) );
+                        var termMatches = TermMatching.Matches(vid.Snippet.Description).Cast<Match>().Select(m => m.Value).ToList();
+                        termMatches.AddRange(TermMatching.Matches(vid.Snippet.Title).Cast<Match>().Select(m => m.Value).ToList().Distinct());
+                        if(termMatches.Count > 0) {
+                            foreach(var thingID in redditThings) {
+                                toReturn[thingID].Scores.Add(new AnalysisScore(STRINGMATCH_SCORE * Settings.ScoreMultiplier, "YouTube video title or description has the following term(s): " + string.Join(", ", termMatches), "Match: " + string.Join(", ", termMatches), ModuleEnum, RemovalFlair));
+                            }
                         }
-                    }
 
+                    }
                 }
                 await ytScrape.ConfigureAwait(false);
             }
